@@ -75,7 +75,7 @@ public class SwingContext implements Context {
                 return 1;
             }
         };
-        logger=new Continuation<>() {
+        logger=new Continuation<Throwable>() {
             @Override
             public void completed(Throwable result) {
                 log(result);

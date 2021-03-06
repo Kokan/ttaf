@@ -6,6 +6,11 @@ plugins {
 group 'dog'
 version '0.1-SNAPSHOT'
 
+compileJava {
+    sourceCompatibility "1.8"
+    targetCompatibility "1.8"
+}
+
 repositories {
     mavenCentral()
 }

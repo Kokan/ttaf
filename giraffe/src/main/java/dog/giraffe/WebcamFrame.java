@@ -129,7 +129,12 @@ public class WebcamFrame extends JFrame {
         image=Continuations.split(images);
         pack();
         Dimension screen=getToolkit().getScreenSize();
-        setBounds(screen.width/8, screen.height/8, 3*screen.width/4, 3*screen.height/4);
+        if (16*screen.height<9*screen.width) {
+            setBounds(screen.width/16, screen.height/8, 3*screen.width/8, 3*screen.height/4);
+        }
+        else {
+            setBounds(screen.width/8, screen.height/8, 3*screen.width/4, 3*screen.height/4);
+        }
         setVisible(true);
     }
 
@@ -163,7 +168,7 @@ public class WebcamFrame extends JFrame {
     }
 
     private <T, U> AsyncFunction<T, U> limitRate(AsyncFunction<T, U> function) {
-        return new AsyncFunction<>() {
+        return new AsyncFunction<T, U>() {
             class LimitRateContinuation implements Continuation<U> {
                 private final Continuation<U> continuation;
 

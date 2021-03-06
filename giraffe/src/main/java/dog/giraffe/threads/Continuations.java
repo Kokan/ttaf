@@ -9,7 +9,7 @@ public class Continuations {
     }
 
     public static <T> Continuation<T> async(Continuation<T> continuation, Executor executor) {
-        return new Continuation<>() {
+        return new Continuation<T>() {
             @Override
             public void completed(T result) throws Throwable {
                 executor.execute(()->continuation.completed(result));
@@ -23,7 +23,7 @@ public class Continuations {
     }
 
     public static <T> Continuation<T> consume(Consumer<T> consumer, Continuation<Throwable> logger) {
-        return new Continuation<>() {
+        return new Continuation<T>() {
             @Override
             public void completed(T result) throws Throwable {
                 consumer.accept(result);
@@ -45,7 +45,7 @@ public class Continuations {
         }
         AtomicInteger remaining=new AtomicInteger(forks.size());
         List<T> results=new ArrayList<>(forks.size());
-        Continuation<Void> continuation=new Continuation<>() {
+        Continuation<Void> continuation=new Continuation<Void>() {
             @Override
             public void completed(Void result) throws Throwable {
                 while (true) {
@@ -107,7 +107,7 @@ public class Continuations {
     }
 
     public static <T, U> Continuation<T> map(AsyncFunction<T, U> function, Continuation<U> continuation) {
-        return new Continuation<>() {
+        return new Continuation<T>() {
             @Override
             public void completed(T result) throws Throwable {
                 function.apply(result, continuation);
@@ -125,7 +125,7 @@ public class Continuations {
     }
 
     public static <T> Continuation<T> split(List<Continuation<T>> continuations) {
-        return new Continuation<>() {
+        return new Continuation<T>() {
             @Override
             public void completed(T result) throws Throwable {
                 Throwable throwable=null;

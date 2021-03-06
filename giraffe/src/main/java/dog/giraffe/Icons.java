@@ -4,13 +4,14 @@ import java.awt.Image;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.imageio.ImageIO;
 
 public class Icons {
-    private static final List<Integer> SIZES=List.of(512, 256, 128, 64, 32);
+    private static final List<Integer> SIZES=Collections.unmodifiableList(Arrays.asList(512, 256, 128, 64, 32));
 
     private Icons() {
     }
