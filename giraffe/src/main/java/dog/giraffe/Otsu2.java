@@ -5,6 +5,7 @@ import java.util.Objects;
 public class Otsu2 {
     private final int bins;
     private final double[] centers;
+    private final Context context;
     private final int[] frequencies;
     private final int[] frequencySums;
     private double max=Double.NEGATIVE_INFINITY;
@@ -12,11 +13,12 @@ public class Otsu2 {
     private final Sum sum;
     private final Iterable<Double> values;
 
-    private Otsu2(int bins, Sum.Factory sumFactory, Iterable<Double> values) {
+    private Otsu2(int bins, Context context, Sum.Factory sumFactory, Iterable<Double> values) {
         if (2>bins) {
             throw new IllegalArgumentException(Integer.toString(bins));
         }
         this.bins=bins;
+        this.context=context;
         this.values=Objects.requireNonNull(values);
         centers=new double[bins];
         frequencies=new int[bins];
@@ -44,7 +46,7 @@ public class Otsu2 {
         return sum.sum()/(frequencySums[to]-frequencySums[from]);
     }
 
-    private double threshold() {
+    private double threshold() throws Throwable {
         for (double value: values) {
             Doubles.checkFinite(value);
             max=Math.max(max, value);
@@ -76,6 +78,7 @@ public class Otsu2 {
         int bestThreshold=0;
         double bestVariance=Double.POSITIVE_INFINITY;
         for (int tt=0; bins>=tt; ++tt) {
+            context.checkStopped();
             double vv=moment0(0, tt)*(moment2(0, tt)-Doubles.square(moment1(0, tt)))
                     +moment0(tt, bins)*(moment2(tt, bins)-Doubles.square(moment1(tt, bins)));
             if (vv<bestVariance) {
@@ -86,8 +89,9 @@ public class Otsu2 {
         return (min*(bins-bestThreshold)+max*bestThreshold)/bins;
     }
 
-    public static double threshold(int bins, Sum.Factory sumFactory, Iterable<Double> values) {
-        return new Otsu2(bins, sumFactory, values)
+    public static double threshold(
+            int bins, Context context, Sum.Factory sumFactory, Iterable<Double> values) throws Throwable {
+        return new Otsu2(bins, context, sumFactory, values)
                 .threshold();
     }
 }

@@ -9,10 +9,6 @@ public class ImageComponent extends JComponent {
 
     private Image image;
 
-    public Image getImage() {
-        return image;
-    }
-
     @Override
     protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);

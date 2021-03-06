@@ -173,12 +173,12 @@ public interface Color {
             }
         }
 
-        public static KMeans.Distance<Color.RGB> DISTANCE
+        public static final KMeans.Distance<Color.RGB> DISTANCE
                 =(center, point)->Math.sqrt(
                         Doubles.square(0.0722*(center.blue-point.blue))
                                 +Doubles.square(0.7152*(center.green-point.green))
                                 +Doubles.square(0.2126*(center.red-point.red)));
-        public static VectorMean.Factory<Color.RGB> MEAN=new Mean.Factory(Sum.PREFERRED);
+        public static final VectorMean.Factory<Color.RGB> MEAN=new Mean.Factory(Sum.PREFERRED);
 
         public final double blue;
         public final double green;

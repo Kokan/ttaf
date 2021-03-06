@@ -61,6 +61,14 @@ public interface Sum {
         }
 
         @Override
+        public Sum addTo(Sum sum) {
+            for (int ii=size-1; 0<=ii; --ii) {
+                sum=sum.add(array[ii]);
+            }
+            return sum;
+        }
+
+        @Override
         protected void clearImpl() {
             size=0;
         }
@@ -162,6 +170,11 @@ public interface Sum {
         }
 
         @Override
+        public Sum addTo(Sum sum) {
+            return sum.add(this.sum);
+        }
+
+        @Override
         protected void clearImpl() {
             sum=0.0;
         }
@@ -200,6 +213,8 @@ public interface Sum {
     Factory PREFERRED=HEAP;
 
     Sum add(double addend);
+
+    Sum addTo(Sum sum);
 
     int addends();
 
