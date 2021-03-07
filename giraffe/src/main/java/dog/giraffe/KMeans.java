@@ -62,14 +62,23 @@ public class KMeans<T> {
         }
         double error=Double.POSITIVE_INFINITY;
         new KMeans<>(clusters, context, distance, errorLimit, maxIterations, meanFactory, points, sumFactory)
-                .cluster(centers, continuation, error, 0);
+                .start(centers, continuation, error, 0);
     }
 
-    public void cluster(
-            Set<T> centers, Continuation<List<T>> continuation, double error, int iteration) throws Throwable {
+    public void start(Set<T> centers, Continuation<List<T>> continuation, double error, int iteration) throws Throwable {
+                distribute(centers, Continuations.map((res,cont)->{ 
+                               cont.completed(new ArrayList<>(res.keySet()));
+                           },continuation), error, 0);
+    }
+
+    public void distribute(Set<T> centers, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
         context.checkStopped();
         if (maxIterations<=iteration) {
-            continuation.completed(new ArrayList<>(centers));
+            Map<T,List<T>> a=new HashMap<>();
+            for (T center : centers) {
+                a.put(center,new ArrayList<>());
+            }
+            continuation.completed(a);
             return;
         }
         int threads=Math.max(1, Math.min(points.size(), context.executor().threads()));
@@ -111,17 +120,17 @@ public class KMeans<T> {
                             double error2=errorSum.sum();
                             if (Double.isFinite(error2)
                                     && (error2>=error*errorLimit)) {
-                                continuation2.completed(new ArrayList<>(centers));
+                                continuation2.completed(voronoi);
                                 return;
                             }
-                            cluster2(continuation2, error2, iteration, voronoi);
+                            update_centers(continuation2, error2, iteration, voronoi);
                         },
                         continuation),
                 context.executor());
     }
 
-    public void cluster2(
-            Continuation<List<T>> continuation, double error, int iteration, Map<T, List<T>> voronoi)
+    public void update_centers(
+            Continuation<Map<T,List<T>>> continuation, double error, int iteration, Map<T, List<T>> voronoi)
             throws Throwable {
         List<AsyncSupplier<T>> forks=new ArrayList<>(voronoi.size());
         for (List<T> cluster: voronoi.values()) {
@@ -140,7 +149,7 @@ public class KMeans<T> {
                             if (centers2.size()<clusters) {
                                 throw new RuntimeException("cluster collapse");
                             }
-                            cluster(new HashSet<>(centers2), continuation2, error, iteration+1);
+                            distribute(new HashSet<>(centers2), continuation2, error, iteration+1);
                         },
                         continuation),
                 context.executor());
