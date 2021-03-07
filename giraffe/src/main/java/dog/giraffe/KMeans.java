@@ -16,7 +16,8 @@ public class KMeans<T> {
         double distance(T center, T point);
     }
 
-    private final int clusters;
+    private int clusters;
+    private final int clusterMinSize;
     private final Context context;
     private final Distance<T> distance;
     private final double errorLimit;
@@ -26,9 +27,10 @@ public class KMeans<T> {
     private final Sum.Factory sumFactory;
 
     private KMeans(
-            int clusters, Context context, Distance<T> distance, double errorLimit, int maxIterations,
+            int clusters, Context context, Distance<T> distance, double errorLimit, int clusterMinSize, int maxIterations,
             VectorMean.Factory<T> meanFactory, List<T> points, Sum.Factory sumFactory) {
         this.clusters=clusters;
+        this.clusterMinSize=clusterMinSize;
         this.context=context;
         this.distance=distance;
         this.errorLimit=errorLimit;
@@ -61,7 +63,7 @@ public class KMeans<T> {
             centers.add(points.get(context.random().nextInt(points.size())));
         }
         double error=Double.POSITIVE_INFINITY;
-        new KMeans<>(clusters, context, distance, errorLimit, maxIterations, meanFactory, points, sumFactory)
+        new KMeans<>(clusters, context, distance, errorLimit, (int)(points.size()*0.005), maxIterations, meanFactory, points, sumFactory)
                 .start(centers, continuation, error, 0);
     }
 
@@ -123,10 +125,24 @@ public class KMeans<T> {
                                 continuation2.completed(voronoi);
                                 return;
                             }
-                            update_centers(continuation2, error2, iteration, voronoi);
+                            discard_sample(continuation2, error2, iteration, voronoi);
                         },
                         continuation),
                 context.executor());
+    }
+
+    public void discard_sample(
+            Continuation<Map<T,List<T>>> continuation, double error, int iteration, Map<T, List<T>> voronoi)
+            throws Throwable {
+         Map<T,List<T>> voronoi2=new HashMap<>();
+         for (T v : voronoi.keySet()) {
+             List<T> sample=voronoi.get(v);
+             if (sample.size() >= clusterMinSize) {
+                voronoi2.put(v,sample);
+             }
+         }
+         clusters=voronoi2.size();
+         update_centers(continuation, error, iteration, voronoi2);
     }
 
     public void update_centers(
