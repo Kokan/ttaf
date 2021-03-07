@@ -146,9 +146,6 @@ public class KMeans<T> {
                 forks,
                 Continuations.map(
                         (centers2, continuation2)->{
-                            if (centers2.size()<clusters) {
-                                throw new RuntimeException("cluster collapse");
-                            }
                             distribute(new HashSet<>(centers2), continuation2, error, iteration+1);
                         },
                         continuation),
