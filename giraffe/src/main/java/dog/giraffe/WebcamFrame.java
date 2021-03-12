@@ -2,6 +2,9 @@ package dog.giraffe;
 
 import com.github.sarxos.webcam.Webcam;
 import dog.giraffe.threads.AsyncFunction;
+import dog.giraffe.threads.AsyncSupplier;
+import dog.giraffe.threads.Block;
+import dog.giraffe.threads.Consumer;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import java.awt.Dimension;
@@ -19,6 +22,90 @@ import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
 public class WebcamFrame extends JFrame {
+    private class ImageConsumer implements Consumer<BufferedImage> {
+        class LimitRateContinuation implements Continuation<BufferedImage> {
+            private final Continuation<BufferedImage> continuation;
+
+            public LimitRateContinuation(Continuation<BufferedImage> continuation) {
+                this.continuation=continuation;
+            }
+
+            private void check() throws Throwable {
+                BufferedImage image3;
+                synchronized (lock) {
+                    if (null==image2) {
+                        running=false;
+                        return;
+                    }
+                    image3=image2;
+                    image2=null;
+                }
+                execute(image3);
+            }
+
+            @Override
+            public void completed(BufferedImage result) throws Throwable {
+                try {
+                    continuation.completed(result);
+                }
+                finally {
+                    check();
+                }
+            }
+
+            @Override
+            public void failed(Throwable throwable) throws Throwable {
+                try {
+                    continuation.failed(throwable);
+                }
+                finally {
+                    check();
+                }
+            }
+        }
+
+        private final AsyncFunction<BufferedImage, BufferedImage> function;
+        private final ImageComponent image;
+        private BufferedImage image2;
+        private final Object lock=new Object();
+        private boolean running;
+
+        public ImageConsumer(AsyncFunction<BufferedImage, BufferedImage> function, ImageComponent image) {
+            this.function=function;
+            this.image=image;
+        }
+
+        @Override
+        public void accept(BufferedImage value) throws Throwable {
+            synchronized (lock) {
+                if ((null==value)
+                        || running) {
+                    image2=value;
+                    return;
+                }
+                running=true;
+            }
+            execute(value);
+        }
+
+        private void execute(BufferedImage image) throws Throwable {
+            Continuation<BufferedImage> continuation
+                    =Continuations.async(
+                            Continuations.consume(this.image::setImage, context.logger()),
+                            context.executorGui());
+            continuation=Continuations.singleRun(new LimitRateContinuation(continuation));
+            continuation=Continuations.map(function, continuation);
+            continuation=Continuations.async(continuation, context.executor());
+            Block block=Block.supply(AsyncSupplier.constSupplier(image), continuation);
+            try {
+                context.executor().execute(block);
+            }
+            catch (Throwable throwable) {
+                continuation.failed(throwable);
+            }
+        }
+    }
+
     private static class WebcamGrabber implements Runnable {
         private final WebcamFrame frame;
 
@@ -45,7 +132,7 @@ public class WebcamFrame extends JFrame {
                     while (!frame.context.stopped()) {
                         BufferedImage image2=webcam.getImage();
                         if (!frame.context.stopped()) {
-                            frame.context.executor().execute(()->frame.image.completed(image2));
+                            frame.context.executor().execute(()->frame.image.accept(image2));
                         }
                         sleep();
                     }
@@ -74,7 +161,7 @@ public class WebcamFrame extends JFrame {
     private static final long serialVersionUID=0L;
 
     private final Context context;
-    private final Continuation<BufferedImage> image;
+    private final Consumer<BufferedImage> image;
 
     public WebcamFrame(Context context) throws Throwable {
         super("Giraffe webcam");
@@ -113,20 +200,13 @@ public class WebcamFrame extends JFrame {
         }
         JPanel panel=new JPanel(new GridLayout(0, columns));
         getContentPane().add(panel);
-        List<Continuation<BufferedImage>> images=new ArrayList<>(functions.size());
+        List<Consumer<BufferedImage>> images=new ArrayList<>(functions.size());
         for (AsyncFunction<BufferedImage, BufferedImage> function: functions) {
             ImageComponent image=new ImageComponent();
-            images.add(
-                    Continuations.map(
-                            AsyncFunction.async(
-                                    limitRate(function),
-                                    context.executor()),
-                            Continuations.async(
-                                        Continuations.consume(image::setImage, context.logger()),
-                                        context.executorGui())));
+            images.add(new ImageConsumer(function, image));
             panel.add(image);
         }
-        image=Continuations.split(images);
+        image=Consumer.fork(images);
         pack();
         Dimension screen=getToolkit().getScreenSize();
         if (16*screen.height<9*screen.width) {
@@ -164,77 +244,6 @@ public class WebcamFrame extends JFrame {
                             continuation),
                     Color.RGB.DISTANCE, 0.95, 1000,
                     Color.RGB.MEAN, Sum.PREFERRED, values);
-        };
-    }
-
-    private <T, U> AsyncFunction<T, U> limitRate(AsyncFunction<T, U> function) {
-        return new AsyncFunction<T, U>() {
-            class LimitRateContinuation implements Continuation<U> {
-                private final Continuation<U> continuation;
-
-                public LimitRateContinuation(Continuation<U> continuation) {
-                    this.continuation=continuation;
-                }
-
-                private void check() throws Throwable {
-                    Continuation<U> continuation3;
-                    T input3;
-                    synchronized (lock) {
-                        if (!has2) {
-                            running=false;
-                            return;
-                        }
-                        continuation3=new LimitRateContinuation(continuation2);
-                        input3=input2;
-                        continuation2=null;
-                        has2=false;
-                        input2=null;
-                    }
-                    context.executor().execute(()->function.apply(input3, continuation3));
-                }
-
-                @Override
-                public void completed(U result) throws Throwable {
-                    try {
-                        continuation.completed(result);
-                    }
-                    finally {
-                        check();
-                    }
-                }
-
-                @Override
-                public void failed(Throwable throwable) throws Throwable {
-                    try {
-                        continuation.failed(throwable);
-                    }
-                    finally {
-                        check();
-                    }
-                }
-            }
-
-            private Continuation<U> continuation2;
-            private boolean has2;
-            private T input2;
-            private final Object lock=new Object();
-            private boolean running;
-
-            @Override
-            public void apply(T input, Continuation<U> continuation) throws Throwable {
-                Continuation<U> continuation3;
-                synchronized (lock) {
-                    if (running) {
-                        continuation2=continuation;
-                        has2=true;
-                        input2=input;
-                        return;
-                    }
-                    continuation3=new LimitRateContinuation(continuation);
-                    running=true;
-                }
-                function.apply(input, continuation3);
-            }
         };
     }
 

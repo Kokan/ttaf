@@ -8,7 +8,6 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.SwingUtilities;
 
@@ -47,12 +46,6 @@ public class SwingContext implements Context {
             }
 
             @Override
-            public void execute(Block block, long delayMillis) throws Throwable {
-                checkStopped();
-                realExecutor.schedule(new BlockRunnable(block), delayMillis, TimeUnit.MILLISECONDS);
-            }
-
-            @Override
             public int threads() {
                 return threads;
             }
@@ -62,12 +55,6 @@ public class SwingContext implements Context {
             public void execute(Block block) throws Throwable {
                 checkStopped();
                 SwingUtilities.invokeLater(new BlockRunnable(block));
-            }
-
-            @Override
-            public void execute(Block block, long delayMillis) throws Throwable {
-                checkStopped();
-                executor.execute(()->SwingUtilities.invokeLater(new BlockRunnable(block)), delayMillis);
             }
 
             @Override

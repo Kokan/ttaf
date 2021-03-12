@@ -9,21 +9,32 @@ public class Continuations {
     }
 
     public static <T> Continuation<T> async(Continuation<T> continuation, Executor executor) {
-        return new Continuation<T>() {
+        Continuation<T> continuation2=singleRun(continuation);
+        return singleRun(new Continuation<T>() {
             @Override
             public void completed(T result) throws Throwable {
-                executor.execute(()->continuation.completed(result));
+                try {
+                    executor.execute(()->continuation2.completed(result));
+                }
+                catch (Throwable throwable) {
+                    continuation2.failed(throwable);
+                }
             }
 
             @Override
             public void failed(Throwable throwable) throws Throwable {
-                executor.execute(()->continuation.failed(throwable));
+                try {
+                    executor.execute(()->continuation2.failed(throwable));
+                }
+                catch (Throwable throwable2) {
+                    continuation2.failed(throwable2);
+                }
             }
-        };
+        });
     }
 
     public static <T> Continuation<T> consume(Consumer<T> consumer, Continuation<Throwable> logger) {
-        return new Continuation<T>() {
+        return singleRun(new Continuation<T>() {
             @Override
             public void completed(T result) throws Throwable {
                 consumer.accept(result);
@@ -33,7 +44,7 @@ public class Continuations {
             public void failed(Throwable throwable) throws Throwable {
                 logger.failed(throwable);
             }
-        };
+        });
     }
 
     public static <T> void forkJoin(
@@ -107,66 +118,26 @@ public class Continuations {
     }
 
     public static <T, U> Continuation<T> map(AsyncFunction<T, U> function, Continuation<U> continuation) {
-        return new Continuation<T>() {
+        Continuation<U> continuation2=singleRun(continuation);
+        return singleRun(new Continuation<T>() {
             @Override
             public void completed(T result) throws Throwable {
-                function.apply(result, continuation);
-            }
-
-            @Override
-            public void failed(Throwable throwable) throws Throwable {
-                continuation.failed(throwable);
-            }
-        };
-    }
-
-    public static <T> Continuation<T> singleRun(Continuation<T> handler) {
-        return SingleRunContinuation.wrap(handler);
-    }
-
-    public static <T> Continuation<T> split(List<Continuation<T>> continuations) {
-        return new Continuation<T>() {
-            @Override
-            public void completed(T result) throws Throwable {
-                Throwable throwable=null;
-                for (Continuation<T> continuation: continuations) {
-                    try {
-                        continuation.completed(result);
-                    }
-                    catch (Throwable throwable2) {
-                        if (null==throwable) {
-                            throwable=throwable2;
-                        }
-                        else {
-                            throwable.addSuppressed(throwable2);
-                        }
-                    }
+                try {
+                    function.apply(result, continuation2);
                 }
-                if (null!=throwable) {
-                    throw throwable;
+                catch (Throwable throwable) {
+                    continuation2.failed(throwable);
                 }
             }
 
             @Override
             public void failed(Throwable throwable) throws Throwable {
-                Throwable throwable2=null;
-                for (Continuation<T> continuation: continuations) {
-                    try {
-                        continuation.failed(throwable);
-                    }
-                    catch (Throwable throwable3) {
-                        if (null==throwable2) {
-                            throwable2=throwable3;
-                        }
-                        else {
-                            throwable2.addSuppressed(throwable3);
-                        }
-                    }
-                }
-                if (null!=throwable2) {
-                    throw throwable2;
-                }
+                continuation2.failed(throwable);
             }
-        };
+        });
+    }
+
+    public static <T> Continuation<T> singleRun(Continuation<T> continuation) {
+        return SingleRunContinuation.wrap(continuation);
     }
 }
