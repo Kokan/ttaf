@@ -101,7 +101,7 @@ public class WebcamFrame extends JFrame {
         functions.add(kMeans(5));
         functions.add(kMeans(7));
         functions.add(kMeans(11));
-        functions.add(kMeans(13));
+        functions.add(kMeans(100));
 
         addWindowListener(new WindowListenerImpl());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -160,6 +160,7 @@ public class WebcamFrame extends JFrame {
                                 BufferedImage image2=new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
                                 image2.setRGB(0, 0, width, height, pixels2, 0, width);
                                 continuation.completed(image2);
+                                System.out.println("starting K="+clusters+" new K="+centers.size());
                             },
                             continuation),
                     Color.RGB.DISTANCE, 0.95, 1000,
