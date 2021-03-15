@@ -7,30 +7,19 @@ import java.util.Arrays;
  */
 public interface Sum {
     abstract class Abstract implements Sum {
-        private int addends;
-
         @Override
-        public Sum add(double addend) {
+        public void add(double addend) {
             Doubles.checkFinite(addend);
-            ++addends;
             if (0.0!=addend) {
                 addImpl(addend);
             }
-            return this;
         }
 
         protected abstract void addImpl(double addend);
 
         @Override
-        public int addends() {
-            return addends;
-        }
-
-        @Override
-        public Sum clear() {
-            addends=0;
+        public void clear() {
             clearImpl();
-            return this;
         }
 
         protected abstract void clearImpl();
@@ -61,11 +50,10 @@ public interface Sum {
         }
 
         @Override
-        public Sum addTo(Sum sum) {
+        public void addTo(Sum sum) {
             for (int ii=size-1; 0<=ii; --ii) {
-                sum=sum.add(array[ii]);
+                sum.add(array[ii]);
             }
-            return sum;
         }
 
         @Override
@@ -89,10 +77,6 @@ public interface Sum {
     }
 
     interface Factory {
-        default Sum create() {
-            return create(16);
-        }
-
         Sum create(int expectedAddends);
     }
 
@@ -170,8 +154,8 @@ public interface Sum {
         }
 
         @Override
-        public Sum addTo(Sum sum) {
-            return sum.add(this.sum);
+        public void addTo(Sum sum) {
+            sum.add(this.sum);
         }
 
         @Override
@@ -210,15 +194,13 @@ public interface Sum {
 
     Factory TREE=Tree::new;
 
-    Factory PREFERRED=HEAP;
+    Factory PREFERRED=SINGLE_VARIABLE;
 
-    Sum add(double addend);
+    void add(double addend);
 
-    Sum addTo(Sum sum);
+    void addTo(Sum sum);
 
-    int addends();
-
-    Sum clear();
+    void clear();
 
     double sum();
 }

@@ -4,4 +4,4 @@ gradle clean jar copyDependencies
 if [ "0" != "$?" ]; then
 	exit 1
 fi
-java -cp "build/libs/*" dog.giraffe.WebcamFrame
+/usr/lib/jvm/java-8-openjdk-amd64/bin/java -agentlib:hprof=cpu=samples,file=../java.hprof.txt -cp "build/libs/*" dog.giraffe.WebcamFrame

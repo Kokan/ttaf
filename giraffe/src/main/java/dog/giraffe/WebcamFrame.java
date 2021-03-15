@@ -1,6 +1,8 @@
 package dog.giraffe;
 
 import com.github.sarxos.webcam.Webcam;
+import dog.giraffe.points.ByteArrayL2Points;
+import dog.giraffe.points.KDTree;
 import dog.giraffe.threads.AsyncFunction;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Block;
@@ -224,17 +226,79 @@ public class WebcamFrame extends JFrame {
             int width=image.getWidth();
             int[] pixels=new int[height*width];
             image.getRGB(0, 0, width, height, pixels, 0, width);
-            List<Color.RGB> values=new ArrayList<>(pixels.length);
+
+            byte[] pointsData=new byte[3*height*width];
+            for (int ii=0; pixels.length>ii; ++ii) {
+                pointsData[3*ii]=(byte)((pixels[ii]>>16)&0xff);
+                pointsData[3*ii+1]=(byte)((pixels[ii]>>8)&0xff);
+                pointsData[3*ii+2]=(byte)(pixels[ii]&0xff);
+            }
+            ByteArrayL2Points points=new ByteArrayL2Points(pointsData, 3);
+            KMeans.cluster(
+                    clusters,
+                    context,
+                    Continuations.map(
+                            new AsyncFunction<List<double[]>, BufferedImage>() {
+                                @Override
+                                public void apply(
+                                        List<double[]> centers, Continuation<BufferedImage> continuation)
+                                        throws Throwable {
+                                    int[] pixels2=new int[height*width];
+                                    for (int ii=0; pixels.length>ii; ++ii) {
+                                        double[] center=nearestCenter(centers, ii);
+                                        pixels2[ii]=0xff000000
+                                                |(((int)Math.round(center[0]))<<16)
+                                                |(((int)Math.round(center[1]))<<8)
+                                                |((int)Math.round(center[2]));
+                                    }
+                                    BufferedImage image2
+                                            =new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+                                    image2.setRGB(0, 0, width, height, pixels2, 0, width);
+                                    continuation.completed(image2);
+                                }
+
+                                private double distance(double[] center, int index) {
+                                    return square(center[0]-((pixels[index]>>16)&0xff))
+                                            +square(center[1]-((pixels[index]>>8)&0xff))
+                                            +square(center[2]-(pixels[index]&0xff));
+                                }
+
+                                private double[] nearestCenter(List<double[]> centers, int index) {
+                                    double[] nc=null;
+                                    double nd=Double.POSITIVE_INFINITY;
+                                    for (double[] center: centers) {
+                                        double dd=distance(center, index);
+                                        if (nd>dd) {
+                                            nc=center;
+                                            nd=dd;
+                                        }
+                                    }
+                                    return nc;
+                                }
+
+                                private double square(double value) {
+                                    return value*value;
+                                }
+                            },
+                            continuation),
+                    0.95,
+                    1000,
+                    KDTree.create(4096, points, Sum.PREFERRED),
+                    Sum.PREFERRED);
+
+            /*
+            List<Color.RGB> points=new ArrayList<>(pixels.length);
             for (int pixel: pixels) {
-                values.add(Color.RGB.createFromRGB(pixel, 1.0));
+                points.add(Color.RGB.createFromRGB(pixel, 1.0));
             }
             KMeans.cluster(
-                    clusters, context,
+                    clusters,
+                    context,
                     Continuations.map(
                             (centers, continuation2)->{
                                 int[] pixels2=new int[height*width];
                                 for (int ii=0; pixels.length>ii; ++ii) {
-                                    Color.RGB center=KMeans.nearestCenter(centers, Color.RGB.DISTANCE, values.get(ii));
+                                    Color.RGB center=KMeans.nearestCenter(centers, Color.RGB.DISTANCE, points.get(ii));
                                     pixels2[ii]=center.toARGBInt(1.0);
                                 }
                                 BufferedImage image2=new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
@@ -242,8 +306,11 @@ public class WebcamFrame extends JFrame {
                                 continuation.completed(image2);
                             },
                             continuation),
-                    Color.RGB.DISTANCE, 0.95, 1000,
-                    Color.RGB.MEAN, Sum.PREFERRED, values);
+                    0.95,
+                    1000,
+                    new PointsList<>(Color.RGB.DISTANCE, Color.RGB.MEAN, points),
+                    Sum.PREFERRED);
+            */
         };
     }
 

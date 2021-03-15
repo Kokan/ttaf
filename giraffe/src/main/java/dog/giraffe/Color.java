@@ -120,16 +120,10 @@ public interface Color {
     }
 
     class RGB {
-        public static class Mean implements VectorMean<Color.RGB> {
-            public static class Factory implements VectorMean.Factory<Color.RGB> {
-                private final Sum.Factory sumFactory;
-
-                public Factory(Sum.Factory sumFactory) {
-                    this.sumFactory=sumFactory;
-                }
-
+        public static class Mean implements VectorMean<Mean, Color.RGB> {
+            public static class Factory implements VectorMean.Factory<Mean, Color.RGB> {
                 @Override
-                public VectorMean<RGB> create(int expectedAddends) {
+                public Mean create(int expectedAddends, Sum.Factory sumFactory) {
                     return new Mean(expectedAddends, sumFactory);
                 }
             }
@@ -146,22 +140,28 @@ public interface Color {
             }
 
             @Override
-            public VectorMean<RGB> add(RGB addend) {
+            public void add(RGB addend) {
                 Objects.requireNonNull(addend);
                 ++addends;
                 blue.add(addend.blue);
                 green.add(addend.green);
                 red.add(addend.red);
-                return this;
             }
 
             @Override
-            public VectorMean<RGB> clear() {
+            public void addTo(Mean mean) {
+                mean.addends+=addends;
+                blue.addTo(mean.blue);
+                green.addTo(mean.green);
+                red.addTo(mean.red);
+            }
+
+            @Override
+            public void clear() {
                 addends=0;
                 blue.clear();
                 green.clear();
                 red.clear();
-                return this;
             }
 
             @Override
@@ -173,12 +173,12 @@ public interface Color {
             }
         }
 
-        public static final KMeans.Distance<Color.RGB> DISTANCE
+        public static final Distance<RGB> DISTANCE
                 =(center, point)->Math.sqrt(
                         Doubles.square(0.0722*(center.blue-point.blue))
                                 +Doubles.square(0.7152*(center.green-point.green))
                                 +Doubles.square(0.2126*(center.red-point.red)));
-        public static final VectorMean.Factory<Color.RGB> MEAN=new Mean.Factory(Sum.PREFERRED);
+        public static final VectorMean.Factory<RGB.Mean, RGB> MEAN=new Mean.Factory();
 
         public final double blue;
         public final double green;

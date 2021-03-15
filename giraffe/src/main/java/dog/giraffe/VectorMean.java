@@ -1,17 +1,15 @@
 package dog.giraffe;
 
-public interface VectorMean<T> {
-    interface Factory<T> {
-        default VectorMean<T> create() {
-            return create(16);
-        }
-
-        VectorMean<T> create(int expectedAddends);
+public interface VectorMean<M extends VectorMean<M, T>, T> {
+    interface Factory<M extends VectorMean<M, T>, T> {
+        M create(int expectedAddends, Sum.Factory sumFactory);
     }
 
-    VectorMean<T> add(T addend);
+    void add(T addend);
+    
+    void addTo(M mean);
 
-    VectorMean<T> clear();
+    void clear();
 
     T mean();
 }
