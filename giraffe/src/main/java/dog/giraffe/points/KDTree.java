@@ -2,9 +2,9 @@ package dog.giraffe.points;
 
 import dog.giraffe.QuickSort;
 import dog.giraffe.Sum;
+import dog.giraffe.Vector;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
@@ -33,8 +33,8 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
 
         @Override
         public <C> void classify(
-                Function<C, double[]> centerPoint, List<C> centers,
-                Classification<C, Distance, Mean, KDTree<P>, double[]> classification) {
+                Function<C, Vector> centerPoint, List<C> centers,
+                Classification<C, Distance, Mean, KDTree<P>, Vector> classification) {
             centers=filterCenters(centerPoint, centers);
             left.classify(centerPoint, centers, classification);
             right.classify(centerPoint, centers, classification);
@@ -47,17 +47,12 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
                     :right.get(dimension, index-left.size());
         }
 
-        private static double[] perform(DoubleBinaryOperator operator, double[] value0, double[] value1) {
-            double[] result=new double[value0.length];
-            for (int dd=0; result.length>dd; ++dd) {
-                result[dd]=operator.applyAsDouble(value0[dd], value1[dd]);
+        private static Vector perform(DoubleBinaryOperator operator, Vector value0, Vector value1) {
+            Vector result=new Vector(value0.dimensions());
+            for (int dd=0; result.dimensions()>dd; ++dd) {
+                result.coordinate(dd, operator.applyAsDouble(value0.coordinate(dd), value1.coordinate(dd)));
             }
             return result;
-        }
-
-        @Override
-        public int size() {
-            return size;
         }
 
         @Override
@@ -84,8 +79,8 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
 
         @Override
         public <C> void classify(
-                Function<C, double[]> centerPoint, List<C> centers,
-                Classification<C, Distance, Mean, KDTree<P>, double[]> classification) {
+                Function<C, Vector> centerPoint, List<C> centers,
+                Classification<C, Distance, Mean, KDTree<P>, Vector> classification) {
             centers=filterCenters(centerPoint, centers);
             if (1==centers.size()) {
                 classification.nearestCenter(centers.get(0), this);
@@ -101,31 +96,26 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         }
 
         @Override
-        public int size() {
-            return size;
-        }
-
-        @Override
         protected boolean split(Deque<KDTree<P>> deque) {
             return false;
         }
     }
 
-    private final double[] max;
-    private final double[] mean;
-    private final double[] min;
-    private final double[] sum;
+    private final Vector max;
+    private final Vector mean;
+    private final Vector min;
+    private final Vector sum;
     protected final int size;
 
-    private KDTree(int dimensions, double[] max, double[] min, int size, double[] sum) {
+    private KDTree(int dimensions, Vector max, Vector min, int size, Vector sum) {
         super(dimensions);
         this.max=max;
         this.min=min;
         this.size=size;
         this.sum=sum;
-        mean=Arrays.copyOf(sum, sum.length);
+        mean=sum.copy();
         for (int dd=0; dimensions>dd; ++dd) {
-            mean[dd]/=size;
+            mean.coordinate(dd, mean.coordinate(dd)/size);
         }
     }
 
@@ -161,7 +151,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
                 create(middle, maxLeafSize, points, sums, to));
     }
 
-    protected <C> List<C> filterCenters(Function<C, double[]> centerPoint, List<C> centers) {
+    protected <C> List<C> filterCenters(Function<C, Vector> centerPoint, List<C> centers) {
         if (1>=centers.size()) {
             return centers;
         }
@@ -176,16 +166,16 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         }
         List<C> centers2=new ArrayList<>(centers.size());
         centers2.add(centers.get(nc));
-        double[] nc2=centerPoint.apply(centers2.get(0));
-        double[] ex=new double[dimensions];
+        Vector nc2=centerPoint.apply(centers2.get(0));
+        Vector ex=new Vector(dimensions);
         for (int cc=0; centers.size()>cc; ++cc) {
             if (cc==nc) {
                 continue;
             }
             C cc2=centers.get(cc);
-            double[] cc3=centerPoint.apply(cc2);
+            Vector cc3=centerPoint.apply(cc2);
             for (int dd=0; dimensions>dd; ++dd) {
-                ex[dd]=((cc3[dd]>nc2[dd])?max:min)[dd];
+                ex.coordinate(dd, ((cc3.coordinate(dd)>nc2.coordinate(dd))?max:min).coordinate(dd));
             }
             if (nd>=distance().distance(cc3, ex)) {
                 centers2.add(cc2);
@@ -197,6 +187,11 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
     @Override
     public KDTree<P> self() {
         return this;
+    }
+
+    @Override
+    public int size() {
+        return size;
     }
 
     protected abstract boolean split(Deque<KDTree<P>> deque);

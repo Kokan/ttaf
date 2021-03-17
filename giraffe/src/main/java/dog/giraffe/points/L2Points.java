@@ -1,6 +1,7 @@
 package dog.giraffe.points;
 
 import dog.giraffe.Sum;
+import dog.giraffe.Vector;
 import dog.giraffe.VectorMean;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,8 +9,8 @@ import java.util.List;
 import java.util.function.DoubleBinaryOperator;
 
 public abstract class L2Points<P extends L2Points<P>>
-        implements Points<L2Points.Distance, L2Points.Mean, P, double[]> {
-    public static class Distance implements dog.giraffe.Distance<double[]> {
+        implements Points<L2Points.Distance, L2Points.Mean, P, Vector> {
+    public static class Distance implements dog.giraffe.Distance<Vector> {
         private final int dimensions;
 
         public Distance(int dimensions) {
@@ -17,26 +18,26 @@ public abstract class L2Points<P extends L2Points<P>>
         }
 
         @Override
-        public void addDistanceTo(double[] center, double[] point, Sum sum) {
+        public void addDistanceTo(Vector center, Vector point, Sum sum) {
             for (int dd=0; dimensions>dd; ++dd) {
-                double di=center[dd]-point[dd];
+                double di=center.coordinate(dd)-point.coordinate(dd);
                 sum.add(di*di);
             }
         }
 
         @Override
-        public double distance(double[] center, double[] point) {
+        public double distance(Vector center, Vector point) {
             double distance=0.0;
             for (int dd=0; dimensions>dd; ++dd) {
-                double di=center[dd]-point[dd];
+                double di=center.coordinate(dd)-point.coordinate(dd);
                 distance+=di*di;
             }
             return distance;
         }
     }
 
-    public static class Mean implements VectorMean<Mean, double[]> {
-        public static class Factory implements VectorMean.Factory<Mean, double[]> {
+    public static class Mean implements VectorMean<Mean, Vector> {
+        public static class Factory implements VectorMean.Factory<Mean, Vector> {
             private final int dimensions;
 
             public Factory(int dimensions) {
@@ -61,17 +62,17 @@ public abstract class L2Points<P extends L2Points<P>>
         }
 
         @Override
-        public void add(double[] addend) {
+        public void add(Vector addend) {
             ++addends;
             for (int dd=0; sums.size()>dd; ++dd) {
-                sums.get(dd).add(addend[dd]);
+                sums.get(dd).add(addend.coordinate(dd));
             }
         }
 
-        public void addAll(int addends, double[] sum) {
+        public void addAll(int addends, Vector sum) {
             this.addends+=addends;
             for (int dd=0; sums.size()>dd; ++dd) {
-                sums.get(dd).add(sum[dd]);
+                sums.get(dd).add(sum.coordinate(dd));
             }
         }
 
@@ -92,10 +93,13 @@ public abstract class L2Points<P extends L2Points<P>>
         }
 
         @Override
-        public double[] mean() {
-            double[] mean=new double[sums.size()];
+        public Vector mean() {
+            if (0>=addends) {
+                throw new EmptySetException();
+            }
+            Vector mean=new Vector(sums.size());
             for (int dd=0; sums.size()>dd; ++dd) {
-                mean[dd]=sums.get(dd).sum()/addends;
+                mean.coordinate(dd, sums.get(dd).sum()/addends);
             }
             return mean;
         }
@@ -115,9 +119,9 @@ public abstract class L2Points<P extends L2Points<P>>
     }
 
     @Override
-    public void addDistanceTo(double[] center, int index, Sum sum) {
+    public void addDistanceTo(Vector center, int index, Sum sum) {
         for (int dd=0; dimensions>dd; ++dd) {
-            double di=center[dd]-get(dd, index);
+            double di=center.coordinate(dd)-get(dd, index);
             sum.add(di*di);
         }
     }
@@ -140,20 +144,20 @@ public abstract class L2Points<P extends L2Points<P>>
     }
 
     @Override
-    public double distance(double[] center, int index) {
+    public double distance(Vector center, int index) {
         double distance=0.0;
         for (int dd=0; dimensions>dd; ++dd) {
-            double di=center[dd]-get(dd, index);
+            double di=center.coordinate(dd)-get(dd, index);
             distance+=di*di;
         }
         return distance;
     }
 
     @Override
-    public double[] get(int index) {
-        double[] point=new double[dimensions];
+    public Vector get(int index) {
+        Vector point=new Vector(dimensions);
         for (int dd=0; dimensions()>dd; ++dd) {
-            point[dd]=get(dd, index);
+            point.coordinate(dd, get(dd, index));
         }
         return point;
     }
@@ -161,35 +165,35 @@ public abstract class L2Points<P extends L2Points<P>>
     public abstract double get(int dimension, int index);
 
     @Override
-    public VectorMean.Factory<Mean, double[]> mean() {
+    public VectorMean.Factory<Mean, Vector> mean() {
         return mean;
     }
 
-    public double[] perform(double defaultValue, int offset, DoubleBinaryOperator operator, int size) {
-        double[] result=new double[dimensions];
+    public Vector perform(double defaultValue, int offset, DoubleBinaryOperator operator, int size) {
+        Vector result=new Vector(dimensions);
         for (int dd=0; dimensions>dd; ++dd) {
-            result[dd]=defaultValue;
+            result.coordinate(dd, defaultValue);
         }
         for (; 0<size; ++offset, --size) {
             for (int dd=0; dimensions>dd; ++dd) {
-                result[dd]=operator.applyAsDouble(result[dd], get(dd, offset));
+                result.coordinate(dd, operator.applyAsDouble(result.coordinate(dd), get(dd, offset)));
             }
         }
         return result;
     }
 
-    public double[] sum(int offset, int size, List<Sum> sums) {
+    public Vector sum(int offset, int size, List<Sum> sums) {
         for (int dd=0; dimensions>dd; ++dd) {
             sums.get(dd).clear();
         }
-        double[] result=new double[dimensions];
+        Vector result=new Vector(dimensions);
         for (; 0<size; ++offset, --size) {
             for (int dd=0; dimensions>dd; ++dd) {
                 sums.get(dd).add(get(dd, offset));
             }
         }
         for (int dd=0; dimensions>dd; ++dd) {
-            result[dd]=sums.get(dd).sum();
+            result.coordinate(dd, sums.get(dd).sum());
         }
         return result;
     }
