@@ -1,6 +1,8 @@
 package dog.giraffe;
 
 import com.github.sarxos.webcam.Webcam;
+import dog.giraffe.kmeans.ReplaceEmptyCluster;
+import dog.giraffe.kmeans.KMeans;
 import dog.giraffe.points.ByteArrayL2Points;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.threads.AsyncFunction;
@@ -298,7 +300,7 @@ public class WebcamFrame extends JFrame {
                                     for (int dd=0; projection.dimensions()>dd; ++dd) {
                                         point.coordinate(dd, buf[dd]&0xff);
                                     }
-                                    Vector center=KMeans.nearestCenter(centers, points.distance(), point);
+                                    Vector center=Distance.nearestCenter(centers, points.distance(), point);
                                     pixels2[ii]=projection.rgb(coloConverter, center);
                                 }
                                 BufferedImage image2
@@ -307,10 +309,11 @@ public class WebcamFrame extends JFrame {
                                 continuation1.completed(image2);
                             },
                             continuation),
-                    KMeans.EmptyCluster.random(),
                     0.95,
                     1000,
+                    //points,
                     KDTree.create(4096, points, Sum.PREFERRED),
+                    ReplaceEmptyCluster.notNear(),
                     Sum.PREFERRED);
         };
     }
