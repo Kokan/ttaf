@@ -1,5 +1,6 @@
 package dog.giraffe.points;
 
+import dog.giraffe.Doubles;
 import dog.giraffe.QuickSort;
 import dog.giraffe.Sum;
 import dog.giraffe.Vector;
@@ -12,6 +13,11 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 
 public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2Points<KDTree<P>> {
+    private static class NearestCenter {
+        public Vector center;
+        public double distance;
+    }
+
     private static final DoubleBinaryOperator ADD=Double::sum;
     private static final DoubleBinaryOperator MAX=Math::max;
     private static final DoubleBinaryOperator MIN=Math::min;
@@ -45,6 +51,48 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
             return (left.size()>index)
                     ?left.get(dimension, index)
                     :right.get(dimension, index-left.size());
+        }
+
+        @Override
+        protected void nearestCenter(NearestCenter nearestCenter, Vector point) {
+            double leftHeuristic=nearestCenterHeuristic(left, point);
+            double rightHeuristic=nearestCenterHeuristic(right, point);
+            if (leftHeuristic<=rightHeuristic) {
+                left.nearestCenter(nearestCenter, point);
+                if (nearestCenter.distance<=rightHeuristic) {
+                    return;
+                }
+                Vector leftCenter=nearestCenter.center;
+                double leftDistance=nearestCenter.distance;
+                right.nearestCenter(nearestCenter, point);
+                if (leftDistance<nearestCenter.distance) {
+                    nearestCenter.center=leftCenter;
+                    nearestCenter.distance=leftDistance;
+                }
+            }
+            else {
+                right.nearestCenter(nearestCenter, point);
+                if (nearestCenter.distance<=leftHeuristic) {
+                    return;
+                }
+                Vector rightCenter=nearestCenter.center;
+                double rightDistance=nearestCenter.distance;
+                left.nearestCenter(nearestCenter, point);
+                if (rightDistance<nearestCenter.distance) {
+                    nearestCenter.center=rightCenter;
+                    nearestCenter.distance=rightDistance;
+                }
+            }
+        }
+
+        private double nearestCenterHeuristic(KDTree<?> tree, Vector point) {
+            double distance=0.0;
+            for (int dd=0; dimensions>dd; ++dd) {
+                double c0=point.coordinate(dd);
+                double c1=Math.max(tree.min.coordinate(dd), Math.min(tree.max.coordinate(dd), point.coordinate(dd)));
+                distance+=Doubles.square(c0-c1);
+            }
+            return distance;
         }
 
         private static Vector perform(DoubleBinaryOperator operator, Vector value0, Vector value1) {
@@ -93,6 +141,22 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         @Override
         public double get(int dimension, int index) {
             return points.get(dimension, offset+index);
+        }
+
+        @Override
+        protected void nearestCenter(NearestCenter nearestCenter, Vector point) {
+            Vector nc=null;
+            double nd=Double.POSITIVE_INFINITY;
+            for (int oo=offset, ss=size; 0<ss; ++oo, --ss) {
+                Vector cc=points.get(oo);
+                double dd=L2Points.DISTANCE.distance(cc, point);
+                if (nd>dd) {
+                    nc=cc;
+                    nd=dd;
+                }
+            }
+            nearestCenter.center=nc;
+            nearestCenter.distance=nd;
         }
 
         @Override
@@ -185,6 +249,17 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         }
         return Collections.unmodifiableList(centers2);
     }
+
+    public static Function<Vector, Vector> nearestCenter(List<Vector> centers, Sum.Factory sum) {
+        NearestCenter nearestCenter=new NearestCenter();
+        KDTree<?> tree=KDTree.create(1, new VectorList(new ArrayList<>(centers)), sum);
+        return (point)->{
+            tree.nearestCenter(nearestCenter, point);
+            return nearestCenter.center;
+        };
+    }
+
+    protected abstract void nearestCenter(NearestCenter nearestCenter, Vector point);
 
     @Override
     public KDTree<P> self() {

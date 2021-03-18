@@ -1,7 +1,6 @@
 package dog.giraffe.points;
 
 import dog.giraffe.Distance;
-import dog.giraffe.QuickSort;
 import dog.giraffe.Sum;
 import dog.giraffe.Vector;
 import java.util.ArrayList;
@@ -13,40 +12,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class KDTreeTest {
-    private static class TestPoints extends L2Points<TestPoints> implements QuickSort.Swap {
-        private final List<Vector> data;
-
-        public TestPoints(List<Vector> data) {
-            super(data.get(0).dimensions());
-            this.data=data;
-        }
-
-        @Override
-        public double get(int dimension, int index) {
-            return data.get(index).coordinate(dimension);
-        }
-
-        @Override
-        public TestPoints self() {
-            return this;
-        }
-
-        @Override
-        public int size() {
-            return data.size();
-        }
-
-        @Override
-        public List<TestPoints> split(int parts) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void swap(int index0, int index1) {
-            data.set(index0, data.set(index1, data.get(index0)));
-        }
-    }
-
     private static List<Vector> create(int dimensions, Random random, int size) {
         List<Vector> list=new ArrayList<>();
         for (; 0<size; --size) {
@@ -65,21 +30,21 @@ public class KDTreeTest {
             Random random=new Random(seed);
             final int dimensions=random.nextInt(4)+1;
             List<Vector> centers=Collections.unmodifiableList(create(dimensions, random, 10));
-            TestPoints points=new TestPoints(create(dimensions, random, 1000));
-            KDTree<TestPoints> tree=KDTree.create(random.nextInt(10)+1, points, Sum.HEAP);
+            VectorList points=new VectorList(create(dimensions, random, 1000));
+            KDTree<VectorList> tree=KDTree.create(random.nextInt(10)+1, points, Sum.HEAP);
             tree.classify(
                     Function.identity(),
                     centers,
-                    new Points.Classification<Vector, L2Points.Distance, L2Points.Mean, KDTree<TestPoints>, Vector>() {
+                    new Points.Classification<Vector, L2Points.Distance, L2Points.Mean, KDTree<VectorList>, Vector>() {
                         @Override
-                        public void nearestCenter(Vector center, KDTree<TestPoints> points) {
+                        public void nearestCenter(Vector center, KDTree<VectorList> points) {
                             for (int ii=0; points.size()>ii; ++ii) {
                                 nearestCenter(center, points, ii);
                             }
                         }
 
                         @Override
-                        public void nearestCenter(Vector center, KDTree<TestPoints> points, int index) {
+                        public void nearestCenter(Vector center, KDTree<VectorList> points, int index) {
                             Vector point=points.get(index);
                             Vector center2=Distance.nearestCenter(centers, tree.distance(), point);
                             if (!center.equals(center2)) {

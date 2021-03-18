@@ -9,26 +9,26 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class PointsList<D extends Distance<T>, M extends VectorMean<M, T>, T>
-        implements Points<D, M, PointsList<D, M, T>, T> {
+public class PointList<D extends Distance<T>, M extends VectorMean<M, T>, T>
+        implements Points<D, M, PointList<D, M, T>, T> {
     private final D distance;
     private final VectorMean.Factory<M, T> mean;
     private final List<T> points;
 
-    private PointsList(D distance, VectorMean.Factory<M, T> mean, List<T> points) {
+    private PointList(D distance, VectorMean.Factory<M, T> mean, List<T> points) {
         this.distance=Objects.requireNonNull(distance, "distance");
         this.mean=Objects.requireNonNull(mean, "mean");
         this.points=Objects.requireNonNull(points, "points");
     }
 
-    public PointsList(D distance, VectorMean.Factory<M, T> mean, Collection<T> points) {
+    public PointList(D distance, VectorMean.Factory<M, T> mean, Collection<T> points) {
         this(distance, mean, Collections.unmodifiableList(new ArrayList<>(points)));
     }
 
     @Override
     public <C> void classify(
             Function<C, T> centerPoint, List<C> centers,
-            Classification<C, D, M, PointsList<D, M, T>, T> classification) {
+            Classification<C, D, M, PointList<D, M, T>, T> classification) {
         if (centers.isEmpty()) {
             throw new IllegalArgumentException();
         }
@@ -62,7 +62,7 @@ public class PointsList<D extends Distance<T>, M extends VectorMean<M, T>, T>
     }
 
     @Override
-    public PointsList<D, M, T> self() {
+    public PointList<D, M, T> self() {
         return this;
     }
 
@@ -72,15 +72,15 @@ public class PointsList<D extends Distance<T>, M extends VectorMean<M, T>, T>
     }
 
     @Override
-    public List<PointsList<D, M, T>> split(int parts) {
+    public List<PointList<D, M, T>> split(int parts) {
         if ((2>parts)
                 || (2>points.size())) {
             return Collections.singletonList(this);
         }
         parts=Math.min(parts, points.size());
-        List<PointsList<D, M, T>> result=new ArrayList<>(parts);
+        List<PointList<D, M, T>> result=new ArrayList<>(parts);
         for (int ii=0; parts>ii; ++ii) {
-            result.add(new PointsList<>(
+            result.add(new PointList<>(
                     distance, mean, points.subList(ii*points.size()/parts, (ii+1)*points.size()/parts)));
         }
         return Collections.unmodifiableList(result);

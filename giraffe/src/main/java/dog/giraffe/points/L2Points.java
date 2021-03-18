@@ -11,14 +11,12 @@ import java.util.function.DoubleBinaryOperator;
 public abstract class L2Points<P extends L2Points<P>>
         implements Points<L2Points.Distance, L2Points.Mean, P, Vector> {
     public static class Distance implements dog.giraffe.Distance<Vector> {
-        private final int dimensions;
-
-        public Distance(int dimensions) {
-            this.dimensions=dimensions;
+        private Distance() {
         }
 
         @Override
         public void addDistanceTo(Vector center, Vector point, Sum sum) {
+            int dimensions=center.dimensions();
             for (int dd=0; dimensions>dd; ++dd) {
                 double di=center.coordinate(dd)-point.coordinate(dd);
                 sum.add(di*di);
@@ -27,6 +25,7 @@ public abstract class L2Points<P extends L2Points<P>>
 
         @Override
         public double distance(Vector center, Vector point) {
+            int dimensions=center.dimensions();
             double distance=0.0;
             for (int dd=0; dimensions>dd; ++dd) {
                 double di=center.coordinate(dd)-point.coordinate(dd);
@@ -105,8 +104,9 @@ public abstract class L2Points<P extends L2Points<P>>
         }
     }
 
+    public static Distance DISTANCE=new Distance();
+
     protected final int dimensions;
-    protected final Distance distance;
     protected final Mean.Factory mean;
 
     public L2Points(int dimensions) {
@@ -114,7 +114,6 @@ public abstract class L2Points<P extends L2Points<P>>
             throw new IllegalArgumentException(Integer.toString(dimensions));
         }
         this.dimensions=dimensions;
-        distance=new Distance(dimensions);
         mean=new Mean.Factory(dimensions);
     }
 
@@ -140,7 +139,7 @@ public abstract class L2Points<P extends L2Points<P>>
 
     @Override
     public Distance distance() {
-        return distance;
+        return DISTANCE;
     }
 
     @Override

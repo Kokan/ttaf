@@ -5,6 +5,7 @@ import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.kmeans.KMeans;
 import dog.giraffe.points.ByteArrayL2Points;
 import dog.giraffe.points.KDTree;
+import dog.giraffe.points.L2Points;
 import dog.giraffe.threads.AsyncFunction;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Block;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.IntToDoubleFunction;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -295,12 +297,16 @@ public class WebcamFrame extends JFrame {
                                 byte[] buf=new byte[projection.dimensions()];
                                 Vector point=new Vector(projection.dimensions());
                                 int[] pixels2=new int[height*width];
+                                Function<Vector, Vector> nearestCenter
+                                        =(16>centers.size())
+                                        ?Distance.nearestCenter(centers, L2Points.DISTANCE)
+                                        :KDTree.nearestCenter(centers, Sum.PREFERRED);
                                 for (int ii=0; pixels.length>ii; ++ii) {
                                     projection.project(buf, coloConverter, 0, pixels[ii]);
                                     for (int dd=0; projection.dimensions()>dd; ++dd) {
                                         point.coordinate(dd, buf[dd]&0xff);
                                     }
-                                    Vector center=Distance.nearestCenter(centers, points.distance(), point);
+                                    Vector center=nearestCenter.apply(point);
                                     pixels2[ii]=projection.rgb(coloConverter, center);
                                 }
                                 BufferedImage image2
