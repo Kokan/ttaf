@@ -135,8 +135,10 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
 
     private static <P extends L2Points<P> & QuickSort.Swap> KDTree<P> create(
             int from, int maxLeafSize, P points, List<Sum> sums, int to) {
-        if ((2>maxLeafSize)
-                || (maxLeafSize>=to-from)) {
+        if (1>maxLeafSize) {
+            throw new IllegalArgumentException(Integer.toString(maxLeafSize));
+        }
+        if (maxLeafSize>=to-from) {
             return new Leaf<>(from, points, to-from, sums);
         }
         int widestDimension=points.widestDimension(from, to);
@@ -177,7 +179,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
             for (int dd=0; dimensions>dd; ++dd) {
                 ex.coordinate(dd, ((cc3.coordinate(dd)>nc2.coordinate(dd))?max:min).coordinate(dd));
             }
-            if (nd>=distance().distance(cc3, ex)) {
+            if (distance().distance(nc2, ex)>distance().distance(cc3, ex)) {
                 centers2.add(cc2);
             }
         }
