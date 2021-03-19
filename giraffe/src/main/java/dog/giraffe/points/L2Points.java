@@ -104,7 +104,7 @@ public abstract class L2Points<P extends L2Points<P>>
         }
     }
 
-    public static Distance DISTANCE=new Distance();
+    public static final Distance DISTANCE=new Distance();
 
     protected final int dimensions;
     protected final Mean.Factory mean;

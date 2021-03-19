@@ -24,4 +24,6 @@ public interface Context extends AutoCloseable {
     Random random();
 
     boolean stopped();
+
+    Sum.Factory sum();
 }

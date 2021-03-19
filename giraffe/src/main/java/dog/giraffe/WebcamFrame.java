@@ -3,7 +3,6 @@ package dog.giraffe;
 import com.github.sarxos.webcam.Webcam;
 import dog.giraffe.kmeans.InitialCenters;
 import dog.giraffe.kmeans.ReplaceEmptyCluster;
-import dog.giraffe.kmeans.KMeans;
 import dog.giraffe.points.ByteArrayL2Points;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.points.L2Points;
@@ -245,10 +244,10 @@ public class WebcamFrame extends JFrame {
                         0x0000ff))));
         functions.add(kMeans(2, Projection.RGB));
         functions.add(kMeans(3, Projection.RGB));
-        functions.add(kMeans(5, Projection.RGB));
+        functions.add(kMeans(-13, Projection.RGB));
         functions.add(kMeans(2, Projection.HUE));
         functions.add(kMeans(3, Projection.HUE));
-        functions.add(kMeans(5, Projection.HUE));
+        functions.add(kMeans(-13, Projection.HUE));
 
         addWindowListener(new WindowListenerImpl());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -280,6 +279,23 @@ public class WebcamFrame extends JFrame {
 
     private AsyncFunction<BufferedImage, BufferedImage> kMeans(int clusters, Projection projection) {
         return (image, continuation)->{
+            Function<Integer, ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>>
+                    strategyGenerator=(clusters2)->ClusteringStrategy.best(
+                            5,
+                            ClusteringStrategy.
+                                    <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                                            clusters2,
+                                            0.95,
+                                            InitialCenters.random(),
+                                            1000,
+                                            ReplaceEmptyCluster.notNear()));
+            ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> strategy;
+            if (0<clusters) {
+                    strategy=strategyGenerator.apply(clusters);
+            }
+            else {
+                strategy=ClusteringStrategy.elbow(0.95, -clusters, 2, strategyGenerator);
+            }
             int height=image.getHeight();
             int width=image.getWidth();
             int[] pixels=new int[height*width];
@@ -290,11 +306,12 @@ public class WebcamFrame extends JFrame {
                 projection.project(pointsData, coloConverter, oo, pixels[ii]);
             }
             ByteArrayL2Points points=new ByteArrayL2Points(pointsData, projection.dimensions());
-            KMeans.cluster(
-                    clusters,
+            strategy.cluster(
                     context,
+                    KDTree.create(4096, points, context.sum()),
                     Continuations.map(
-                            (centers, continuation1)->{
+                            (clusters2, continuation1)->{
+                                List<Vector> centers=clusters2.centers;
                                 byte[] buf=new byte[projection.dimensions()];
                                 Vector point=new Vector(projection.dimensions());
                                 int[] pixels2=new int[height*width];
@@ -315,14 +332,7 @@ public class WebcamFrame extends JFrame {
                                 image2.setRGB(0, 0, width, height, pixels2, 0, width);
                                 continuation1.completed(image2);
                             },
-                            continuation),
-                    0.95,
-                    InitialCenters.random(),
-                    1000,
-                    //points,
-                    KDTree.create(4096, points, Sum.PREFERRED),
-                    ReplaceEmptyCluster.notNear(),
-                    Sum.PREFERRED);
+                            continuation));
         };
     }
 

@@ -43,7 +43,7 @@ public interface ReplaceEmptyCluster
                     private T bestPoint;
 
                     @Override
-                    public void get(Continuation<? super Candidate> continuation) throws Throwable {
+                    public void get(Continuation<Candidate> continuation) throws Throwable {
                         points3.classify(
                                 Function.identity(),
                                 centers,

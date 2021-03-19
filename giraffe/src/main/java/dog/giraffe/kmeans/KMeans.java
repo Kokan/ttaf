@@ -1,5 +1,6 @@
 package dog.giraffe.kmeans;
 
+import dog.giraffe.Clusters;
 import dog.giraffe.Context;
 import dog.giraffe.Distance;
 import dog.giraffe.Sum;
@@ -75,9 +76,9 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
 
     public static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
     void cluster(
-            int clusters, Context context, Continuation<List<T>> continuation,
+            int clusters, Context context, Continuation<Clusters<T>> continuation,
             double errorLimit, InitialCenters<D, M, P, T> initialCenters, int maxIterations, P points,
-            ReplaceEmptyCluster<D, M, P, T> replaceEmptyCluster, Sum.Factory sumFactory) throws Throwable {
+            ReplaceEmptyCluster<D, M, P, T> replaceEmptyCluster) throws Throwable {
         if (2>clusters) {
             continuation.failed(new IllegalStateException(Integer.toString(clusters)));
             return;
@@ -92,10 +93,10 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
         for (P points3: points2) {
             List<M> means2=new ArrayList<>(clusters);
             for (int ii=clusters; 0<ii; --ii) {
-                means2.add(points.mean().create((means.isEmpty()?points:points3).size(), sumFactory));
+                means2.add(points.mean().create((means.isEmpty()?points:points3).size(), context.sum()));
             }
             means.add(Collections.unmodifiableList(means2));
-            sums.add(sumFactory.create((sums.isEmpty()?points:points3).size()));
+            sums.add(context.sum().create((sums.isEmpty()?points:points3).size()));
         }
         initialCenters.initialCenters(
                 clusters,
@@ -140,10 +141,10 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
     }
 
     private void fork(
-            List<T> centers, Continuation<List<T>> continuation, double error, int iteration) throws Throwable {
+            List<T> centers, Continuation<Clusters<T>> continuation, double error, int iteration) throws Throwable {
         context.checkStopped();
         if (maxIterations<=iteration) {
-            continuation.completed(new ArrayList<>(centers));
+            continuation.completed(new Clusters<>(Collections.unmodifiableList(new ArrayList<>(centers)), error));
             return;
         }
         for (List<M> means2: means) {
@@ -170,7 +171,7 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
                 context.executor());
     }
 
-    private AsyncFunction<List<Void>, List<T>> join(double error, int iteration) {
+    private AsyncFunction<List<Void>, Clusters<T>> join(double error, int iteration) {
         return (input, continuation)->{
             List<M> means2=means.get(0);
             Sum sum2=sums.get(0);
@@ -196,13 +197,13 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
     }
 
     private void newCenters(
-            Set<T> centers, Continuation<List<T>> continuation, double error, int iteration, Sum sum)
+            Set<T> centers, Continuation<Clusters<T>> continuation, double error, int iteration, Sum sum)
             throws Throwable {
         List<T> centers2=Collections.unmodifiableList(new ArrayList<>(centers));
         if (centers2.size()>=clusters) {
             double error2=sum.sum();
             if (error*errorLimit<=error2) {
-                continuation.completed(centers2);
+                continuation.completed(new Clusters<>(centers2, error2));
             }
             else {
                 fork(centers2, continuation, error2, iteration+1);

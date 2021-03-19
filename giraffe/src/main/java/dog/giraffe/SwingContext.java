@@ -133,4 +133,9 @@ public class SwingContext implements Context {
     public boolean stopped() {
         return stopped.get();
     }
+
+    @Override
+    public Sum.Factory sum() {
+        return Sum.PREFERRED;
+    }
 }

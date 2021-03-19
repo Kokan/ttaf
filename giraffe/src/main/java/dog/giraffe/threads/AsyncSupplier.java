@@ -5,5 +5,5 @@ public interface AsyncSupplier<T> {
         return (continuation)->continuation.completed(value);
     }
 
-    void get(Continuation<? super T> continuation) throws Throwable;
+    void get(Continuation<T> continuation) throws Throwable;
 }
