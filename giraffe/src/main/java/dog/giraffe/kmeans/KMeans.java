@@ -76,8 +76,8 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
     public static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
     void cluster(
             int clusters, Context context, Continuation<List<T>> continuation,
-            double errorLimit, int maxIterations, P points, ReplaceEmptyCluster<D, M, P, T> replaceEmptyCluster,
-            Sum.Factory sumFactory) throws Throwable {
+            double errorLimit, InitialCenters<D, M, P, T> initialCenters, int maxIterations, P points,
+            ReplaceEmptyCluster<D, M, P, T> replaceEmptyCluster, Sum.Factory sumFactory) throws Throwable {
         if (2>clusters) {
             continuation.failed(new IllegalStateException(Integer.toString(clusters)));
             return;
@@ -86,33 +86,35 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
             continuation.failed(new RuntimeException("too few data points"));
             return;
         }
-        Set<T> centers=new HashSet<>(clusters);
-        for (int ii=maxIterations*clusters; clusters>centers.size(); --ii) {
-            if (0>=ii) {
-                continuation.failed(new CannotSelectInitialCentersException());
-                return;
-            }
-            centers.add(points.get(context.random().nextInt(points.size())));
-        }
         List<P> points2=points.split(context.executor().threads());
         List<List<M>> means=new ArrayList<>(points2.size());
         List<Sum> sums=new ArrayList<>(points2.size());
         for (P points3: points2) {
-            List<M> means2=new ArrayList<>(centers.size());
-            for (int ii=centers.size(); 0<ii; --ii) {
+            List<M> means2=new ArrayList<>(clusters);
+            for (int ii=clusters; 0<ii; --ii) {
                 means2.add(points.mean().create((means.isEmpty()?points:points3).size(), sumFactory));
             }
             means.add(Collections.unmodifiableList(means2));
             sums.add(sumFactory.create((sums.isEmpty()?points:points3).size()));
         }
-        new KMeans<D, M, P, T>(
-                clusters, context, errorLimit, maxIterations, Collections.unmodifiableList(means), points,
-                points2, replaceEmptyCluster, Collections.unmodifiableList(sums))
-                .fork(
-                        Collections.unmodifiableList(new ArrayList<>(centers)),
-                        continuation,
-                        Double.POSITIVE_INFINITY,
-                        0);
+        initialCenters.initialCenters(
+                clusters,
+                context,
+                maxIterations,
+                points,
+                points2,
+                Continuations.map(
+                        (centers, continuation2)->{
+                            if (centers.size()!=clusters) {
+                                continuation2.failed(new CannotSelectInitialCentersException());
+                                return;
+                            }
+                            KMeans<D, M, P, T> kMeans=new KMeans<>(
+                                    clusters, context, errorLimit, maxIterations, Collections.unmodifiableList(means),
+                                    points, points2, replaceEmptyCluster, Collections.unmodifiableList(sums));
+                            kMeans.fork(centers, continuation2, Double.POSITIVE_INFINITY, 0);
+                        },
+                        continuation));
     }
 
     private AsyncSupplier<Void> classify(List<Center<T>> centers, List<M> means, P points, Sum sum) {

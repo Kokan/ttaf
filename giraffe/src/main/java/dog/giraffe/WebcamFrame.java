@@ -1,6 +1,7 @@
 package dog.giraffe;
 
 import com.github.sarxos.webcam.Webcam;
+import dog.giraffe.kmeans.InitialCenters;
 import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.kmeans.KMeans;
 import dog.giraffe.points.ByteArrayL2Points;
@@ -316,6 +317,7 @@ public class WebcamFrame extends JFrame {
                             },
                             continuation),
                     0.95,
+                    InitialCenters.random(),
                     1000,
                     //points,
                     KDTree.create(4096, points, Sum.PREFERRED),
