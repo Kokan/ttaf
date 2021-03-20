@@ -82,26 +82,27 @@ public class WebcamFrame extends JFrame {
 
         List<AsyncFunction<BufferedImage, BufferedImage>> functions=new ArrayList<>();
         functions.add(AsyncFunction.identity());
-        functions.add(otsu(Collections.singletonList(
-                new Pair<>(
-                        (rgb)->0.2126*((rgb>>>16)&0xff)+0.7152*((rgb>>>8)&0xff)+0.0722*(rgb&0xff),
-                        0xffffff))));
-        functions.add(otsu(Arrays.asList(
-                new Pair<>(
-                        (rgb)->(rgb>>>16)&0xff,
-                        0xff0000),
-                new Pair<>(
-                        (rgb)->(rgb>>>8)&0xff,
-                        0x00ff00),
-                new Pair<>(
-                        (rgb)->rgb&0xff,
-                        0x0000ff))));
-        functions.add(kMeans(2));
-        functions.add(kMeans(3));
-        functions.add(kMeans(5));
-        functions.add(kMeans(7));
-        functions.add(kMeans(11));
-        functions.add(kMeans(100));
+        //functions.add(otsu(Collections.singletonList(
+        //        new Pair<>(
+        //                (rgb)->0.2126*((rgb>>>16)&0xff)+0.7152*((rgb>>>8)&0xff)+0.0722*(rgb&0xff),
+        //                0xffffff))));
+        //functions.add(otsu(Arrays.asList(
+        //        new Pair<>(
+        //                (rgb)->(rgb>>>16)&0xff,
+        //                0xff0000),
+        //        new Pair<>(
+        //                (rgb)->(rgb>>>8)&0xff,
+        //                0x00ff00),
+        //        new Pair<>(
+        //                (rgb)->rgb&0xff,
+        //                0x0000ff))));
+        //functions.add(kMeans(2, 200));
+        //functions.add(kMeans(3));
+        //functions.add(kMeans(5));
+        //functions.add(kMeans(7));
+        //functions.add(kMeans(11));
+        functions.add(Isodata(2, 200));
+        //functions.add(Isodata(100, 200));
 
         addWindowListener(new WindowListenerImpl());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -138,7 +139,38 @@ public class WebcamFrame extends JFrame {
         setVisible(true);
     }
 
-    private AsyncFunction<BufferedImage, BufferedImage> kMeans(int clusters) {
+    private AsyncFunction<BufferedImage, BufferedImage> Isodata(int clusters, int max_clusters) {
+        return (image, continuation)->{
+            int height=image.getHeight();
+            int width=image.getWidth();
+            int[] pixels=new int[height*width];
+            image.getRGB(0, 0, width, height, pixels, 0, width);
+            List<Color.RGB> values=new ArrayList<>(pixels.length);
+            for (int pixel: pixels) {
+                values.add(Color.RGB.createFromRGB(pixel, 1.0));
+            }
+            Isodata.cluster(
+                    clusters, max_clusters, context,
+                    Continuations.map(
+                            (centers, continuation2)->{
+                                int[] pixels2=new int[height*width];
+                                for (int ii=0; pixels.length>ii; ++ii) {
+                                    Color.RGB center=Isodata.nearestCenter(centers, Color.RGB.DISTANCE, values.get(ii));
+                                    pixels2[ii]=center.toARGBInt(1.0);
+                                }
+                                BufferedImage image2=new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+                                image2.setRGB(0, 0, width, height, pixels2, 0, width);
+                                continuation.completed(image2);
+                                System.out.println("starting K="+clusters+" new K="+centers.size());
+                            },
+                            continuation),
+                    Color.RGB.DISTANCE, Color.RGB.MAX, 0.95, 50,
+                    Color.RGB.MEAN, Color.RGB.DEV, Sum.PREFERRED, values);
+        };
+    }
+
+
+    private AsyncFunction<BufferedImage, BufferedImage> kMeans(int clusters, int max_clusters) {
         return (image, continuation)->{
             int height=image.getHeight();
             int width=image.getWidth();
@@ -149,7 +181,7 @@ public class WebcamFrame extends JFrame {
                 values.add(Color.RGB.createFromRGB(pixel, 1.0));
             }
             KMeans.cluster(
-                    clusters, context,
+                    clusters, max_clusters, context,
                     Continuations.map(
                             (centers, continuation2)->{
                                 int[] pixels2=new int[height*width];
@@ -163,8 +195,8 @@ public class WebcamFrame extends JFrame {
                                 System.out.println("starting K="+clusters+" new K="+centers.size());
                             },
                             continuation),
-                    Color.RGB.DISTANCE, 0.95, 1000,
-                    Color.RGB.MEAN, Sum.PREFERRED, values);
+                    Color.RGB.DISTANCE, Color.RGB.MAX, 0.95, 1000,
+                    Color.RGB.MEAN, Color.RGB.DEV, Sum.PREFERRED, values);
         };
     }
 

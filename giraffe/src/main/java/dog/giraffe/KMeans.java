@@ -12,37 +12,43 @@ import java.util.Objects;
 import java.util.Set;
 
 public class KMeans<T> {
-    public interface Distance<T> {
-        double distance(T center, T point);
-    }
-
     private int clusters;
+    private final int max_clusters;
     private final int clusterMinSize;
+    private final double lumping;
+    private final double std_deviation;
     private final Context context;
     private final Distance<T> distance;
+    private final MaxComponent<Double,T> max;
     private final double errorLimit;
     private final int maxIterations;
     private final VectorMean.Factory<T> meanFactory;
+    private final VectorStdDeviation.Factory<T> devFactory;
     private final List<T> points;
     private final Sum.Factory sumFactory;
 
     private KMeans(
-            int clusters, Context context, Distance<T> distance, double errorLimit, int clusterMinSize, int maxIterations,
-            VectorMean.Factory<T> meanFactory, List<T> points, Sum.Factory sumFactory) {
+            int clusters, int max_clusters, Context context, Distance<T> distance, MaxComponent<Double,T> max, double errorLimit, int clusterMinSize, double lumping, double std_deviation, int maxIterations,
+            VectorMean.Factory<T> meanFactory, VectorStdDeviation.Factory<T> devFactory, List<T> points, Sum.Factory sumFactory) {
         this.clusters=clusters;
+        this.max_clusters=max_clusters;
         this.clusterMinSize=clusterMinSize;
+        this.lumping=lumping;
+        this.std_deviation=std_deviation;
         this.context=context;
         this.distance=distance;
+        this.max=max;
         this.errorLimit=errorLimit;
         this.maxIterations=maxIterations;
         this.meanFactory=meanFactory;
+        this.devFactory=devFactory;
         this.points=points;
         this.sumFactory=sumFactory;
     }
 
     public static <T> void cluster(
-            int clusters, Context context, Continuation<List<T>> continuation, Distance<T> distance, double errorLimit,
-            int maxIterations, VectorMean.Factory<T> meanFactory, Sum.Factory sumFactory, Iterable<T> values)
+            int clusters, int max_clusters, Context context, Continuation<List<T>> continuation, Distance<T> distance, MaxComponent<Double,T> max, double errorLimit,
+            int maxIterations, VectorMean.Factory<T> meanFactory, VectorStdDeviation.Factory<T> devFactory, Sum.Factory sumFactory, Iterable<T> values)
             throws Throwable {
         if (2>clusters) {
             throw new IllegalStateException(Integer.toString(clusters));
@@ -63,7 +69,7 @@ public class KMeans<T> {
             centers.add(points.get(context.random().nextInt(points.size())));
         }
         double error=Double.POSITIVE_INFINITY;
-        new KMeans<>(clusters, context, distance, errorLimit, (int)(points.size()*0.005), maxIterations, meanFactory, points, sumFactory)
+        new KMeans<>(clusters, max_clusters, context, distance, max, errorLimit, (int)(points.size()*0.005), 0.5, 1, maxIterations, meanFactory, devFactory, points, sumFactory)
                 .start(centers, continuation, error, 0);
     }
 
@@ -125,29 +131,37 @@ public class KMeans<T> {
                                 continuation2.completed(voronoi);
                                 return;
                             }
-                            discard_sample(continuation2, error2, iteration, voronoi);
+                            update_centers(continuation, error, iteration, voronoi);
                         },
                         continuation),
                 context.executor());
     }
 
-    public void discard_sample(
-            Continuation<Map<T,List<T>>> continuation, double error, int iteration, Map<T, List<T>> voronoi)
+
+    public void lumping(Continuation<Map<T,List<T>>> continuation, double error, int iteration, Map<T, List<T>> voronoi)
             throws Throwable {
-         Map<T,List<T>> voronoi2=new HashMap<>();
-         for (T v : voronoi.keySet()) {
-             List<T> sample=voronoi.get(v);
-             if (sample.size() >= clusterMinSize) {
-                voronoi2.put(v,sample);
-             }
-         }
-         clusters=voronoi2.size();
-         update_centers(continuation, error, iteration, voronoi2);
+         distribute(voronoi.keySet(), continuation, error, iteration+1);
     }
 
-    public void update_centers(
-            Continuation<Map<T,List<T>>> continuation, double error, int iteration, Map<T, List<T>> voronoi)
-            throws Throwable {
+    //goto 8 ~ split
+    //goto 11 ~ no split
+    //if last iteration goto 8
+    //if Nc < K/2 goto 8
+    //if iteration is even or Nc >= 2K goto 11
+    //else goto 8
+    public boolean maySplitCluster(int iteration) {
+        if (iteration % 2 == 0) {
+           return false;
+        }
+
+        if (clusters >= 2*max_clusters) {
+           return false;
+        }
+
+        return true;
+    }
+
+    public void update_centers( Continuation<Map<T,List<T>>> continuation, double error, int iteration, Map<T, List<T>> voronoi) throws Throwable {
         List<AsyncSupplier<T>> forks=new ArrayList<>(voronoi.size());
         for (List<T> cluster: voronoi.values()) {
             forks.add((continuation2)->{
@@ -162,7 +176,9 @@ public class KMeans<T> {
                 forks,
                 Continuations.map(
                         (centers2, continuation2)->{
-                            distribute(new HashSet<>(centers2), continuation2, error, iteration+1);
+                            Set<T> centers=new HashSet<>();
+                            centers2.forEach(centers::add);
+                            distribute(centers, continuation2, error, iteration+1);
                         },
                         continuation),
                 context.executor());
