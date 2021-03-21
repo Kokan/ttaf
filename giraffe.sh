@@ -1,7 +1,12 @@
 #!/bin/bash
 
-JAVA=/usr/lib/jvm/java-8-openjdk-amd64/bin/java
-JAVA_ARG="${JAVA_ARG} -agentlib:hprof=cpu=samples,file=../java.hprof.txt"
+JAVA=java
+JAVA_ARG=""
+
+if test -f "/usr/lib/jvm/java-8-openjdk-amd64/bin/java" ; then
+  JAVA=/usr/lib/jvm/java-8-openjdk-amd64/bin/java
+  JAVA_ARG="${JAVA_ARG} -agentlib:hprof=cpu=samples,file=../java.hprof.txt"
+fi
 
 cd giraffe
 gradle clean jar copyDependencies
