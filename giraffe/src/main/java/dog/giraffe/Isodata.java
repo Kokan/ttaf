@@ -12,10 +12,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Collections;
+import java.util.Comparator;
 
-public class Isodata<T> {
+public class Isodata<T extends Arith<T>> {
     private int N_c;
     private final int K;
+    private final int L;
     private final int theta_N;
     private double lumping;
     private final double std_deviation;
@@ -29,7 +31,7 @@ public class Isodata<T> {
     //private final List<T> points;
     private final Sum.Factory sumFactory;
 
-    public static class Points<T> {
+    public static class Points<T extends Arith<T>> {
       public final List<Cluster<T>> clusters;
       public final List<T> points;
       public Optional<Double> avg_dist;
@@ -57,7 +59,7 @@ public class Isodata<T> {
       }
     }
 
-    public static class Cluster<T> {
+    public static class Cluster<T extends Arith<T>> {
       public List<T> points;
       public T center;
 
@@ -79,6 +81,7 @@ public class Isodata<T> {
             double errorLimit,
             int theta_N,
             double lumping,
+            int L,
             double std_deviation,
             int maxIterations,
             VectorMean.Factory<T> meanFactory,
@@ -87,6 +90,7 @@ public class Isodata<T> {
             Sum.Factory sumFactory) {
         this.N_c=N_c;
         this.K=K;
+        this.L=L;
         this.theta_N=theta_N;
         this.lumping=lumping;
         this.std_deviation=std_deviation;
@@ -101,7 +105,7 @@ public class Isodata<T> {
         this.sumFactory=sumFactory;
     }
 
-    public static <T> void cluster(
+    public static <T extends Arith<T>> void cluster(
             int N_c, int K, Context context, Continuation<List<T>> continuation, Distance<T> distance, MaxComponent<Double,T> max, double errorLimit,
             int maxIterations, VectorMean.Factory<T> meanFactory, VectorStdDeviation.Factory<T> devFactory, Sum.Factory sumFactory, Iterable<T> values)
             throws Throwable {
@@ -126,7 +130,7 @@ public class Isodata<T> {
         }
         Points<T> p = new Points<>(clusters, points);
         double error=Double.POSITIVE_INFINITY;
-        new Isodata<>(N_c, K, context, distance, max, errorLimit, (int)(points.size()*0.005), 0.5, 1, maxIterations, meanFactory, devFactory, points, sumFactory)
+        new Isodata<>(N_c, K, context, distance, max, errorLimit, (int)(points.size()*0.005), 0.5, 5, 0.001, maxIterations, meanFactory, devFactory, points, sumFactory)
                 .start(p, continuation, error, 0);
     }
 
@@ -146,7 +150,7 @@ public class Isodata<T> {
     // Step 2, distribute points between cluster centers
     public void distribute(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
         context.checkStopped();
-        if (maxIterations<=iteration || iteration==5) {
+        if (maxIterations<=iteration || iteration==10) {
             Map<T,List<T>> a=new HashMap<>();
             for (T center : p.getCenters()) {
                 a.put(center,new ArrayList<>());
@@ -155,43 +159,13 @@ public class Isodata<T> {
             return;
         }
         List<T> points = Collections.unmodifiableList(p.points);
-        int threads=Math.max(1, Math.min(points.size(), context.executor().threads()));
-        List<AsyncSupplier<Map<T, List<T>>>> forks=new ArrayList<>(threads);
-        for (int tt=0; threads>tt; ++tt) {
-            int start=tt*points.size()/threads;
-            int end=(tt+1)*points.size()/threads;
-            forks.add((continuation2)->{
-                Map<T, List<T>> voronoi=new HashMap<>(p.getCenters().size());
-                List<T> centers = p.getCenters();
-                for (T center: centers) {
-                    voronoi.put(center, new ArrayList<>(end-start));
-                }
-                for (int ii=start; end>ii; ++ii) {
-                    T point=points.get(ii);
-                    T center=nearestCenter(centers, distance, point);
-                    voronoi.get(center).add(point);
-                }
-                continuation2.completed(voronoi);
-            });
+        List<T> centers = p.getCenters();
+        for (T point : points) {
+            T center=nearestCenter(centers, distance, point);
+            p.get(center).points.add(point);
+       
         }
-        Continuations.forkJoin(
-                forks,
-                Continuations.map(
-                        (results, continuation2)->{
-                            System.out.println("hi: " + iteration);
-                            Map<T, List<T>> voronoi=new HashMap<>(p.getCenters().size());
-                            for (Cluster<T> cluster: p.clusters) {
-                                cluster.points = new ArrayList<>();
-                            }
-                            for (Map<T, List<T>> result: results) {
-                                for (Map.Entry<T, List<T>> entry: result.entrySet()) {
-                                    p.get(entry.getKey()).points.addAll(entry.getValue());
-                                }
-                            }
-                            discard_sample(p, continuation2, error, iteration);
-                        },
-                        continuation),
-                context.executor());
+        discard_sample(p, continuation, error, iteration);
     }
 
     // Step 3, discard samples that has fewer then theta_N number of points
@@ -206,135 +180,139 @@ public class Isodata<T> {
                 discarded=true;
              }
          }
-         //N_c=clusters2.size();
-         //p.clusters = clusters2;
-         //throw new Expcetion("discard_sample");
+         N_c=clusters2.size();
+         p.clusters.clear();
+         p.clusters.addAll(clusters2);
+
          update_centers(p, continuation, error, iteration);
     }
 
+    private List<Pair<Integer,Integer>> nthSmallest(List<Pair<Integer,Integer>> filter, double dist[][], int n) {
+       filter.sort(new Comparator<Pair<Integer,Integer>>() {
+                          @Override
+                          public int compare(Pair<Integer,Integer> m1, Pair<Integer,Integer> m2) {
+                                  if (dist[m1.first][m1.second] < dist[m2.first][m2.second]) return -1;
+                                  if (dist[m1.first][m1.second] > dist[m2.first][m2.second]) return +1;
+                                  return 0;
+                           }});
+      return filter;
+    }
+
+    private Cluster<T> merge_cluster(Cluster<T> z1, Cluster<T> z2) {
+         int N_z1 = Math.max(1,z1.points.size());
+         int N_z2 = Math.max(1,z2.points.size());
+         T new_center = z1.center.mul(N_z1).addition(z2.center.mul(N_z2)).div(N_z1+N_z2);
+         List<T> points = z1.points;      
+         points.addAll(z2.points);
+         Cluster<T> z_3 = new Cluster<>(points, new_center);
+
+         return z_3;
+    }
+   
+
+    // Step 11, Step 12, finding pairwise center distance and lumping clusters
     public void lumping(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration)
             throws Throwable {
+         double dist[][] = new double[p.clusters.size()][p.clusters.size()];
+         List<Pair<Integer,Integer>> map = new ArrayList<>();
+         for (int i=0;i<p.clusters.size();++i) {
+              dist[i][i] = 0; //not lumped
+         }
+         for (int i=0;i<p.clusters.size();++i) {
+             for (int j=i+1;j<p.clusters.size();++j) {
+                 double d_ij= distance.distance(p.clusters.get(i).center, p.clusters.get(j).center);
+                 dist[i][j] = d_ij;
+                 if (i!=j && d_ij < lumping) {
+                     map.add(new Pair<>(i,j));
+                 }
+             }
+         }
+
+         nthSmallest(map, dist, L);
+
+         List<Cluster<T>> new_clusters = new ArrayList<>();
+         for (Pair<Integer, Integer> pair : map) {
+             int i = pair.first;
+             int j = pair.second;
+
+             if (dist[i][i] == 1 || dist[j][j] == 1) continue;//either of them lumped we skip
+
+             new_clusters.add(merge_cluster(p.clusters.get(i), p.clusters.get(j)));
+             dist[i][i] = dist[j][j] = 1;
+         }
+
+         for (int i=0;i<p.clusters.size();++i) {
+              if (dist[i][i] == 0) { //not lumped
+                 new_clusters.add(p.clusters.get(i));
+              }
+         }
+         p.clusters.clear();
+         p.clusters.addAll(new_clusters);
+         N_c=p.clusters.size();
+
          distribute(p, continuation, error, iteration+1);
     }
 
     // Step 10, split clusters
     public void split_cluster(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration)
             throws Throwable {
-        List<AsyncSupplier<Optional<Pair<T,Pair<Cluster<T>,Cluster<T>>>>>> forks=new ArrayList<>(p.getCenters().size());
+        boolean split=false;
+        List<Cluster<T>> new_clusters = new ArrayList<>();
+        List<Cluster<T>> rm_clusters = new ArrayList<>();
         for (Cluster<T> cluster : p.clusters) {
-            forks.add((continuation2)->{
                 double ro_max = max.max(cluster.std_dev.get());
+                final T ro_maxVec = max.maxVec(cluster.std_dev.get());
                 if ((ro_max > std_deviation) &&
                     ((cluster.avg_dist.get() > p.avg_dist.get()) && (cluster.points.size() > 2 * (theta_N + 1)) ||
                      (p.clusters.size() <= K/2))) {
-                    //continuation2.completed(Optional.of(new Pair<>(cluster.center, new Pair<>(cluster, cluster))));
+                        split=true;
+                        Cluster<T> z_plus = new Cluster<>(new ArrayList<>(), cluster.center.addition(ro_maxVec));
+                        Cluster<T> z_minus = new Cluster<>(new ArrayList<>(), cluster.center.subtract(ro_maxVec));
+
+                        rm_clusters.add(cluster);
+                        new_clusters.add(z_plus);
+                        new_clusters.add(z_minus);
+
                 }
-                
-                continuation2.completed(Optional.empty());
-            });
         }
-        Continuations.forkJoin(
-                forks,
-                Continuations.map(
-                        (new_clusters, continuation2)->{
-                            boolean split=false;
-                            for (Optional<Pair<T,Pair<Cluster<T>,Cluster<T>>>> nc : new_clusters) {
-                               if (nc.isPresent()) {
-                                  split=true;
-                                  p.clusters.remove(nc.get().first);
-                                  p.clusters.add(nc.get().second.first);
-                                  p.clusters.add(nc.get().second.second);
-                               }
-                            }
-
-                          if (split) {
-                             distribute(p, continuation2, error, iteration);
-                          }
-                          else {
-                             lumping(p, continuation2, error, iteration);
-                          }
-                        },
-                        continuation),
-                context.executor());
-    }
-
-    //goto 8 ~ split
-    //goto 11 ~ no split
-    //if last iteration goto 8
-    //if Nc < K/2 goto 8
-    //if iteration is even or Nc >= 2K goto 11
-    //else goto 8
-    public boolean maySplitCluster(int iteration) {
-        if (iteration % 2 == 0) {
-           return false;
+        p.clusters.removeAll(rm_clusters);
+        p.clusters.addAll(new_clusters);
+        N_c=p.clusters.size();
+        if (split) {
+           distribute(p, continuation, error, iteration+1);
         }
-
-        if (N_c >= 2*K) {
-           return false;
+        else {
+           lumping(p, continuation, error, iteration);
         }
-
-        return true;
     }
 
     //Step 4, update each cluster centers
     public void update_centers(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
-        List<AsyncSupplier<Pair<T,T>>> forks=new ArrayList<>(p.getCenters().size());
         List<Cluster<T>> clusters = Collections.unmodifiableList(p.clusters);
         List<T> points = Collections.unmodifiableList(p.points);
         for (Cluster<T> cluster: clusters) {
-            forks.add((continuation2)->{
+                if (cluster.points.size() > 0) {
                 VectorMean<T> mean=meanFactory.create(points.size());
                 for (T point: cluster.points) {
                     mean=mean.add(point);
                 }
                 cluster.center = mean.mean();
-                continuation2.completed(new Pair<>(cluster.center, mean.mean()));
-            });
+                }
         }
-        Continuations.forkJoin(
-                forks,
-                Continuations.map(
-                        (results, continuation2)->{
-                            //for (Pair<T,T> r : results) {
-                            //    p.get(r.first).center = r.second;
-                            //}
-                            avg_distance(p, continuation2, error, iteration);
-                        },
-                        continuation),
-                context.executor());
+        avg_distance(p, continuation, error, iteration);
     }
 
     //Step 5, compute avg distance D_j
     public void avg_distance(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
-        List<AsyncSupplier<Pair<T,Double>>> forks=new ArrayList<>(p.getCenters().size());
         List<Cluster<T>> clusters = Collections.unmodifiableList(p.clusters);
         for (Cluster<T> cluster : clusters) {
-            forks.add((continuation2)->{
                 VectorMean<Double> mean = new MeanDouble(cluster.points.size(), sumFactory);
                 for (T point: cluster.points) {
                     mean=mean.add(distance.distance(cluster.center, point));
                 }
                 cluster.avg_dist = Optional.of(mean.mean());
-                continuation2.completed(new Pair<>(cluster.center, mean.mean()));
-            });
         }
-        Continuations.forkJoin(
-                forks,
-                Continuations.map(
-                        (centers2, continuation2)->{
-                            //for (Pair<T,Double> pr : centers2 ) {
-                            //   p.get(pr.first).avg_dist = Optional.of(pr.second);
-                            //}
-                            //if (maySplitCluster(iteration)) {
-                            //   split_cluster(p, continuation2, error, iteration);
-                            //}
-                            //else {
-                            //   lumping(p, continuation2, error, iteration);
-                            //}
-                            all_avg_distance(p, continuation2, error, iteration);
-                        },
-                        continuation),
-                context.executor());
+        all_avg_distance(p, continuation, error, iteration);
     }
 
     //Step 6, compute overall avg distance D
@@ -356,12 +334,16 @@ public class Isodata<T> {
           lumping = 0;
           //theta_c = 0;
           //TODO: goto Step 11
+          lumping(p, continuation, error, iteration);
+          return;
        }
        if (p.clusters.size() <= K/2) {
           std_deviation(p, continuation, error, iteration);
+          return;
        }
        if (iteration % 2 == 0 || p.clusters.size() >= 2*K) {
-          //TODO: goto Step 11
+          lumping(p, continuation, error, iteration);
+          return;
        }
 
        std_deviation(p, continuation, error, iteration);
@@ -369,28 +351,17 @@ public class Isodata<T> {
 
     //Step 8, find std deviation vector
     public void std_deviation(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
-        List<AsyncSupplier<Optional<Void>>> forks=new ArrayList<>(p.getCenters().size());
         for (Cluster<T> cluster : p.clusters) {
-            forks.add((continuation2)->{
                 VectorStdDeviation<T> dev = devFactory.create(cluster.center, 0);
                 for (T point: cluster.points) {
                     dev=dev.add(point);
                 }
                 cluster.std_dev = Optional.of(dev.deviation());
                 
-                continuation2.completed(Optional.empty());
-            });
         }
-        Continuations.forkJoin(
-                forks,
-                Continuations.map(
-                        (stddevs, continuation2)->{
-                          //TODO: goto Step 9/Step 10
-                          //split_cluster(p, continuation2, error, iteration);
-                          distribute(p, continuation2, error, iteration+1);
-                        },
-                        continuation),
-                context.executor());
+        //TODO: goto Step 9/Step 10
+        split_cluster(p, continuation, error, iteration);
+        //distribute(p, continuation, error, iteration+1);
     }
 
     public static <T> T nearestCenter(Iterable<T> centers, Distance<T> distance, T point) {

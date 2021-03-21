@@ -119,7 +119,7 @@ public interface Color {
         }
     }
 
-    class RGB {
+    class RGB implements Arith<RGB> {
         public static class Mean implements VectorMean<Color.RGB> {
             public static class Factory implements VectorMean.Factory<Color.RGB> {
                 private final Sum.Factory sumFactory;
@@ -218,6 +218,7 @@ public interface Color {
 
             @Override
             public Color.RGB deviation() {
+                if (addends==0) return new RGB(0,0,0);
                 return mean.mean().div(addends).sqrt(); //Sqrt(mean.mean())
             }
         }
@@ -225,7 +226,13 @@ public interface Color {
         public static class Comp implements MaxComponent<Double, Color.RGB> {
            @Override
            public Double max(RGB self) { return Math.max(self.blue, Math.max(self.green, self.red)); }
-           
+
+           @Override
+           public RGB maxVec(RGB self) {
+              Double max = max(self);
+
+              return new RGB(self.blue==max ? max : 0,self.green==max ? max : 0,self.red==max ? max : 0);
+           }
         }
 
         public static final Distance<Color.RGB> DISTANCE
@@ -241,18 +248,32 @@ public interface Color {
         public final double green;
         public final double red;
 
+        @Override
+        public RGB addition(RGB other) {
+            return new RGB(blue + other.blue, green + other.green, red + other.red);
+        }
+
+        @Override
         public RGB subtract(RGB other) {
             return new RGB(blue - other.blue, green - other.green, red - other.red);
         }
 
+        @Override
         public RGB pow() {
             return new RGB(Math.pow(blue,2), Math.pow(green,2), Math.pow(red, 2));
         }
 
+        @Override
         public RGB sqrt() {
             return new RGB(Math.sqrt(blue), Math.sqrt(green), Math.sqrt(red));
         }
 
+        @Override
+        public RGB mul(double multiplier) {
+            return new RGB(blue * multiplier, green * multiplier, red * multiplier);
+        }
+
+        @Override
         public RGB div(double divisor) {
             return new RGB(blue / divisor, green / divisor, red / divisor);
         }
