@@ -158,14 +158,50 @@ public class Isodata<T extends Arith<T>> {
             continuation.completed(a);
             return;
         }
+
+
         List<T> points = Collections.unmodifiableList(p.points);
         List<T> centers = p.getCenters();
-        for (T point : points) {
-            T center=nearestCenter(centers, distance, point);
-            p.get(center).points.add(point);
-       
+
+
+        int threads=Math.max(1, Math.min(points.size(), context.executor().threads()));
+        List<AsyncSupplier<Pair<Sum, Map<T, List<T>>>>> forks=new ArrayList<>(threads);
+        for (int tt=0; threads>tt; ++tt) {
+            int start=tt*points.size()/threads;
+            int end=(tt+1)*points.size()/threads;
+            forks.add((continuation2)->{
+                Map<T, List<T>> voronoi=new HashMap<>(centers.size());
+                for (T center: centers) {
+                    voronoi.put(center, new ArrayList<>(end-start));
+                }
+                Sum errorSum=sumFactory.create(end-start);
+                for (int ii=start; end>ii; ++ii) {
+                    T point=points.get(ii);
+                    T center=nearestCenter(centers, distance, point);
+                    errorSum=errorSum.add(distance.distance(center, point));
+                    voronoi.get(center).add(point);
+                }
+                continuation2.completed(new Pair<>(errorSum, voronoi));
+            });
         }
-        discard_sample(p, continuation, error, iteration);
+        Continuations.forkJoin(
+                forks,
+                Continuations.map(
+                        (results, continuation2)->{
+                            Sum errorSum=sumFactory.create(points.size());
+                            for (T center: p.getCenters()) {
+                                List<T> cluster=new ArrayList<>(points.size());
+                                p.get(center).points.clear();
+                            }
+                            for (Pair<Sum, Map<T, List<T>>> result: results) {
+                                for (Map.Entry<T, List<T>> entry: result.second.entrySet()) {
+                                    p.get(entry.getKey()).points.addAll(entry.getValue());
+                                }
+                            }
+                            discard_sample(p, continuation2, error, iteration);
+                        },
+                        continuation),
+                context.executor());
     }
 
     // Step 3, discard samples that has fewer then theta_N number of points
@@ -290,29 +326,56 @@ public class Isodata<T extends Arith<T>> {
     public void update_centers(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
         List<Cluster<T>> clusters = Collections.unmodifiableList(p.clusters);
         List<T> points = Collections.unmodifiableList(p.points);
-        for (Cluster<T> cluster: clusters) {
-                if (cluster.points.size() > 0) {
-                VectorMean<T> mean=meanFactory.create(points.size());
-                for (T point: cluster.points) {
-                    mean=mean.add(point);
+
+        List<AsyncSupplier<Pair<T, T>>> forks=new ArrayList<>(clusters.size());
+        for (Cluster<T> cluster : clusters) {
+            forks.add((continuation2)->{
+                VectorMean<T> mean=meanFactory.create();
+                for (T point : cluster.points) {
+                    mean.add(point);
                 }
                 cluster.center = mean.mean();
-                }
+                continuation2.completed(new Pair<>(cluster.center, mean.mean()));
+            });
         }
-        avg_distance(p, continuation, error, iteration);
+        Continuations.forkJoin(
+                forks,
+                Continuations.map(
+                        (results, continuation2)->{
+                            //for (Pair<T, T> pair : results) {
+                            //     p.get(pair.first).center = pair.second;
+                            //}
+                            avg_distance(p, continuation2, error, iteration);
+                        },
+                        continuation),
+                context.executor());
     }
 
     //Step 5, compute avg distance D_j
     public void avg_distance(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
         List<Cluster<T>> clusters = Collections.unmodifiableList(p.clusters);
+
+        List<AsyncSupplier<Pair<T, Double>>> forks=new ArrayList<>(clusters.size());
         for (Cluster<T> cluster : clusters) {
+            forks.add((continuation2)->{
                 VectorMean<Double> mean = new MeanDouble(cluster.points.size(), sumFactory);
                 for (T point: cluster.points) {
                     mean=mean.add(distance.distance(cluster.center, point));
                 }
-                cluster.avg_dist = Optional.of(mean.mean());
+                continuation2.completed(new Pair<>(cluster.center, mean.mean()));
+            });
         }
-        all_avg_distance(p, continuation, error, iteration);
+        Continuations.forkJoin(
+                forks,
+                Continuations.map(
+                        (results, continuation2)->{
+                            for (Pair<T, Double> pair : results) {
+                                 p.get(pair.first).avg_dist = Optional.of(pair.second);
+                            }
+                            all_avg_distance(p, continuation2, error, iteration);
+                        },
+                        continuation),
+                context.executor());
     }
 
     //Step 6, compute overall avg distance D
@@ -351,17 +414,29 @@ public class Isodata<T extends Arith<T>> {
 
     //Step 8, find std deviation vector
     public void std_deviation(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
-        for (Cluster<T> cluster : p.clusters) {
+        List<Cluster<T>> clusters = Collections.unmodifiableList(p.clusters);
+
+        List<AsyncSupplier<Pair<T, T>>> forks=new ArrayList<>(clusters.size());
+        for (Cluster<T> cluster : clusters) {
+            forks.add((continuation2)->{
                 VectorStdDeviation<T> dev = devFactory.create(cluster.center, 0);
                 for (T point: cluster.points) {
                     dev=dev.add(point);
                 }
-                cluster.std_dev = Optional.of(dev.deviation());
-                
+                continuation2.completed(new Pair<>(cluster.center, dev.deviation()));
+            });
         }
-        //TODO: goto Step 9/Step 10
-        split_cluster(p, continuation, error, iteration);
-        //distribute(p, continuation, error, iteration+1);
+        Continuations.forkJoin(
+                forks,
+                Continuations.map(
+                        (results, continuation2)->{
+                            for (Pair<T, T> pair : results) {
+                                 p.get(pair.first).std_dev = Optional.of(pair.second);
+                            }
+                            split_cluster(p, continuation2, error, iteration);
+                        },
+                        continuation),
+                context.executor());
     }
 
     public static <T> T nearestCenter(Iterable<T> centers, Distance<T> distance, T point) {
