@@ -130,7 +130,18 @@ public class Isodata<T extends Arith<T>> {
         }
         Points<T> p = new Points<>(clusters, points);
         double error=Double.POSITIVE_INFINITY;
-        new Isodata<>(N_c, K, context, distance, max, errorLimit, (int)(points.size()*0.005), 0.5, 5, 0.001, maxIterations, meanFactory, devFactory, points, sumFactory)
+        new Isodata<>(N_c,
+                      K,
+                      context,
+                      distance,
+                      max,
+                      errorLimit,
+                      (int)(points.size()*0.01),
+                      0.9,
+                      3,
+                      0.05,
+                      maxIterations,
+                      meanFactory, devFactory, points, sumFactory)
                 .start(p, continuation, error, 0);
     }
 
@@ -150,7 +161,7 @@ public class Isodata<T extends Arith<T>> {
     // Step 2, distribute points between cluster centers
     public void distribute(Points<T> p, Continuation<Map<T,List<T>>> continuation, double error, int iteration) throws Throwable {
         context.checkStopped();
-        if (maxIterations<=iteration || iteration==10) {
+        if (maxIterations<=iteration) {
             Map<T,List<T>> a=new HashMap<>();
             for (T center : p.getCenters()) {
                 a.put(center,new ArrayList<>());
