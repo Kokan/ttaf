@@ -271,11 +271,15 @@ public class WebcamFrame extends JFrame {
         };
     }
 
+   private static Runnable grabberFactory(WebcamFrame frame, String[] args) {
+      return new WebcamGrabber(frame);
+   }
+
     public static void main(String[] args) throws Throwable {
         boolean error=true;
         Context threads=new SwingContext();
         try {
-            new Thread(new WebcamGrabber(new WebcamFrame(threads)))
+            new Thread(grabberFactory(new WebcamFrame(threads), args))
                     .start();
             error=false;
         }
