@@ -131,7 +131,7 @@ public class KMeans<T> {
                                 continuation2.completed(voronoi);
                                 return;
                             }
-                            update_centers(continuation, error, iteration, voronoi);
+                            update_centers(continuation2, error, iteration, voronoi);
                         },
                         continuation),
                 context.executor());
