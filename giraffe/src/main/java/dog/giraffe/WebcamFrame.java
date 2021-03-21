@@ -1,5 +1,7 @@
 package dog.giraffe;
 
+import java.io.File;
+import javax.imageio.ImageIO;
 import com.github.sarxos.webcam.Webcam;
 import dog.giraffe.threads.AsyncFunction;
 import dog.giraffe.threads.Continuation;
@@ -61,6 +63,31 @@ public class WebcamFrame extends JFrame {
 
         private void sleep() throws Throwable {
             Thread.sleep(25L);
+        }
+    }
+
+    private static class FileGrabber implements Runnable {
+        private final WebcamFrame frame;
+        private final File file;
+
+        public FileGrabber(WebcamFrame frame, File file) {
+            this.frame=frame;
+            this.file=file;
+        }
+
+        @Override
+        public void run() {
+            try {
+                    if (frame.context.stopped()) {
+                       return;
+                    }
+                    BufferedImage image2=ImageIO.read(file);
+
+                    frame.context.executor().execute(()->frame.image.accept(image2));
+            }
+            catch (Throwable throwable) {
+                throwable.printStackTrace(System.err);
+            }
         }
     }
 
@@ -272,6 +299,9 @@ public class WebcamFrame extends JFrame {
     }
 
    private static Runnable grabberFactory(WebcamFrame frame, String[] args) {
+      if (args.length >= 1)
+         return new FileGrabber(frame, new File(args[0]));
+
       return new WebcamGrabber(frame);
    }
 
