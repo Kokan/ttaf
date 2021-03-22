@@ -136,10 +136,10 @@ public class Isodata<T extends Arith<T>> {
                       distance,
                       max,
                       errorLimit,
-                      (int)(points.size()*0.01),
-                      0.9,
+                      (int)(points.size()*0.05),
+                      0.3,
                       3,
-                      0.05,
+                      0.0,
                       maxIterations,
                       meanFactory, devFactory, points, sumFactory)
                 .start(p, continuation, error, 0);

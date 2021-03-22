@@ -78,12 +78,13 @@ public class WebcamFrame extends JFrame {
         @Override
         public void run() {
             try {
-                    if (frame.context.stopped()) {
-                       return;
+                    while (!frame.context.stopped()) {
+                        BufferedImage image2=ImageIO.read(file);
+                        if (!frame.context.stopped()) {
+                            frame.context.executor().execute(()->frame.image.completed(image2));
+                        }
+                        Thread.sleep(25L);
                     }
-                    BufferedImage image2=ImageIO.read(file);
-
-                    frame.context.executor().execute(()->frame.image.accept(image2));
             }
             catch (Throwable throwable) {
                 throwable.printStackTrace(System.err);
@@ -128,7 +129,7 @@ public class WebcamFrame extends JFrame {
         //functions.add(kMeans(5));
         //functions.add(kMeans(7));
         //functions.add(kMeans(11));
-        functions.add(Isodata(2, 5));
+        functions.add(Isodata(2, 50));
         functions.add(Isodata(5, 10));
 
         addWindowListener(new WindowListenerImpl());
@@ -191,7 +192,7 @@ public class WebcamFrame extends JFrame {
                                 System.out.println("starting K="+clusters+" new K="+centers.size());
                             },
                             continuation),
-                    Color.RGB.DISTANCE, Color.RGB.MAX, 0.95, 50,
+                    Color.RGB.DISTANCE, Color.RGB.MAX, 0.95, 5,
                     Color.RGB.MEAN, Color.RGB.DEV, Sum.PREFERRED, values);
         };
     }
