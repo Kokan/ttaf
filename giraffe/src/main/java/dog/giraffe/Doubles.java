@@ -1,6 +1,11 @@
 package dog.giraffe;
 
+import java.util.function.DoubleUnaryOperator;
+
 public class Doubles {
+    public static final DoubleUnaryOperator IDENTITY=DoubleUnaryOperator.identity();
+    public static final DoubleUnaryOperator SQUARE=Doubles::square;
+
     private Doubles() {
     }
 

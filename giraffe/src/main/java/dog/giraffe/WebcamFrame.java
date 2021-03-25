@@ -319,6 +319,12 @@ public class WebcamFrame extends JFrame {
                                         InitialCenters.meanAndNotNear(),
                                         maxIterations,
                                         ReplaceEmptyCluster.notNear()));
+                        /*strategies.add(ClusteringStrategy.kMeans(
+                                clusters2,
+                                errorLimit,
+                                KDTree.initialCentres(),
+                                maxIterations,
+                                ReplaceEmptyCluster.notNear()));*/
                         /*strategies.add(ClusteringStrategy.best(
                                 5,
                                 ClusteringStrategy.

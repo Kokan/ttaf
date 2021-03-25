@@ -4,11 +4,17 @@ import dog.giraffe.Doubles;
 import dog.giraffe.QuickSort;
 import dog.giraffe.Sum;
 import dog.giraffe.Vector;
+import dog.giraffe.kmeans.InitialCenters;
+import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 
@@ -32,7 +38,8 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
                     perform(MAX, left.max, right.max),
                     perform(MIN, left.min, right.min),
                     left.size()+right.size(),
-                    perform(ADD, left.sum, right.sum));
+                    perform(ADD, left.sum, right.sum),
+                    perform(ADD, left.sum2, right.sum2));
             this.left=left;
             this.right=right;
         }
@@ -116,11 +123,13 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         private final P points;
 
         public Leaf(int offset, P points, int size, List<Sum> sums) {
-            super(points.dimensions(),
+            super(
+                    points.dimensions(),
                     points.perform(Double.NEGATIVE_INFINITY, offset, MAX, size),
                     points.perform(Double.POSITIVE_INFINITY, offset, MIN, size),
                     size,
-                    points.sum(offset, size, sums));
+                    points.sum(offset, Doubles.IDENTITY, size, sums),
+                    points.sum(offset, Doubles.SQUARE, size, sums));
             this.offset=offset;
             this.points=points;
         }
@@ -169,18 +178,25 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
     private final Vector mean;
     private final Vector min;
     private final Vector sum;
+    private final Vector sum2;
     protected final int size;
+    private final double variance;
 
-    private KDTree(int dimensions, Vector max, Vector min, int size, Vector sum) {
+    private KDTree(int dimensions, Vector max, Vector min, int size, Vector sum, Vector sum2) {
         super(dimensions);
         this.max=max;
         this.min=min;
         this.size=size;
         this.sum=sum;
-        mean=sum.copy();
+        this.sum2=sum2;
+        mean=new Vector(dimensions);
+        double variance2=0.0;
         for (int dd=0; dimensions>dd; ++dd) {
-            mean.coordinate(dd, mean.coordinate(dd)/size);
+            double s1=sum.coordinate(dd);
+            mean.coordinate(dd, s1/size);
+            variance2=sum2.coordinate(dd)-s1*s1/size;
         }
+        variance=variance2/size;
     }
 
     @Override
@@ -248,6 +264,43 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
             }
         }
         return Collections.unmodifiableList(centers2);
+    }
+
+    public static <P extends L2Points<P> & QuickSort.Swap>
+    InitialCenters<L2Points.Distance, L2Points.Mean, KDTree<P>, Vector> initialCentres() {
+        ReplaceEmptyCluster<Distance, Mean, KDTree<P>, Vector> fallback=ReplaceEmptyCluster.notNear();
+        return (clusters, context, maxIterations, points, points2, continuation)->{
+            Deque<KDTree<P>> deque=new ArrayDeque<>(2);
+            PriorityQueue<KDTree<P>> queue=new PriorityQueue<>(
+                    clusters, Comparator.<KDTree<P>>comparingDouble((tree)->tree.variance).reversed());
+            queue.add(points);
+            while (queue.size()<clusters) {
+                KDTree<P> tree=queue.remove();
+                if (tree.split(deque)) {
+                    while (!deque.isEmpty()) {
+                        queue.add(deque.removeFirst());
+                    }
+                }
+                else {
+                    queue.add(tree);
+                    break;
+                }
+            }
+            Set<Vector> centers=new HashSet<>(queue.size());
+            for (KDTree<P> tree: queue) {
+                centers.add(tree.mean);
+            }
+            InitialCenters.newCenters(
+                    centers,
+                    clusters,
+                    context,
+                    continuation,
+                    maxIterations,
+                    points,
+                    points2,
+                    fallback,
+                    fallback);
+        };
     }
 
     public static Function<Vector, Vector> nearestCenter(List<Vector> centers, Sum.Factory sum) {

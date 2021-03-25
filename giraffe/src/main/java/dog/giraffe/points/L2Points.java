@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 
 public abstract class L2Points<P extends L2Points<P>>
         implements Points<L2Points.Distance, L2Points.Mean, P, Vector> {
@@ -181,14 +182,14 @@ public abstract class L2Points<P extends L2Points<P>>
         return result;
     }
 
-    public Vector sum(int offset, int size, List<Sum> sums) {
+    public Vector sum(int offset, DoubleUnaryOperator operator, int size, List<Sum> sums) {
         for (int dd=0; dimensions>dd; ++dd) {
             sums.get(dd).clear();
         }
         Vector result=new Vector(dimensions);
         for (; 0<size; ++offset, --size) {
             for (int dd=0; dimensions>dd; ++dd) {
-                sums.get(dd).add(get(dd, offset));
+                sums.get(dd).add(operator.applyAsDouble(get(dd, offset)));
             }
         }
         for (int dd=0; dimensions>dd; ++dd) {
