@@ -1,7 +1,5 @@
 package dog.giraffe;
 
-import java.io.File;
-import javax.imageio.ImageIO;
 import com.github.sarxos.webcam.Webcam;
 import dog.giraffe.kmeans.InitialCenters;
 import dog.giraffe.kmeans.ReplaceEmptyCluster;
@@ -19,12 +17,14 @@ import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.IntToDoubleFunction;
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
@@ -307,15 +307,29 @@ public class WebcamFrame extends JFrame {
     private AsyncFunction<BufferedImage, BufferedImage> kMeans(int clusters, Projection projection) {
         return (image, continuation)->{
             Function<Integer, ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>>
-                    strategyGenerator=(clusters2)->ClusteringStrategy.best(
-                            5,
-                            ClusteringStrategy.
-                                    <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
-                                            clusters2,
-                                            0.95,
-                                            InitialCenters.random(),
-                                            1000,
-                                            ReplaceEmptyCluster.notNear()));
+                    strategyGenerator=(clusters2)->{
+                        double errorLimit=0.95;
+                        int maxIterations=1000;
+                        List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>>
+                                strategies=new ArrayList<>();
+                        strategies.add(ClusteringStrategy.
+                                <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                                        clusters2,
+                                        errorLimit,
+                                        InitialCenters.meanAndNotNear(),
+                                        maxIterations,
+                                        ReplaceEmptyCluster.notNear()));
+                        /*strategies.add(ClusteringStrategy.best(
+                                5,
+                                ClusteringStrategy.
+                                        <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                                                clusters2,
+                                                errorLimit,
+                                                InitialCenters.random(),
+                                                maxIterations,
+                                                ReplaceEmptyCluster.notNear())));*/
+                        return ClusteringStrategy.best(strategies);
+                    };
             ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> strategy;
             if (0<clusters) {
                     strategy=strategyGenerator.apply(clusters);

@@ -192,44 +192,26 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
                 }
                 centers.add(center);
             }
-            newCenters(centers, continuation, error, iteration, sum2);
-        };
-    }
-
-    private void newCenters(
-            Set<T> centers, Continuation<Clusters<T>> continuation, double error, int iteration, Sum sum)
-            throws Throwable {
-        List<T> centers2=Collections.unmodifiableList(new ArrayList<>(centers));
-        if (centers2.size()>=clusters) {
-            double error2=sum.sum();
-            if (error*errorLimit<=error2) {
-                continuation.completed(new Clusters<>(centers2, error2));
-            }
-            else {
-                fork(centers2, continuation, error2, iteration+1);
-            }
-            return;
-        }
-        replaceEmptyCluster.newCenter(
-                centers2,
-                context,
-                maxIterations,
-                points,
-                points2,
-                Continuations.async(
-                        Continuations.map(
-                            (center, continuation2)->{
-                                Set<T> centers3=new HashSet<>(clusters);
-                                centers3.addAll(centers);
-                                if (centers3.add(center)) {
-                                    newCenters(centers3, continuation2, error, iteration, sum);
+            InitialCenters.newCenters(
+                    centers,
+                    clusters,
+                    context,
+                    Continuations.map(
+                            (newCenters, continuation2)->{
+                                double error2=sum2.sum();
+                                if (error*errorLimit<=error2) {
+                                    continuation2.completed(new Clusters<>(newCenters, error2));
                                 }
                                 else {
-                                    System.out.println(centers+" - "+center);
-                                    continuation.failed(new EmptyClusterException());
+                                    fork(newCenters, continuation2, error2, iteration+1);
                                 }
                             },
                             continuation),
-                        context.executor()));
+                    maxIterations,
+                    points,
+                    points2,
+                    replaceEmptyCluster,
+                    replaceEmptyCluster);
+        };
     }
 }

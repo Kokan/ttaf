@@ -29,21 +29,24 @@ public interface ReplaceEmptyCluster
         return (centers, context, maxIterations, points, points2, continuation)->{
             class Candidate {
                 public final double distance;
-                public final T point;
+                public final int index;
+                public final P points;
 
-                public Candidate(double distance, T point) {
+                public Candidate(double distance, int index, P points) {
                     this.distance=distance;
-                    this.point=point;
+                    this.index=index;
+                    this.points=points;
                 }
             }
             List<AsyncSupplier<Candidate>> forks=new ArrayList<>(points2.size());
             for (P points3: points2) {
                 forks.add(new AsyncSupplier<Candidate>() {
                     private double bestDistance;
-                    private T bestPoint;
+                    private int bestIndex;
+                    private P bestPoints;
 
                     @Override
-                    public void get(Continuation<Candidate> continuation) throws Throwable {
+                    public void get(Continuation<Candidate> continuation2) throws Throwable {
                         points3.classify(
                                 Function.identity(),
                                 centers,
@@ -60,32 +63,34 @@ public interface ReplaceEmptyCluster
                                         double dd=points.distance(center, index);
                                         if (dd>bestDistance) {
                                             bestDistance=dd;
-                                            bestPoint=points.get(index);
+                                            bestIndex=index;
+                                            bestPoints=points;
                                         }
                                     }
                                 });
-                        continuation.completed(
+                        continuation2.completed(
                                 (0.0>=bestDistance)
                                         ?null
-                                        :new Candidate(bestDistance, bestPoint));
+                                        :new Candidate(bestDistance, bestIndex, bestPoints));
                     }
                 });
             }
             Continuation<List<Candidate>> join=Continuations.map(
                     (candidates, continuation2)->{
-                        T bc=null;
-                        double bd=0.0;
+                        Candidate bestCandidate=null;
+                        double bestDistance=0.0;
                         for (Candidate candidate: candidates) {
-                            if (bd<candidate.distance) {
-                                bc=candidate.point;
-                                bd=candidate.distance;
+                            if ((null!=candidate)
+                                    && (bestDistance<candidate.distance)) {
+                                bestCandidate=candidate;
+                                bestDistance=candidate.distance;
                             }
                         }
-                        if (0.0>=bd) {
-                            continuation.failed(new EmptyClusterException());
+                        if (0.0>=bestDistance) {
+                            continuation2.failed(new EmptyClusterException());
                         }
                         else {
-                            continuation.completed(bc);
+                            continuation2.completed(bestCandidate.points.get(bestCandidate.index));
                         }
                     },
                     continuation);

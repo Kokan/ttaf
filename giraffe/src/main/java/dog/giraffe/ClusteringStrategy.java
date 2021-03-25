@@ -18,6 +18,9 @@ public interface ClusteringStrategy<D extends Distance<T>, M extends VectorMean<
         if (strategies.isEmpty()) {
             throw new IllegalArgumentException("empty strategies");
         }
+        if (1==strategies.size()) {
+            return strategies.get(0);
+        }
         return (context, points, continuation)->{
             List<AsyncSupplier<Clusters<T>>> forks=new ArrayList<>(strategies.size());
             for (ClusteringStrategy<D, M, P, T> strategy: strategies) {
