@@ -316,15 +316,28 @@ public class WebcamFrame extends JFrame {
                                 <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
                                         clusters2,
                                         errorLimit,
-                                        InitialCenters.meanAndNotNear(),
+                                        InitialCenters.meanAndFarthest(false),
                                         maxIterations,
-                                        ReplaceEmptyCluster.notNear()));
+                                        ReplaceEmptyCluster.farthest(false)));
+                        /*strategies.add(ClusteringStrategy.
+                                <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                                        clusters2,
+                                        errorLimit,
+                                        InitialCenters.meanAndFarthest(true),
+                                        maxIterations,
+                                        ReplaceEmptyCluster.farthest(true)));*/
                         /*strategies.add(ClusteringStrategy.kMeans(
                                 clusters2,
                                 errorLimit,
-                                KDTree.initialCentres(),
+                                KDTree.initialCenters(false),
                                 maxIterations,
-                                ReplaceEmptyCluster.notNear()));*/
+                                ReplaceEmptyCluster.farthest(false)));*/
+                        /*strategies.add(ClusteringStrategy.kMeans(
+                                clusters2,
+                                errorLimit,
+                                KDTree.initialCenters(true),
+                                maxIterations,
+                                ReplaceEmptyCluster.farthest(true)));*/
                         /*strategies.add(ClusteringStrategy.best(
                                 5,
                                 ClusteringStrategy.
@@ -333,7 +346,16 @@ public class WebcamFrame extends JFrame {
                                                 errorLimit,
                                                 InitialCenters.random(),
                                                 maxIterations,
-                                                ReplaceEmptyCluster.notNear())));*/
+                                                ReplaceEmptyCluster.farthest(false))));*/
+                        /*strategies.add(ClusteringStrategy.best(
+                                5,
+                                ClusteringStrategy.
+                                        <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                                                clusters2,
+                                                errorLimit,
+                                                InitialCenters.random(),
+                                                maxIterations,
+                                                ReplaceEmptyCluster.farthest(true))));*/
                         return ClusteringStrategy.best(strategies);
                     };
             ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> strategy;

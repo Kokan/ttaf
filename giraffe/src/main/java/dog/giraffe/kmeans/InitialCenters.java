@@ -20,7 +20,7 @@ public interface InitialCenters<D extends Distance<T>, M extends VectorMean<M, T
             Continuation<List<T>> continuation) throws Throwable;
 
     static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
-    InitialCenters<D, M, P, T> meanAndNotNear() {
+    InitialCenters<D, M, P, T> meanAndFarthest(boolean notNear) {
         ReplaceEmptyCluster<D, M, P, T> replaceEmptyClustersFirst
                 =(centers, context, maxIterations, points, points2, continuation)->{
                     List<AsyncSupplier<M>> forks=new ArrayList<>(points2.size());
@@ -45,7 +45,7 @@ public interface InitialCenters<D extends Distance<T>, M extends VectorMean<M, T
                             continuation);
                     Continuations.forkJoin(forks, join, context.executor());
                 };
-        ReplaceEmptyCluster<D, M, P, T> replaceEmptyClustersRest=ReplaceEmptyCluster.notNear();
+        ReplaceEmptyCluster<D, M, P, T> replaceEmptyClustersRest=ReplaceEmptyCluster.farthest(notNear);
         return (clusters, context, maxIterations, points, points2, continuation)->{
             newCenters(
                     new HashSet<>(0),

@@ -20,12 +20,8 @@ public interface ReplaceEmptyCluster
                 continuation.failed(new EmptyClusterException());
     }
 
-    void newCenter(
-            List<T> centers, Context context, int maxIterations, P points, List<P> points2,
-            Continuation<T> continuation) throws Throwable;
-
     static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
-    ReplaceEmptyCluster<D, M, P, T> notNear() {
+    ReplaceEmptyCluster<D, M, P, T> farthest(boolean notNear) {
         return (centers, context, maxIterations, points, points2, continuation)->{
             class Candidate {
                 public final double distance;
@@ -47,27 +43,46 @@ public interface ReplaceEmptyCluster
 
                     @Override
                     public void get(Continuation<Candidate> continuation2) throws Throwable {
-                        points3.classify(
-                                Function.identity(),
-                                centers,
-                                new Points.Classification<T, D, M, P, T>() {
-                                    @Override
-                                    public void nearestCenter(T center, P points) {
-                                        for (int ii=0; points.size()>ii; ++ii) {
-                                            nearestCenter(center, points, ii);
+                        if (notNear) {
+                            points3.classify(
+                                    Function.identity(),
+                                    centers,
+                                    new Points.Classification<T, D, M, P, T>() {
+                                        @Override
+                                        public void nearestCenter(T center, P points) {
+                                            for (int ii=0; points.size()>ii; ++ii) {
+                                                nearestCenter(center, points, ii);
+                                            }
                                         }
-                                    }
 
-                                    @Override
-                                    public void nearestCenter(T center, P points, int index) {
-                                        double dd=points.distance(center, index);
-                                        if (dd>bestDistance) {
-                                            bestDistance=dd;
-                                            bestIndex=index;
-                                            bestPoints=points;
+                                        @Override
+                                        public void nearestCenter(T center, P points, int index) {
+                                            double dd=points.distance(center, index);
+                                            if (dd>bestDistance) {
+                                                bestDistance=dd;
+                                                bestIndex=index;
+                                                bestPoints=points;
+                                            }
                                         }
+                                    });
+                        }
+                        else {
+                            points3.forEach((points, index)->{
+                                double dd=0.0;
+                                for (T center: centers) {
+                                    double d2=points.distance(center, index);
+                                    if (0.0>=d2) {
+                                        return;
                                     }
-                                });
+                                    dd+=d2;
+                                }
+                                if (dd>bestDistance) {
+                                    bestDistance=dd;
+                                    bestIndex=index;
+                                    bestPoints=points;
+                                }
+                            });
+                        }
                         continuation2.completed(
                                 (0.0>=bestDistance)
                                         ?null
@@ -97,6 +112,10 @@ public interface ReplaceEmptyCluster
             Continuations.forkJoin(forks, join, context.executor());
         };
     }
+
+    void newCenter(
+            List<T> centers, Context context, int maxIterations, P points, List<P> points2,
+            Continuation<T> continuation) throws Throwable;
 
     static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
     ReplaceEmptyCluster<D, M, P, T> random() {

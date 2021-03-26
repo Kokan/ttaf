@@ -13,6 +13,10 @@ public interface Points<D extends Distance<T>, M extends VectorMean<M, T>, P ext
         void nearestCenter(C center, P points, int index );
     }
 
+    interface ForEach<D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T> {
+        void point(P points, int index );
+    }
+
     default void addAllDistanceTo(T center, Sum sum) {
         for (int ii=0; size()>ii; ++ii) {
             addDistanceTo(center, ii, sum);
@@ -59,6 +63,12 @@ public interface Points<D extends Distance<T>, M extends VectorMean<M, T>, P ext
     }
 
     T get(int index);
+
+    default void forEach(ForEach<D, M, P, T> forEach) {
+        for (int ii=0; size()>ii; ++ii) {
+            forEach.point(self(), ii);
+        }
+    }
 
     VectorMean.Factory<M, T> mean();
     

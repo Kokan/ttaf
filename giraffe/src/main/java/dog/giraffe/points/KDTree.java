@@ -54,6 +54,12 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         }
 
         @Override
+        public void forEach(ForEach<Distance, Mean, KDTree<P>, Vector> forEach) {
+            left.forEach(forEach);
+            right.forEach(forEach);
+        }
+
+        @Override
         public double get(int dimension, int index) {
             return (left.size()>index)
                     ?left.get(dimension, index)
@@ -267,8 +273,8 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
     }
 
     public static <P extends L2Points<P> & QuickSort.Swap>
-    InitialCenters<L2Points.Distance, L2Points.Mean, KDTree<P>, Vector> initialCentres() {
-        ReplaceEmptyCluster<Distance, Mean, KDTree<P>, Vector> fallback=ReplaceEmptyCluster.notNear();
+    InitialCenters<L2Points.Distance, L2Points.Mean, KDTree<P>, Vector> initialCenters(boolean notNear) {
+        ReplaceEmptyCluster<Distance, Mean, KDTree<P>, Vector> fallback=ReplaceEmptyCluster.farthest(notNear);
         return (clusters, context, maxIterations, points, points2, continuation)->{
             Deque<KDTree<P>> deque=new ArrayDeque<>(2);
             PriorityQueue<KDTree<P>> queue=new PriorityQueue<>(
