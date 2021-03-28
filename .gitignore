@@ -2,6 +2,7 @@
 .gradle
 build
 hs_err_pid*
+java.hprof.txt
 *.class
 *.ear
 *.log

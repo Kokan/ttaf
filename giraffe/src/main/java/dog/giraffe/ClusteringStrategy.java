@@ -5,10 +5,15 @@ import dog.giraffe.kmeans.KMeans;
 import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.points.Points;
 import dog.giraffe.threads.AsyncSupplier;
+import dog.giraffe.threads.Block;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import dog.giraffe.threads.ParallelSearch;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 @FunctionalInterface
@@ -56,34 +61,58 @@ public interface ClusteringStrategy<D extends Distance<T>, M extends VectorMean<
     static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
     ClusteringStrategy<D, M, P, T> elbow(
             double errorLimit, int maxClusters, int minClusters,
-            Function<Integer, ClusteringStrategy<D, M, P, T>> strategy) {
+            Function<Integer, ClusteringStrategy<D, M, P, T>> strategy, int threads) {
         return (context, points, continuation)->{
-            class Elbow {
-                public void cluster(
-                        Clusters<T> lastClusters, Continuation<Clusters<T>> continuation) throws Throwable {
-                    if ((null!=lastClusters)
-                            && (lastClusters.centers.size()>=maxClusters)) {
-                        continuation.completed(lastClusters);
-                        return;
-                    }
-                    strategy.apply((null==lastClusters)?minClusters:(lastClusters.centers.size()+1))
-                            .cluster(
-                                    context,
-                                    points,
-                                    Continuations.map(
-                                            (clusters, continuation2)->{
-                                                if ((null==lastClusters)
-                                                        || (lastClusters.error*errorLimit>clusters.error)) {
-                                                    cluster(clusters, continuation2);
-                                                }
-                                                else {
-                                                    continuation2.completed(lastClusters);
-                                                }
-                                            },
-                                            continuation));
-                }
-            }
-            new Elbow().cluster(null, continuation);
+            ParallelSearch.search(
+                    (clusters, continuation2)->strategy.apply(clusters).cluster(context, points, continuation2),
+                    minClusters,
+                    maxClusters+1,
+                    new ParallelSearch<Clusters<T>, Clusters<T>>() {
+                        private final NavigableMap<Integer, Clusters<T>> clusters=new TreeMap<>();
+                        private int index;
+                        private Clusters<T> selected;
+
+                        @Override
+                        public void search(
+                                Map<Integer, Clusters<T>> newElements, Block continueSearch,
+                                Continuation<Clusters<T>> continuation) throws Throwable {
+                            clusters.putAll(newElements);
+                            while (true) {
+                                if (null==selected) {
+                                    selected=clusters.remove(minClusters);
+                                    if (null==selected) {
+                                        continueSearch.run();
+                                        return;
+                                    }
+                                    else {
+                                        index=minClusters;
+                                    }
+                                }
+                                else if (maxClusters<=index) {
+                                    continuation.completed(selected);
+                                    return;
+                                }
+                                else {
+                                    Clusters<T> selected2=clusters.remove(index+1);
+                                    if (null==selected2) {
+                                        continueSearch.run();
+                                        return;
+                                    }
+                                    else if (selected.error*errorLimit>selected2.error) {
+                                        selected=selected2;
+                                        ++index;
+                                    }
+                                    else {
+                                        continuation.completed(selected);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    context.executor(),
+                    threads,
+                    continuation);
         };
     }
 

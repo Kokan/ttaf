@@ -363,7 +363,7 @@ public class WebcamFrame extends JFrame {
                     strategy=strategyGenerator.apply(clusters);
             }
             else {
-                strategy=ClusteringStrategy.elbow(0.95, -clusters, 2, strategyGenerator);
+                strategy=ClusteringStrategy.elbow(0.95, -clusters, 2, strategyGenerator, 1);
             }
             int height=image.getHeight();
             int width=image.getWidth();
