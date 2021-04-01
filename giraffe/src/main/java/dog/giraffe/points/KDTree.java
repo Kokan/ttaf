@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 
-public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2Points<KDTree<P>> {
+public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> extends L2Points<KDTree<P>> {
     private static class NearestCenter {
         public Vector center;
         public double distance;
@@ -28,7 +28,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
     private static final DoubleBinaryOperator MAX=Math::max;
     private static final DoubleBinaryOperator MIN=Math::min;
 
-    private static class Branch<P extends L2Points<P> & QuickSort.Swap> extends KDTree<P> {
+    private static class Branch<P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> extends KDTree<P> {
         private final KDTree<P> left;
         private final KDTree<P> right;
 
@@ -124,19 +124,17 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         }
     }
 
-    private static class Leaf<P extends L2Points<P> & QuickSort.Swap> extends KDTree<P> {
-        private final int offset;
+    private static class Leaf<P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> extends KDTree<P> {
         private final P points;
 
-        public Leaf(int offset, P points, int size, List<Sum> sums) {
+        public Leaf(P points, List<Sum> sums) {
             super(
                     points.dimensions(),
-                    points.perform(Double.NEGATIVE_INFINITY, offset, MAX, size),
-                    points.perform(Double.POSITIVE_INFINITY, offset, MIN, size),
-                    size,
-                    points.sum(offset, Doubles.IDENTITY, size, sums),
-                    points.sum(offset, Doubles.SQUARE, size, sums));
-            this.offset=offset;
+                    points.perform(Double.NEGATIVE_INFINITY, 0, MAX, points.size()),
+                    points.perform(Double.POSITIVE_INFINITY, 0, MIN, points.size()),
+                    points.size(),
+                    points.sum(0, Doubles.IDENTITY, points.size(), sums),
+                    points.sum(0, Doubles.SQUARE, points.size(), sums));
             this.points=points;
         }
 
@@ -155,14 +153,14 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
 
         @Override
         public double get(int dimension, int index) {
-            return points.get(dimension, offset+index);
+            return points.get(dimension, index);
         }
 
         @Override
         protected void nearestCenter(NearestCenter nearestCenter, Vector point) {
             Vector nc=null;
             double nd=Double.POSITIVE_INFINITY;
-            for (int oo=offset, ss=size; 0<ss; ++oo, --ss) {
+            for (int oo=0, ss=size; 0<ss; ++oo, --ss) {
                 Vector cc=points.get(oo);
                 double dd=L2Points.DISTANCE.distance(cc, point);
                 if (nd>dd) {
@@ -210,33 +208,33 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         mean.addAll(size(), sum);
     }
 
-    public static <P extends L2Points<P> & QuickSort.Swap> KDTree<P> create(
+    public static <P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> KDTree<P> create(
             int maxLeafSize, P points, Sum.Factory sum) {
         List<Sum> sums=new ArrayList<>(points.dimensions());
         for (int dd=0; points.dimensions()>dd; ++dd) {
             sums.add(sum.create(maxLeafSize));
         }
-        return create(0, maxLeafSize, points, sums, points.size());
+        return create(maxLeafSize, points, sums);
     }
 
-    private static <P extends L2Points<P> & QuickSort.Swap> KDTree<P> create(
-            int from, int maxLeafSize, P points, List<Sum> sums, int to) {
+    private static <P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> KDTree<P> create(
+            int maxLeafSize, P points, List<Sum> sums) {
         if (1>maxLeafSize) {
             throw new IllegalArgumentException(Integer.toString(maxLeafSize));
         }
-        if (maxLeafSize>=to-from) {
-            return new Leaf<>(from, points, to-from, sums);
+        if (maxLeafSize>=points.size()) {
+            return new Leaf<>(points, sums);
         }
-        int widestDimension=points.widestDimension(from, to);
+        int widestDimension=points.widestDimension();
         int middle=QuickSort.medianSplit(
                 (index0, index1)->
                         Double.compare(points.get(widestDimension, index0), points.get(widestDimension, index1)),
-                from,
+                0,
                 points,
-                to);
+                points.size());
         return new Branch<>(
-                create(from, maxLeafSize, points, sums, middle),
-                create(middle, maxLeafSize, points, sums, to));
+                create(maxLeafSize, points.subPoints(0, middle), sums),
+                create(maxLeafSize, points.subPoints(middle, points.size()), sums));
     }
 
     protected <C> List<C> filterCenters(Function<C, Vector> centerPoint, List<C> centers) {
@@ -272,7 +270,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap> extends L2P
         return Collections.unmodifiableList(centers2);
     }
 
-    public static <P extends L2Points<P> & QuickSort.Swap>
+    public static <P extends L2Points<P> & QuickSort.Swap & SubPoints<P>>
     InitialCenters<L2Points.Distance, L2Points.Mean, KDTree<P>, Vector> initialCenters(boolean notNear) {
         ReplaceEmptyCluster<Distance, Mean, KDTree<P>, Vector> fallback=ReplaceEmptyCluster.farthest(notNear);
         return (clusters, context, maxIterations, points, points2, continuation)->{

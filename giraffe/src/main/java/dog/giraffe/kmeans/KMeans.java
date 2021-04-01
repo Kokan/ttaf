@@ -79,12 +79,13 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
             int clusters, Context context, Continuation<Clusters<T>> continuation,
             double errorLimit, InitialCenters<D, M, P, T> initialCenters, int maxIterations, P points,
             ReplaceEmptyCluster<D, M, P, T> replaceEmptyCluster) throws Throwable {
-        if (2>clusters) {
+        if (0>=clusters) {
             continuation.failed(new IllegalStateException(Integer.toString(clusters)));
             return;
         }
         if (points.size()<clusters) {
-            continuation.failed(new RuntimeException("too few data points"));
+            continuation.failed(new CannotSelectInitialCentersException(String.format(
+                    "too few data points; clusters: %1$d, data points: %2$d", clusters, points.size())));
             return;
         }
         List<P> points2=points.split(context.executor().threads());

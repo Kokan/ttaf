@@ -1,6 +1,7 @@
 package dog.giraffe.points;
 
 import dog.giraffe.Distance;
+import dog.giraffe.QuickSort;
 import dog.giraffe.VectorMean;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,7 +11,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public class PointList<D extends Distance<T>, M extends VectorMean<M, T>, T>
-        implements Points<D, M, PointList<D, M, T>, T> {
+        implements Points<D, M, PointList<D, M, T>, T>, QuickSort.Swap, SubPoints<PointList<D, M, T>> {
     private final D distance;
     private final VectorMean.Factory<M, T> mean;
     private final List<T> points;
@@ -84,5 +85,15 @@ public class PointList<D extends Distance<T>, M extends VectorMean<M, T>, T>
                     distance, mean, points.subList(ii*points.size()/parts, (ii+1)*points.size()/parts)));
         }
         return Collections.unmodifiableList(result);
+    }
+
+    @Override
+    public PointList<D, M, T> subPoints(int fromIndex, int toIndex) {
+        return new PointList<>(distance, mean, points.subList(fromIndex, toIndex));
+    }
+
+    @Override
+    public void swap(int index0, int index1) {
+        points.set(index0, points.set(index1, points.get(index0)));
     }
 }

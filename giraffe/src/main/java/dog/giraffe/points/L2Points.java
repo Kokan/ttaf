@@ -198,13 +198,13 @@ public abstract class L2Points<P extends L2Points<P>>
         return result;
     }
 
-    public int widestDimension(int from, int to) {
+    public int widestDimension() {
         double widestDifference=Double.NEGATIVE_INFINITY;
         int widestDimension=0;
         for (int dd=0; dimensions>dd; ++dd) {
             double max=Double.NEGATIVE_INFINITY;
             double min=Double.POSITIVE_INFINITY;
-            for (int ii=from; to>ii; ++ii) {
+            for (int ii=0; size()>ii; ++ii) {
                 double value=get(dd, ii);
                 max=Math.max(max, value);
                 min=Math.min(min, value);

@@ -1,5 +1,6 @@
 package dog.giraffe;
 
+import dog.giraffe.kmeans.EmptyClusterException;
 import dog.giraffe.kmeans.InitialCenters;
 import dog.giraffe.kmeans.KMeans;
 import dog.giraffe.kmeans.ReplaceEmptyCluster;
@@ -13,11 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Function;
 
 @FunctionalInterface
-public interface ClusteringStrategy<D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T> {
+public interface ClusteringStrategy
+        <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T> {
     static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
     ClusteringStrategy<D, M, P, T> best(List<ClusteringStrategy<D, M, P, T>> strategies) {
         if (strategies.isEmpty()) {
@@ -63,28 +66,65 @@ public interface ClusteringStrategy<D extends Distance<T>, M extends VectorMean<
             double errorLimit, int maxClusters, int minClusters,
             Function<Integer, ClusteringStrategy<D, M, P, T>> strategy, int threads) {
         return (context, points, continuation)->{
+            class ClustersOrEmpty {
+                public final Clusters<T> clusters;
+                public final EmptyClusterException empty;
+
+                public ClustersOrEmpty(Clusters<T> clusters) {
+                    this.clusters=Objects.requireNonNull(clusters, "clusters");
+                    empty=null;
+                }
+
+                public ClustersOrEmpty(EmptyClusterException empty) {
+                    this.empty=Objects.requireNonNull(empty, "empty");
+                    clusters=null;
+                }
+            }
             ParallelSearch.search(
-                    (clusters, continuation2)->strategy.apply(clusters).cluster(context, points, continuation2),
+                    (clusters, continuation2)->strategy.apply(clusters).cluster(
+                            context,
+                            points,
+                            new Continuation<Clusters<T>>() {
+                                @Override
+                                public void completed(Clusters<T> result) throws Throwable {
+                                    continuation2.completed(new ClustersOrEmpty(result));
+                                }
+
+                                @Override
+                                public void failed(Throwable throwable) throws Throwable {
+                                    if (throwable instanceof EmptyClusterException) {
+                                        continuation2.completed(new ClustersOrEmpty((EmptyClusterException)throwable));
+                                    }
+                                    else {
+                                        continuation2.failed(throwable);
+                                    }
+                                }
+                            }),
                     minClusters,
                     maxClusters+1,
-                    new ParallelSearch<Clusters<T>, Clusters<T>>() {
-                        private final NavigableMap<Integer, Clusters<T>> clusters=new TreeMap<>();
+                    new ParallelSearch<ClustersOrEmpty, Clusters<T>>() {
+                        private final NavigableMap<Integer, ClustersOrEmpty> clusters=new TreeMap<>();
                         private int index;
                         private Clusters<T> selected;
 
                         @Override
                         public void search(
-                                Map<Integer, Clusters<T>> newElements, Block continueSearch,
+                                Map<Integer, ClustersOrEmpty> newElements, Block continueSearch,
                                 Continuation<Clusters<T>> continuation) throws Throwable {
                             clusters.putAll(newElements);
                             while (true) {
                                 if (null==selected) {
-                                    selected=clusters.remove(minClusters);
-                                    if (null==selected) {
+                                    ClustersOrEmpty next=clusters.remove(minClusters);
+                                    if (null==next) {
                                         continueSearch.run();
                                         return;
                                     }
+                                    else if (null==next.clusters) {
+                                        continuation.failed(new EmptyClusterException(next.empty));
+                                        return;
+                                    }
                                     else {
+                                        selected=next.clusters;
                                         index=minClusters;
                                     }
                                 }
@@ -93,13 +133,17 @@ public interface ClusteringStrategy<D extends Distance<T>, M extends VectorMean<
                                     return;
                                 }
                                 else {
-                                    Clusters<T> selected2=clusters.remove(index+1);
-                                    if (null==selected2) {
+                                    ClustersOrEmpty next=clusters.remove(index+1);
+                                    if (null==next) {
                                         continueSearch.run();
                                         return;
                                     }
-                                    else if (selected.error*errorLimit>selected2.error) {
-                                        selected=selected2;
+                                    else if (null==next.clusters) {
+                                        continuation.completed(selected);
+                                        return;
+                                    }
+                                    else if (selected.error*errorLimit>next.clusters.error) {
+                                        selected=next.clusters;
                                         ++index;
                                     }
                                     else {

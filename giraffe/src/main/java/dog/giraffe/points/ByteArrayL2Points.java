@@ -2,13 +2,63 @@ package dog.giraffe.points;
 
 import dog.giraffe.QuickSort;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class ByteArrayL2Points extends L2Points<ByteArrayL2Points> implements QuickSort.Swap {
+public class ByteArrayL2Points
+        extends L2Points<ByteArrayL2Points> implements QuickSort.Swap, SubPoints<ByteArrayL2Points> {
     private final byte[] data;
     private final int offset;
     private final int size;
+
+    public static class Builder {
+        private byte[] data;
+        private final int dimensions;
+        private int size;
+
+        public Builder(int dimensions, int expectedSize) {
+            this.dimensions=dimensions;
+            data=new byte[dimensions*Math.max(0, expectedSize)];
+        }
+
+        public void add(byte coordinate0) {
+            ensureSize();
+            data[dimensions*size]=coordinate0;
+            size+=dimensions;
+        }
+
+        public void add(byte coordinate0, byte coordinate1) {
+            ensureSize();
+            data[dimensions*size]=coordinate0;
+            data[dimensions*size+1]=coordinate1;
+            size+=dimensions;
+        }
+
+        public void add(byte coordinate0, byte coordinate1, byte coordinate2) {
+            ensureSize();
+            data[dimensions*size]=coordinate0;
+            data[dimensions*size+1]=coordinate1;
+            data[dimensions*size+2]=coordinate2;
+            size+=dimensions;
+        }
+
+        public void add(byte[] vector) {
+            ensureSize();
+            System.arraycopy(vector, 0, data, dimensions*size, dimensions);
+            size+=dimensions;
+        }
+
+        public ByteArrayL2Points create() {
+            return new ByteArrayL2Points(data, dimensions, 0, size);
+        }
+
+        private void ensureSize() {
+            if (dimensions*(size+1)>data.length) {
+                data=Arrays.copyOf(data, Math.max(dimensions*(size+1), 2*data.length));
+            }
+        }
+    }
 
     public ByteArrayL2Points(byte[] data, int dimensions, int offset, int size) {
         super(dimensions);
@@ -54,6 +104,11 @@ public class ByteArrayL2Points extends L2Points<ByteArrayL2Points> implements Qu
                     to-from));
         }
         return Collections.unmodifiableList(result);
+    }
+
+    @Override
+    public ByteArrayL2Points subPoints(int fromIndex, int toIndex) {
+        return new ByteArrayL2Points(data, dimensions, offset+fromIndex, toIndex-fromIndex);
     }
 
     @Override

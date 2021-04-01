@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class VectorList extends L2Points<VectorList> implements QuickSort.Swap {
+public class VectorList extends L2Points<VectorList> implements QuickSort.Swap, SubPoints<VectorList> {
     private final List<Vector> points;
 
     public VectorList(List<Vector> points) {
@@ -47,6 +47,11 @@ public class VectorList extends L2Points<VectorList> implements QuickSort.Swap {
                     points.subList(ii*points.size()/parts, (ii+1)*points.size()/parts)));
         }
         return Collections.unmodifiableList(result);
+    }
+
+    @Override
+    public VectorList subPoints(int fromIndex, int toIndex) {
+        return new VectorList(points.subList(fromIndex, toIndex));
     }
 
     @Override
