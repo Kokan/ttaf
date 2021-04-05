@@ -1,4 +1,4 @@
-package dog.giraffe.kmeans;
+package dog.giraffe;
 
 import dog.giraffe.Context;
 import dog.giraffe.Distance;

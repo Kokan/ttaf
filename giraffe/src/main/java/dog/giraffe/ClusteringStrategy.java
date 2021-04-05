@@ -1,9 +1,9 @@
 package dog.giraffe;
 
-import dog.giraffe.kmeans.EmptyClusterException;
-import dog.giraffe.kmeans.InitialCenters;
+import dog.giraffe.EmptyClusterException;
+import dog.giraffe.InitialCenters;
 import dog.giraffe.kmeans.KMeans;
-import dog.giraffe.kmeans.ReplaceEmptyCluster;
+import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.points.Points;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Block;

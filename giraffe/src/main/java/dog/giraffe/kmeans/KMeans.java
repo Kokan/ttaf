@@ -1,5 +1,8 @@
 package dog.giraffe.kmeans;
 
+import dog.giraffe.ReplaceEmptyCluster;
+import dog.giraffe.CannotSelectInitialCentersException;
+import dog.giraffe.InitialCenters;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
 import dog.giraffe.Distance;

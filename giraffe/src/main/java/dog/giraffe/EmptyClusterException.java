@@ -1,6 +1,6 @@
-package dog.giraffe.kmeans;
+package dog.giraffe;
 
-public class EmptyClusterException extends KMeansException {
+public class EmptyClusterException extends RuntimeException {
     private static final long serialVersionUID=0L;
 
     public EmptyClusterException() {

@@ -1,8 +1,8 @@
 package dog.giraffe;
 
 import com.github.sarxos.webcam.Webcam;
-import dog.giraffe.kmeans.InitialCenters;
-import dog.giraffe.kmeans.ReplaceEmptyCluster;
+import dog.giraffe.InitialCenters;
+import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.points.ByteArrayL2Points;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.points.L2Points;
