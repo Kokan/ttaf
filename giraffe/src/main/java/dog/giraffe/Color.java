@@ -292,68 +292,6 @@ public interface Color {
     }
 
     class RGB {
-        public static class Mean implements VectorMean<Mean, Color.RGB> {
-            public static class Factory implements VectorMean.Factory<Mean, Color.RGB> {
-                @Override
-                public Mean create(int expectedAddends, Sum.Factory sumFactory) {
-                    return new Mean(expectedAddends, sumFactory);
-                }
-            }
-
-            private int addends;
-            private final Sum blue;
-            private final Sum green;
-            private final Sum red;
-
-            public Mean(int expectedAddends, Sum.Factory sumFactory) {
-                this.blue=sumFactory.create(expectedAddends);
-                this.green=sumFactory.create(expectedAddends);
-                this.red=sumFactory.create(expectedAddends);
-            }
-
-            @Override
-            public void add(RGB addend) {
-                Objects.requireNonNull(addend);
-                ++addends;
-                blue.add(addend.blue);
-                green.add(addend.green);
-                red.add(addend.red);
-            }
-
-            @Override
-            public void addTo(Mean mean) {
-                mean.addends+=addends;
-                blue.addTo(mean.blue);
-                green.addTo(mean.green);
-                red.addTo(mean.red);
-            }
-
-            @Override
-            public void clear() {
-                addends=0;
-                blue.clear();
-                green.clear();
-                red.clear();
-            }
-
-            @Override
-            public RGB mean() {
-                if (0>=addends) {
-                    throw new EmptySetException();
-                }
-                double blue2=blue.sum();
-                double green2=green.sum();
-                double red2=red.sum();
-                return new RGB(blue2/addends, green2/addends, red2/addends);
-            }
-        }
-
-        public static final Distance<RGB> DISTANCE
-                =(center, point)->Math.sqrt(
-                        Doubles.square(0.0722*(center.blue-point.blue))
-                                +Doubles.square(0.7152*(center.green-point.green))
-                                +Doubles.square(0.2126*(center.red-point.red)));
-        public static final VectorMean.Factory<RGB.Mean, RGB> MEAN=new Mean.Factory();
 
         public final double blue;
         public final double green;

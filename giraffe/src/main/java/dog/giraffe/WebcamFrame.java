@@ -12,6 +12,7 @@ import dog.giraffe.threads.Block;
 import dog.giraffe.threads.Consumer;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import dog.giraffe.isodata.Isodata;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
@@ -291,6 +292,10 @@ public class WebcamFrame extends JFrame {
         functions.add(kMeans(-13, Projection.HUE));
         functions.add(saturationBased(kMeansStrategy(-13)));
 
+        functions.add(Isodata( 2, 30, Projection.RGB));
+        functions.add(Isodata( 2, 30, Projection.HUE));
+        functions.add(saturationBased(isodataStrategy(2,30)));
+
         addWindowListener(new WindowListenerImpl());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setIconImages(Icons.icons());
@@ -317,6 +322,30 @@ public class WebcamFrame extends JFrame {
             setBounds(screen.width/8, screen.height/8, 3*screen.width/4, 3*screen.height/4);
         }
         setVisible(true);
+    }
+
+    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> isodataStrategy(
+            int start_clusters, int desired_clusters) {
+            double errorLimit=0.95;
+            int maxIterations=100;
+            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>>
+                    strategies=new ArrayList<>();
+            strategies.add((contex,points,cont)-> {
+
+            Isodata.cluster(
+                    start_clusters,
+                    desired_clusters,
+                    context,
+                    cont,
+                    0.95,
+                    InitialCenters.meanAndFarthest(false),
+                    100,
+                    points,
+                    ReplaceEmptyCluster.farthest(false)
+                    );
+
+});
+            return ClusteringStrategy.best(strategies);
     }
 
     private ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> kMeansStrategy(
@@ -376,6 +405,54 @@ public class WebcamFrame extends JFrame {
         return (0<clusters)
                 ?strategyGenerator.apply(clusters)
                 :ClusteringStrategy.elbow(0.95, -clusters, 1, strategyGenerator, 1);
+    }
+
+    private AsyncFunction<BufferedImage, BufferedImage> Isodata(int start_clusters, int desired_clusters, Projection projection) {
+        return (image, continuation)->{
+            int height=image.getHeight();
+            int width=image.getWidth();
+            int[] pixels=new int[height*width];
+            image.getRGB(0, 0, width, height, pixels, 0, width);
+            Color.Converter colorConverter=new Color.Converter();
+            ByteArrayL2Points.Builder pointsBuilder
+                    =new ByteArrayL2Points.Builder(projection.dimensions(), height*width);
+            for (int rgb: pixels) {
+                projection.project(colorConverter, pointsBuilder, rgb);
+            }
+
+            Isodata.cluster(
+                    start_clusters,
+                    desired_clusters,
+                    context,
+                    Continuations.map(
+                            (clusters2, continuation2)->{
+                                List<Vector> centers=clusters2.centers;
+                                byte[] buf=new byte[projection.dimensions()];
+                                Vector point=new Vector(projection.dimensions());
+                                int[] pixels2=new int[height*width];
+                                Function<Vector, Vector> nearestCenter=(16>centers.size())
+                                        ?Distance.nearestCenter(centers, L2Points.DISTANCE)
+                                        :KDTree.nearestCenter(centers, Sum.PREFERRED);
+                                for (int ii=0; pixels.length>ii; ++ii) {
+                                    projection.project(buf, colorConverter, 0, pixels[ii]);
+                                    for (int dd=0; projection.dimensions()>dd; ++dd) {
+                                        point.coordinate(dd, buf[dd]&0xff);
+                                    }
+                                    Vector center=nearestCenter.apply(point);
+                                    pixels2[ii]=projection.rgb(colorConverter, center);
+                                }
+                                BufferedImage image2=new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+                                image2.setRGB(0, 0, width, height, pixels2, 0, width);
+                                continuation2.completed(image2);
+                            },
+                            continuation),
+                    0.95,
+                    InitialCenters.meanAndFarthest(false),
+                    100,
+                    KDTree.create(4096, pointsBuilder.create(), context.sum()),
+                    ReplaceEmptyCluster.farthest(false)
+                    );
+        };
     }
 
     private AsyncFunction<BufferedImage, BufferedImage> kMeans(int clusters, Projection projection) {

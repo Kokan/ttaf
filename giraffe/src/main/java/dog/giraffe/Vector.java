@@ -3,7 +3,7 @@ package dog.giraffe;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class Vector {
+public class Vector implements Arith<Vector> {
     private final double[] coordinates;
 
     public Vector(double[] coordinates) {
@@ -28,6 +28,54 @@ public class Vector {
 
     public int dimensions() {
         return coordinates.length;
+    }
+
+    @Override
+    public Vector add(Vector other) {
+        final int dim = dimensions();
+        double d[] = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = this.coordinates[i] + other.coordinates[i];
+        return new Vector(d);
+    }
+
+    @Override
+    public Vector sub(Vector other) {
+        final int dim = dimensions();
+        double d[] = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = this.coordinates[i] - other.coordinates[i];
+        return new Vector(d);
+    }
+
+    @Override
+    public Vector pow() {
+        final int dim = dimensions();
+        double d[] = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = Math.pow(this.coordinates[i], 2);
+        return new Vector(d);
+    }
+
+    @Override
+    public Vector sqrt() {
+        final int dim = dimensions();
+        double d[] = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = Math.sqrt(this.coordinates[i]);
+        return new Vector(d);
+    }
+
+    @Override
+    public Vector mul(double multiplier) {
+        final int dim = dimensions();
+        double d[] = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = multiplier * this.coordinates[i];
+        return new Vector(d);
+    }
+
+    @Override
+    public Vector div(double divisor) {
+        final int dim = dimensions();
+        double d[] = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = this.coordinates[i] / divisor;
+        return new Vector(d);
     }
 
     @Override
