@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.function.Function;
 import java.util.function.IntToDoubleFunction;
 import java.util.function.Predicate;
@@ -179,6 +181,67 @@ public class WebcamFrame extends JFrame {
         int rgb(Color.Converter colorConverter, Vector point);
     }
 
+    private class ReplaceCenters implements Projection {
+        private Projection projection;
+
+        public ReplaceCenters(Projection projection) {
+           this.projection=projection;
+
+           Vector darkgreen = new Vector(0,0x64,0);
+           colors.add(darkgreen);
+           Vector darkblue = new Vector(0x8b,0,0);
+           colors.add(darkblue);
+           Vector maroon3 = new Vector(0x60, 0x30, 0xb0);// #b03060 
+           colors.add(maroon3);
+           Vector red  = new Vector(0, 0, 0xff);//#ff0000
+           colors.add(red);
+           Vector yellow  = new Vector(0, 0xff, 0xff);//#ffff00
+           colors.add(yellow);
+           Vector burlywood  = new Vector(0x87, 0xb8, 0xde);//#deb887
+           colors.add(burlywood);
+           Vector lime  = new Vector(0, 0xff, 0);//#00ff00
+           colors.add(lime);
+           Vector aqua  = new Vector(0xff, 0xff, 0);//#00ffff
+           colors.add(aqua);
+           Vector fuchsia  = new Vector(0xff, 0, 0xff);//#ff00ff
+           colors.add(fuchsia);
+           Vector cornflower  = new Vector(0xed, 0x95, 0x64);//#6495ed
+           colors.add(cornflower);
+        }
+        private Map<Vector, Vector> newc = new HashMap<>();
+        private List<Vector> colors = new ArrayList<>();
+
+        private Vector replace_point(Vector point) {
+            if (newc.containsKey(point)) {
+               return newc.get(point);
+            }
+            //newc.put(point, colors.get(newc.size() % colors.size()));
+            newc.put(point, colors.get(newc.size()));
+
+            return newc.get(point);
+        }
+
+        @Override
+        public int dimensions() {
+           return projection.dimensions();
+        }
+
+        @Override
+        public void project(byte[] buf, Color.Converter colorConverter, int offset, int rgb) {
+           projection.project(buf, colorConverter, offset, rgb);
+        }
+
+        @Override
+        public void project(Color.Converter colorConverter, ByteArrayL2Points.Builder points, int rgb) {
+             projection.project(colorConverter, points, rgb);
+        }
+
+        @Override
+        public int rgb(Color.Converter colorConverter, Vector point) {
+            return projection.rgb(colorConverter, replace_point(point));
+        }
+    };
+
     private static class WebcamGrabber implements Runnable {
         private final WebcamFrame frame;
 
@@ -286,14 +349,14 @@ public class WebcamFrame extends JFrame {
                         0x0000ff))));
         //functions.add(kMeans(2, Projection.RGB));
         //functions.add(kMeans(3, Projection.RGB));
-        functions.add(kMeans(-13, Projection.RGB));
+        functions.add(kMeans(-13, new ReplaceCenters(Projection.RGB)));
         //functions.add(kMeans(2, Projection.HUE));
         //functions.add(kMeans(3, Projection.HUE));
-        functions.add(kMeans(-13, Projection.HUE));
+        functions.add(kMeans(-13, new ReplaceCenters(Projection.HUE)));
         functions.add(saturationBased(kMeansStrategy(-13)));
 
-        functions.add(Isodata( 2, 30, Projection.RGB));
-        functions.add(Isodata( 2, 30, Projection.HUE));
+        functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.RGB)));
+        functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.HUE)));
         functions.add(saturationBased(isodataStrategy(2,30)));
 
         addWindowListener(new WindowListenerImpl());

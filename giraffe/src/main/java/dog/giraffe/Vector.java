@@ -10,6 +10,13 @@ public class Vector implements Arith<Vector> {
         this.coordinates=Objects.requireNonNull(coordinates, "coordinates");
     }
 
+   public Vector(double blue, double green, double red) {
+        this(new double[3]);
+        coordinates[0]=blue;
+        coordinates[1]=green;
+        coordinates[2]=red;
+   }
+
     public Vector(int dimensions) {
         this(new double[dimensions]);
     }
