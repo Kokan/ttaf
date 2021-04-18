@@ -91,71 +91,6 @@ public class Isodata<P extends L2Points<P>> {
     private final ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, P, Vector> replaceEmptyCluster;
     private final List<Sum> sums;
 
-    public static class StdDeviation implements VectorStdDeviation<Vector> {
-        public static class Factory implements VectorStdDeviation.Factory<Vector> {
-            private final int dimensions;
-            private final Sum.Factory sumFactory;
-
-            public Factory(int dimensions, Sum.Factory sumFactory) {
-                 this.dimensions = dimensions;
-                 this.sumFactory = sumFactory;
-            }
-
-            @Override
-            public VectorStdDeviation<Vector> create(Vector mean, int addends) {
-                List<Sum> sums=new ArrayList<>(dimensions);
-                for (int i=0; i<dimensions; ++i) {
-                    sums.add(sumFactory.create(addends));
-                }
-
-                return new StdDeviation(mean, addends, Collections.unmodifiableList(sums));
-            }
-        }
-
-        private int addends;
-        private final Vector meanValue;
-        private final List<Sum> sums;
-
-        public StdDeviation(Vector mean, int addends, List<Sum> sums) {
-          this.addends = 0;
-          this.meanValue = mean;
-          this.sums = sums;
-        }
-
-        @Override
-        public VectorStdDeviation<Vector> add(Vector addend) {
-            ++addends;
-            for (int i=0;i<addend.dimensions(); ++i) {
-               sums.get(i).add( Math.pow(addend.coordinate(i) - meanValue.coordinate(i), 2) );
-            }
-            return this;
-        }
-
-        @Override
-        public VectorStdDeviation<Vector> clear() {
-            sums.forEach(Sum::clear);
-            addends=0;
-            return this;
-        }
-
-        @Override
-        public Vector mean() {
-            return meanValue;
-        }
-
-        @Override
-        public Vector deviation() {
-            if (addends==0) throw new RuntimeException("dividing by zero");
-            Vector dev=new Vector(sums.size());
-            for (int i=0;i<sums.size(); ++i) {
-               dev.coordinate(i, Math.sqrt( sums.get(i).sum() / addends ) );
-            }
-            return dev;
-        }
-    }
-
-    private final VectorStdDeviation.Factory<Vector> devFactory;
-
     public static class Comp implements MaxComponent<Double, Vector> {
        private int maxInd(Vector self) {
           Double max = self.coordinate(0);
@@ -215,7 +150,6 @@ public class Isodata<P extends L2Points<P>> {
         this.points2=points2;
         this.replaceEmptyCluster=replaceEmptyCluster;
         this.sums=sums;
-        this.devFactory = new StdDeviation.Factory(sums.size(), context.sum());
     }
 
     public static <P extends L2Points<P>>
@@ -571,7 +505,7 @@ public class Isodata<P extends L2Points<P>> {
         List<AsyncSupplier<Void>> forks=new ArrayList<>(clusters.size());
         for (Cluster cluster : clusters) {
             forks.add((continuation2)->{
-                VectorStdDeviation<Vector> dev = devFactory.create(cluster.center, 0);
+                VectorStdDeviation<Vector> dev = this.points.dev().create(cluster.center, 0, context.sum());
                 for (Vector point: cluster.points) {
                     dev=dev.add(point);
                 }

@@ -402,7 +402,7 @@ public class WebcamFrame extends JFrame {
                     cont,
                     0.95,
                     InitialCenters.meanAndFarthest(false),
-                    100,
+                    maxIterations,
                     points,
                     ReplaceEmptyCluster.farthest(false)
                     );
