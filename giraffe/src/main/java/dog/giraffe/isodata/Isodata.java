@@ -93,53 +93,64 @@ public class Isodata<P extends L2Points<P>> {
 
     public static class StdDeviation implements VectorStdDeviation<Vector> {
         public static class Factory implements VectorStdDeviation.Factory<Vector> {
-            private final VectorMean.Factory<L2Points.Mean,Vector> meanFactory;
+            private final int dimensions;
             private final Sum.Factory sumFactory;
 
-            public Factory(VectorMean.Factory<L2Points.Mean,Vector> meanFactory, Sum.Factory sumFactory) {
-                 this.meanFactory = meanFactory;
+            public Factory(int dimensions, Sum.Factory sumFactory) {
+                 this.dimensions = dimensions;
                  this.sumFactory = sumFactory;
             }
 
             @Override
             public VectorStdDeviation<Vector> create(Vector mean, int addends) {
-                   return new StdDeviation(mean, addends, meanFactory, sumFactory);
+                List<Sum> sums=new ArrayList<>(dimensions);
+                for (int i=0; i<dimensions; ++i) {
+                    sums.add(sumFactory.create(addends));
+                }
+
+                return new StdDeviation(mean, addends, Collections.unmodifiableList(sums));
             }
         }
 
         private int addends;
         private final Vector meanValue;
-        private final VectorMean<L2Points.Mean,Vector> mean;
+        private final List<Sum> sums;
 
-        public StdDeviation(Vector mean, int addends, VectorMean.Factory<L2Points.Mean,Vector> meanFactory, Sum.Factory sumFactory) {
+        public StdDeviation(Vector mean, int addends, List<Sum> sums) {
           this.addends = 0;
           this.meanValue = mean;
-          this.mean = meanFactory.create(addends, sumFactory);
+          this.sums = sums;
         }
 
         @Override
         public VectorStdDeviation<Vector> add(Vector addend) {
             ++addends;
-            mean.add(addend.sub(meanValue).pow());
+            for (int i=0;i<addend.dimensions(); ++i) {
+               sums.get(i).add( Math.pow(addend.coordinate(i) - meanValue.coordinate(i), 2) );
+            }
             return this;
         }
 
         @Override
         public VectorStdDeviation<Vector> clear() {
-            mean.clear();
+            sums.forEach(Sum::clear);
             addends=0;
             return this;
         }
 
         @Override
         public Vector mean() {
-            return meanValue.sqrt();
+            return meanValue;
         }
 
         @Override
         public Vector deviation() {
             if (addends==0) throw new RuntimeException("dividing by zero");
-            return mean.mean().div(addends).sqrt();
+            Vector dev=new Vector(sums.size());
+            for (int i=0;i<sums.size(); ++i) {
+               dev.coordinate(i, Math.sqrt( sums.get(i).sum() / addends ) );
+            }
+            return dev;
         }
     }
 
@@ -204,7 +215,7 @@ public class Isodata<P extends L2Points<P>> {
         this.points2=points2;
         this.replaceEmptyCluster=replaceEmptyCluster;
         this.sums=sums;
-        this.devFactory = new StdDeviation.Factory(points.mean(), context.sum());
+        this.devFactory = new StdDeviation.Factory(sums.size(), context.sum());
     }
 
     public static <P extends L2Points<P>>
@@ -500,23 +511,21 @@ public class Isodata<P extends L2Points<P>> {
     public void avg_distance(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
         List<Cluster> clusters = Collections.unmodifiableList(p.clusters);
 
-        List<AsyncSupplier<Map.Entry<Vector, Double>>> forks=new ArrayList<>(clusters.size());
+        List<AsyncSupplier<Void>> forks=new ArrayList<>(clusters.size());
         for (Cluster cluster : clusters) {
             forks.add((continuation2)->{
                 MeanDouble mean = new MeanDouble(cluster.points.size(), context.sum());
                 for (Vector point: cluster.points) {
                     mean=mean.add(points.distance().distance(cluster.center, point));
                 }
-                continuation2.completed(new SimpleEntry<>(cluster.center, mean.mean()));
+                cluster.avg_dist = mean.mean();
+                continuation2.completed(null);
             });
         }
         Continuations.forkJoin(
                 forks,
                 Continuations.map(
                         (results, continuation2)->{
-                            for (Map.Entry<Vector, Double> pair : results) {
-                                 p.get(pair.getKey()).avg_dist = pair.getValue();
-                            }
                             all_avg_distance(p, continuation2, error, iteration);
                         },
                         continuation),
@@ -559,23 +568,21 @@ public class Isodata<P extends L2Points<P>> {
     public void std_deviation(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
         List<Cluster> clusters = Collections.unmodifiableList(p.clusters);
 
-        List<AsyncSupplier<Map.Entry<Vector, Vector>>> forks=new ArrayList<>(clusters.size());
+        List<AsyncSupplier<Void>> forks=new ArrayList<>(clusters.size());
         for (Cluster cluster : clusters) {
             forks.add((continuation2)->{
                 VectorStdDeviation<Vector> dev = devFactory.create(cluster.center, 0);
                 for (Vector point: cluster.points) {
                     dev=dev.add(point);
                 }
-                continuation2.completed(new SimpleEntry<>(cluster.center, dev.deviation()));
+                cluster.std_dev = dev.deviation();
+                continuation2.completed(null);
             });
         }
         Continuations.forkJoin(
                 forks,
                 Continuations.map(
                         (results, continuation2)->{
-                            for (Map.Entry<Vector, Vector> pair : results) {
-                                 p.get(pair.getKey()).std_dev = pair.getValue();
-                            }
                             split_cluster(p, continuation2, error, iteration);
                         },
                         continuation),
