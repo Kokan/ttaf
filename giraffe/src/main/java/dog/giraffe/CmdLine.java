@@ -2,13 +2,10 @@ package dog.giraffe;
 
 import dog.giraffe.image.BufferedImageReader;
 import dog.giraffe.image.BufferedImageWriter;
-import dog.giraffe.image.Cluster1Transform;
 import dog.giraffe.image.FileImageReader;
 import dog.giraffe.image.FileImageWriter;
 import dog.giraffe.image.ImageTransform;
 import dog.giraffe.image.PixelTransform;
-import dog.giraffe.image.Projection1;
-import dog.giraffe.points.L2Points;
 import dog.giraffe.threads.Continuation;
 import java.nio.file.Files;
 import java.nio.file.Path;

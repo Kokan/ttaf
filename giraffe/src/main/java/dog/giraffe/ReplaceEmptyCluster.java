@@ -1,9 +1,7 @@
 package dog.giraffe;
 
-import dog.giraffe.Context;
-import dog.giraffe.Distance;
-import dog.giraffe.VectorMean;
 import dog.giraffe.points.Points;
+import dog.giraffe.points.Vector;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
@@ -12,16 +10,13 @@ import java.util.List;
 import java.util.function.Function;
 
 @FunctionalInterface
-public interface ReplaceEmptyCluster
-        <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T> {
-    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
-    ReplaceEmptyCluster<D, M, S, P, T> error() {
+public interface ReplaceEmptyCluster<P extends Points<P>> {
+    static <P extends Points<P>> ReplaceEmptyCluster<P> error() {
         return (centers, context, maxIterations, points, points2, continuation)->
                 continuation.failed(new EmptyClusterException());
     }
 
-    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
-    ReplaceEmptyCluster<D, M, S, P, T> farthest(boolean notNear) {
+    static <P extends Points<P>> ReplaceEmptyCluster<P> farthest(boolean notNear) {
         return (centers, context, maxIterations, points, points2, continuation)->{
             class Candidate {
                 public final double distance;
@@ -36,7 +31,7 @@ public interface ReplaceEmptyCluster
             }
             List<AsyncSupplier<Candidate>> forks=new ArrayList<>(points2.size());
             for (P points3: points2) {
-                forks.add(new AsyncSupplier<Candidate>() {
+                forks.add(new AsyncSupplier<>() {
                     private double bestDistance;
                     private int bestIndex;
                     private P bestPoints;
@@ -47,16 +42,16 @@ public interface ReplaceEmptyCluster
                             points3.classify(
                                     Function.identity(),
                                     centers,
-                                    new Points.Classification<T, D, M, S, P, T>() {
+                                    new Points.Classification<Vector, P>() {
                                         @Override
-                                        public void nearestCenter(T center, P points) {
+                                        public void nearestCenter(Vector center, P points) {
                                             for (int ii=0; points.size()>ii; ++ii) {
                                                 nearestCenter(center, points, ii);
                                             }
                                         }
 
                                         @Override
-                                        public void nearestCenter(T center, P points, int index) {
+                                        public void nearestCenter(Vector center, P points, int index) {
                                             double dd=points.distance(center, index);
                                             if (dd>bestDistance) {
                                                 bestDistance=dd;
@@ -69,7 +64,7 @@ public interface ReplaceEmptyCluster
                         else {
                             points3.forEach((points, index)->{
                                 double dd=0.0;
-                                for (T center: centers) {
+                                for (Vector center: centers) {
                                     double d2=points.distance(center, index);
                                     if (0.0>=d2) {
                                         return;
@@ -114,14 +109,13 @@ public interface ReplaceEmptyCluster
     }
 
     void newCenter(
-            List<T> centers, Context context, int maxIterations, P points, List<P> points2,
-            Continuation<T> continuation) throws Throwable;
+            List<Vector> centers, Context context, int maxIterations, P points, List<P> points2,
+            Continuation<Vector> continuation) throws Throwable;
 
-    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
-    ReplaceEmptyCluster<D, M, S, P, T> random() {
+    static <P extends Points<P>> ReplaceEmptyCluster<P> random() {
         return (centers, context, maxIterations, points, points2, continuation)->{
             for (int ii=maxIterations; 0<ii; --ii) {
-                T point=points.get(context.random().nextInt(points.size()));
+                Vector point=points.get(context.random().nextInt(points.size()));
                 if (!centers.contains(point)) {
                     continuation.completed(point);
                     return;

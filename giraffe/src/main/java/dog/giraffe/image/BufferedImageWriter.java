@@ -2,7 +2,7 @@ package dog.giraffe.image;
 
 import dog.giraffe.Context;
 import dog.giraffe.Pair;
-import dog.giraffe.points.UnsignedByteArrayL2Points;
+import dog.giraffe.points.UnsignedByteArrayPoints;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import java.awt.image.BufferedImage;
@@ -52,7 +52,7 @@ public class BufferedImageWriter implements ImageWriter {
 
         @Override
         public void setNormalized(int dimension, int xx, double value) {
-            data[dimensions*(yy*width+xx)+dimension]=UnsignedByteArrayL2Points.denormalize(value);
+            data[dimensions*(yy*width+xx)+dimension]=UnsignedByteArrayPoints.denormalize(value);
         }
 
         @Override

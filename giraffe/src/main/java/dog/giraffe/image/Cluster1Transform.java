@@ -3,12 +3,12 @@ package dog.giraffe.image;
 import dog.giraffe.ClusterColors;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
-import dog.giraffe.Distance;
 import dog.giraffe.Lists;
 import dog.giraffe.Sum;
-import dog.giraffe.Vector;
+import dog.giraffe.points.Distance;
 import dog.giraffe.points.KDTree;
-import dog.giraffe.points.L2Points;
+import dog.giraffe.points.MutablePoints;
+import dog.giraffe.points.Vector;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import java.util.List;
@@ -17,14 +17,14 @@ import java.util.function.Function;
 
 public class Cluster1Transform implements ImageTransform {
     public interface Strategy {
-        <P extends L2Points.Mutable<P>> void cluster(
-                Context context, P points, Continuation<Clusters<Vector>> continuation) throws Throwable;
+        <P extends MutablePoints<P>> void cluster(
+                Context context, KDTree<P> points, Continuation<Clusters> continuation) throws Throwable;
     }
 
-    private class State<P extends L2Points.Mutable<P>, Q extends L2Points.Mutable<Q>> {
+    private class State<P extends MutablePoints<P>, Q extends MutablePoints<Q>> {
         private List<Vector> centers;
         private Map<Vector, Vector> colorMap;
-        private Clusters<Vector> clusters;
+        private Clusters clusters;
         private final ImageReader<P> imageReader;
         private final Projection1<Q> projection;
 
@@ -43,7 +43,7 @@ public class Cluster1Transform implements ImageTransform {
             }
             strategy.cluster(
                     context,
-                    points,
+                    KDTree.create(4096, points, context.sum()),
                     Continuations.map(
                             (result, continuation2)->{
                                 clusters=result;
@@ -54,10 +54,10 @@ public class Cluster1Transform implements ImageTransform {
                             continuation));
         }
 
-        public void write(L2Points.Mutable<?> inputLine, ImageWriter.Line outputLine, int dimension) {
+        public void write(MutablePoints<?> inputLine, ImageWriter.Line outputLine, int dimension) {
             Vector point=new Vector(projection.dimensions());
             Function<Vector, Vector> nearestCenter=(16>centers.size())
-                    ?Distance.nearestCenter(centers, L2Points.DISTANCE)
+                    ?Distance.nearestCenter(centers)
                     :KDTree.nearestCenter(centers, Sum.PREFERRED);
             for (int xx=0; inputLine.size()>xx; ++xx) {
                 projection.project(inputLine, xx, point);
@@ -87,25 +87,25 @@ public class Cluster1Transform implements ImageTransform {
     }
 
     @Override
-    public <P extends L2Points.Mutable<P>> void prepare(ImageReader<P> imageReader) {
+    public <P extends MutablePoints<P>> void prepare(ImageReader<P> imageReader) {
         projection.create(
                 imageReader,
                 new Projection1.Factory.Callback() {
                     @Override
-                    public <R extends L2Points.Mutable<R>> void projection(Projection1<R> projection) {
+                    public <R extends MutablePoints<R>> void projection(Projection1<R> projection) {
                         state=new State<>(imageReader, projection);
                     }
                 });
     }
 
     @Override
-    public <P extends L2Points.Mutable<P>> void prepare(
+    public <P extends MutablePoints<P>> void prepare(
             Context context, ImageReader<P> imageReader, Continuation<Void> continuation) throws Throwable {
         state.prepare(context, continuation);
     }
 
     @Override
-    public <P extends L2Points.Mutable<P>> void prepare(Context context, ImageReader<P> imageReader, P inputLine) {
+    public <P extends MutablePoints<P>> void prepare(Context context, ImageReader<P> imageReader, P inputLine) {
     }
 
     @Override
@@ -114,7 +114,7 @@ public class Cluster1Transform implements ImageTransform {
     }
 
     @Override
-    public <P extends L2Points.Mutable<P>> void write(
+    public <P extends MutablePoints<P>> void write(
             Context context, P inputLine, ImageWriter.Line outputLine, int dimension) {
         state.write(inputLine, outputLine, dimension);
     }

@@ -1,8 +1,6 @@
 package dog.giraffe.points;
 
-import dog.giraffe.Distance;
 import dog.giraffe.Sum;
-import dog.giraffe.Vector;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +33,7 @@ public class KDTreeTest {
             tree.classify(
                     Function.identity(),
                     centers,
-                    new Points.Classification<Vector, L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<VectorList>, Vector>() {
+                    new Points.Classification<Vector, KDTree<VectorList>>() {
                         @Override
                         public void nearestCenter(Vector center, KDTree<VectorList> points) {
                             for (int ii=0; points.size()>ii; ++ii) {
@@ -46,7 +44,7 @@ public class KDTreeTest {
                         @Override
                         public void nearestCenter(Vector center, KDTree<VectorList> points, int index) {
                             Vector point=points.get(index);
-                            Vector center2=Distance.nearestCenter(centers, tree.distance(), point);
+                            Vector center2=Distance.nearestCenter(centers, point);
                             if (!center.equals(center2)) {
                                 fail();
                             }

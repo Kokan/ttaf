@@ -1,16 +1,17 @@
 package dog.giraffe.image;
 
-import dog.giraffe.Vector;
-import dog.giraffe.points.FloatArrayL2Points;
-import dog.giraffe.points.L2Points;
+import dog.giraffe.points.FloatArrayPoints;
+import dog.giraffe.points.MutablePoints;
+import dog.giraffe.points.Points;
+import dog.giraffe.points.Vector;
 
-public interface Projection1<P extends L2Points<P>> {
+public interface Projection1<P extends Points<P>> {
     interface Factory {
         interface Callback {
-            <P extends L2Points.Mutable<P>> void projection(Projection1<P> projection);
+            <P extends MutablePoints<P>> void projection(Projection1<P> projection);
         }
 
-        <P extends L2Points.Mutable<P>>void create(ImageReader<P> imageReader, Callback callback);
+        <P extends MutablePoints<P>>void create(ImageReader<P> imageReader, Callback callback);
     }
 
     P createPoints(int expectedSize);
@@ -20,11 +21,11 @@ public interface Projection1<P extends L2Points<P>> {
     static Factory multidimensionalHue(int... selectedDimensions) {
         return new Factory() {
             @Override
-            public <P extends L2Points.Mutable<P>> void create(ImageReader<P> imageReader, Callback callback) {
-                callback.projection(new Projection1<FloatArrayL2Points>() {
+            public <P extends MutablePoints<P>> void create(ImageReader<P> imageReader, Callback callback) {
+                callback.projection(new Projection1<FloatArrayPoints>() {
                     @Override
-                    public FloatArrayL2Points createPoints(int expectedSize) {
-                        return new FloatArrayL2Points(selectedDimensions.length, expectedSize);
+                    public FloatArrayPoints createPoints(int expectedSize) {
+                        return new FloatArrayPoints(selectedDimensions.length, expectedSize);
                     }
 
                     @Override
@@ -33,7 +34,7 @@ public interface Projection1<P extends L2Points<P>> {
                     }
 
                     @Override
-                    public void project(L2Points<?> input, FloatArrayL2Points output) {
+                    public void project(Points<?> input, FloatArrayPoints output) {
                         Vector vector=new Vector(selectedDimensions.length);
                         for (int ii=0; input.size()>ii; ++ii) {
                             project(input, ii, vector);
@@ -42,7 +43,7 @@ public interface Projection1<P extends L2Points<P>> {
                     }
 
                     @Override
-                    public void project(L2Points<?> input, int index, Vector output) {
+                    public void project(Points<?> input, int index, Vector output) {
                         double dotProduct=0.0;
                         for (int dd=0; selectedDimensions.length>dd; ++dd) {
                             double cc=(input.get(selectedDimensions[dd], index)-input.minValue())
@@ -63,11 +64,11 @@ public interface Projection1<P extends L2Points<P>> {
     static Factory multidimensionalHueNormalized(double maxZero, int... selectedDimensions) {
         return new Factory() {
             @Override
-            public <P extends L2Points.Mutable<P>> void create(ImageReader<P> imageReader, Callback callback) {
-                callback.projection(new Projection1<FloatArrayL2Points>() {
+            public <P extends MutablePoints<P>> void create(ImageReader<P> imageReader, Callback callback) {
+                callback.projection(new Projection1<FloatArrayPoints>() {
                     @Override
-                    public FloatArrayL2Points createPoints(int expectedSize) {
-                        return new FloatArrayL2Points(selectedDimensions.length, expectedSize);
+                    public FloatArrayPoints createPoints(int expectedSize) {
+                        return new FloatArrayPoints(selectedDimensions.length, expectedSize);
                     }
 
                     @Override
@@ -76,7 +77,7 @@ public interface Projection1<P extends L2Points<P>> {
                     }
 
                     @Override
-                    public void project(L2Points<?> input, FloatArrayL2Points output) {
+                    public void project(Points<?> input, FloatArrayPoints output) {
                         Vector vector=new Vector(selectedDimensions.length);
                         for (int ii=0; input.size()>ii; ++ii) {
                             project(input, ii, vector);
@@ -85,7 +86,7 @@ public interface Projection1<P extends L2Points<P>> {
                     }
 
                     @Override
-                    public void project(L2Points<?> input, int index, Vector output) {
+                    public void project(Points<?> input, int index, Vector output) {
                         double dotProduct=0.0;
                         for (int dd=0; selectedDimensions.length>dd; ++dd) {
                             double cc=(input.get(selectedDimensions[dd], index)-input.minValue())
@@ -117,14 +118,14 @@ public interface Projection1<P extends L2Points<P>> {
         };
     }
 
-    void project(L2Points<?> input, P output);
+    void project(Points<?> input, P output);
 
-    void project(L2Points<?> input, int index, Vector output);
+    void project(Points<?> input, int index, Vector output);
 
     static Factory select(int... selectedDimensions) {
         return new Factory() {
             @Override
-            public <P extends L2Points.Mutable<P>> void create(ImageReader<P> imageReader, Callback callback) {
+            public <P extends MutablePoints<P>> void create(ImageReader<P> imageReader, Callback callback) {
                 callback.projection(new Projection1<P>() {
                     @Override
                     public P createPoints(int expectedSize) {
@@ -137,7 +138,7 @@ public interface Projection1<P extends L2Points<P>> {
                     }
 
                     @Override
-                    public void project(L2Points<?> input, P output) {
+                    public void project(Points<?> input, P output) {
                         Vector vector=new Vector(selectedDimensions.length);
                         for (int ii=0; input.size()>ii; ++ii) {
                             project(input, ii, vector);
@@ -146,7 +147,7 @@ public interface Projection1<P extends L2Points<P>> {
                     }
 
                     @Override
-                    public void project(L2Points<?> input, int index, Vector output) {
+                    public void project(Points<?> input, int index, Vector output) {
                         for (int dd=0; selectedDimensions.length>dd; ++dd) {
                             output.coordinate(dd, input.get(selectedDimensions[dd], index));
                         }

@@ -1,9 +1,9 @@
 package dog.giraffe.image;
 
 import dog.giraffe.Context;
-import dog.giraffe.points.L2Points;
-import dog.giraffe.points.UnsignedByteArrayL2Points;
-import dog.giraffe.points.UnsignedShortArrayL2Points;
+import dog.giraffe.points.MutablePoints;
+import dog.giraffe.points.UnsignedByteArrayPoints;
+import dog.giraffe.points.UnsignedShortArrayPoints;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
@@ -13,7 +13,7 @@ import java.awt.image.Raster;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
 
-public abstract class BufferedImageReader<P extends L2Points.Mutable<P>> implements ImageReader<P> {
+public abstract class BufferedImageReader<P extends MutablePoints<P>> implements ImageReader<P> {
     public static class Factory implements ImageReader.Factory {
         private final AsyncSupplier<BufferedImage> supplier;
 
@@ -61,10 +61,10 @@ public abstract class BufferedImageReader<P extends L2Points.Mutable<P>> impleme
             }
             readProcess.run(
                     context,
-                    new BufferedImageReader<>(height, new UnsignedByteArrayL2Points(data, dimensions), width) {
+                    new BufferedImageReader<>(height, new UnsignedByteArrayPoints(data, dimensions), width) {
                         @Override
-                        public UnsignedByteArrayL2Points createPoints(int dimensions, int expectedSize) {
-                            return new UnsignedByteArrayL2Points(dimensions, expectedSize);
+                        public UnsignedByteArrayPoints createPoints(int dimensions, int expectedSize) {
+                            return new UnsignedByteArrayPoints(dimensions, expectedSize);
                         }
                     },
                     continuation);
@@ -87,10 +87,10 @@ public abstract class BufferedImageReader<P extends L2Points.Mutable<P>> impleme
             }
             readProcess.run(
                     context,
-                    new BufferedImageReader<>(height, new UnsignedShortArrayL2Points(data, dimensions), width) {
+                    new BufferedImageReader<>(height, new UnsignedShortArrayPoints(data, dimensions), width) {
                         @Override
-                        public UnsignedShortArrayL2Points createPoints(int dimensions, int expectedSize) {
-                            return new UnsignedShortArrayL2Points(dimensions, expectedSize);
+                        public UnsignedShortArrayPoints createPoints(int dimensions, int expectedSize) {
+                            return new UnsignedShortArrayPoints(dimensions, expectedSize);
                         }
                     },
                     continuation);

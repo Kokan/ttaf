@@ -1,35 +1,31 @@
 package dog.giraffe.isodata;
 
-import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.CannotSelectInitialCentersException;
-import dog.giraffe.InitialCenters;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
-import dog.giraffe.points.L2Points;
-import dog.giraffe.Distance;
-import dog.giraffe.Vector;
+import dog.giraffe.InitialCenters;
+import dog.giraffe.MaxComponent;
+import dog.giraffe.MeanDouble;
+import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
-import dog.giraffe.VectorMean;
+import dog.giraffe.points.Distance;
+import dog.giraffe.points.Mean;
 import dog.giraffe.points.Points;
-import dog.giraffe.threads.AsyncFunction;
+import dog.giraffe.points.Variance;
+import dog.giraffe.points.Vector;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
-import dog.giraffe.VectorStdDeviation;
-import dog.giraffe.MaxComponent;
-import dog.giraffe.MeanDouble;
-import java.util.HashMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.function.Function;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
-public class Isodata<P extends L2Points<P>> {
+public class Isodata<P extends Points<P>> {
     public static class Clusterss {
       public final List<Cluster> clusters;
       public final List<Vector> points;
@@ -85,10 +81,10 @@ public class Isodata<P extends L2Points<P>> {
     private final Context context;
     private final double errorLimit;
     private final int maxIterations;
-    private final List<List<L2Points.Mean>> means;
+    private final List<List<Mean>> means;
     private final P points;
     private final List<P> points2;
-    private final ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> replaceEmptyCluster;
+    private final ReplaceEmptyCluster<P> replaceEmptyCluster;
     private final List<Sum> sums;
 
     public static class Comp implements MaxComponent<Double, Vector> {
@@ -131,10 +127,10 @@ public class Isodata<P extends L2Points<P>> {
             Context context,
             double errorLimit,
             int maxIterations,
-            List<List<L2Points.Mean>> means,
+            List<List<Mean>> means,
             P points,
             List<P> points2,
-            ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> replaceEmptyCluster,
+            ReplaceEmptyCluster<P> replaceEmptyCluster,
             List<Sum> sums){
         this.N_c=N_c;
         this.K=K;
@@ -152,17 +148,17 @@ public class Isodata<P extends L2Points<P>> {
         this.sums=sums;
     }
 
-    public static <P extends L2Points<P>>
+    public static <P extends Points<P>>
     void cluster(
             int N_c,
             int K,
             Context context,
-            Continuation<Clusters<Vector>> continuation,
+            Continuation<Clusters> continuation,
             double errorLimit,
-            InitialCenters<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> initialCenters,
+            InitialCenters<P> initialCenters,
             int maxIterations,
             P points,
-            ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> replaceEmptyCluster) throws Throwable {
+            ReplaceEmptyCluster<P> replaceEmptyCluster) throws Throwable {
         if (0>=N_c) {
             continuation.failed(new IllegalStateException(Integer.toString(N_c)));
             return;
@@ -174,10 +170,10 @@ public class Isodata<P extends L2Points<P>> {
         }
         List<Vector> pointss = new ArrayList<>(points.size());
         List<P> points2=points.split(context.executor().threads());
-        List<List<L2Points.Mean>> means=new ArrayList<>(points2.size());
+        List<List<Mean>> means=new ArrayList<>(points2.size());
         List<Sum> sums=new ArrayList<>(points2.size());
         for (P points3: points2) {
-            List<L2Points.Mean> means2=new ArrayList<>(N_c);
+            List<Mean> means2=new ArrayList<>(N_c);
             for (int ii=N_c; 0<ii; --ii) {
                 means2.add(points.mean().create((means.isEmpty()?points:points3).size(), context.sum()));
             }
@@ -422,7 +418,7 @@ public class Isodata<P extends L2Points<P>> {
         List<AsyncSupplier<Map.Entry<Vector, Vector>>> forks=new ArrayList<>(clusters.size());
         for (Cluster cluster : clusters) {
             forks.add((continuation2)->{
-                VectorMean<L2Points.Mean,Vector> mean=this.points.mean().create(cluster.points.size(), context.sum());
+                Mean mean=this.points.mean().create(cluster.points.size(), context.sum());
                 for (Vector point : cluster.points) {
                     mean.add(point);
                 }
@@ -507,11 +503,11 @@ public class Isodata<P extends L2Points<P>> {
         List<AsyncSupplier<Void>> forks=new ArrayList<>(clusters.size());
         for (Cluster cluster : clusters) {
             forks.add((continuation2)->{
-                VectorStdDeviation<L2Points.StdDeviation,Vector> dev = this.points.dev().create(cluster.center, 0, context.sum());
+                Variance dev = this.points.variance().create(16, cluster.center, context.sum());
                 for (Vector point: cluster.points) {
                     dev.add(point);
                 }
-                cluster.std_dev = dev.deviation();
+                cluster.std_dev = dev.variance();
                 continuation2.completed(null);
             });
         }
@@ -525,7 +521,7 @@ public class Isodata<P extends L2Points<P>> {
                 context.executor());
     }
 
-    public static <Vector> Vector nearestCenter(Iterable<Vector> centers, Distance<Vector> distance, Vector point) {
+    public static Vector nearestCenter(Iterable<Vector> centers, Distance distance, Vector point) {
         Vector bestCenter=null;
         double bestDistance=Double.POSITIVE_INFINITY;
         for (Vector cc: centers) {

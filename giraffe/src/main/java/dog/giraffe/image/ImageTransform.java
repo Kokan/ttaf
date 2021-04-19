@@ -1,7 +1,7 @@
 package dog.giraffe.image;
 
 import dog.giraffe.Context;
-import dog.giraffe.points.L2Points;
+import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
@@ -20,17 +20,17 @@ public interface ImageTransform {
             }
 
             @Override
-            public <P extends L2Points.Mutable<P>> void prepare(ImageReader<P> imageReader) {
+            public <P extends MutablePoints<P>> void prepare(ImageReader<P> imageReader) {
             }
 
             @Override
-            public <P extends L2Points.Mutable<P>> void prepare(
+            public <P extends MutablePoints<P>> void prepare(
                     Context context, ImageReader<P> imageReader, Continuation<Void> continuation) throws Throwable {
                 continuation.completed(null);
             }
 
             @Override
-            public <P extends L2Points.Mutable<P>> void prepare(
+            public <P extends MutablePoints<P>> void prepare(
                     Context context, ImageReader<P> imageReader, P inputLine) {
             }
 
@@ -40,21 +40,21 @@ public interface ImageTransform {
             }
 
             @Override
-            public <P extends L2Points.Mutable<P>> void write(
+            public <P extends MutablePoints<P>> void write(
                     Context context, P inputLine, ImageWriter.Line outputLine, int dimension) {
             }
         };
     }
 
-    <P extends L2Points.Mutable<P>> void prepare(ImageReader<P> imageReader) throws Throwable;
+    <P extends MutablePoints<P>> void prepare(ImageReader<P> imageReader) throws Throwable;
 
-    <P extends L2Points.Mutable<P>>
+    <P extends MutablePoints<P>>
     void prepare(Context context, ImageReader<P> imageReader, Continuation<Void> continuation) throws Throwable;
 
     /**
      * Multiple lines may run in parallel.
      */
-    <P extends L2Points.Mutable<P>> void prepare(
+    <P extends MutablePoints<P>> void prepare(
             Context context, ImageReader<P> imageReader, P inputLine) throws Throwable;
 
     boolean prepareLines();
@@ -65,7 +65,7 @@ public interface ImageTransform {
         reader.run(
                 context,
                 new ImageReader.ReadProcess<>() {
-                    private <P extends L2Points.Mutable<P>> void prepare(
+                    private <P extends MutablePoints<P>> void prepare(
                             Context context, ImageReader<P> imageReader, int index, Continuation<T> continuation)
                             throws Throwable {
                         if (transforms.size()<=index) {
@@ -97,7 +97,7 @@ public interface ImageTransform {
                         }
                     }
 
-                    private <P extends L2Points.Mutable<P>> void prepareLines(
+                    private <P extends MutablePoints<P>> void prepareLines(
                             Context context, ImageReader<P> imageReader, Continuation<T> continuation)
                             throws Throwable {
                         int threads=Math.max(1, Math.min(context.executor().threads(), imageReader.height()));
@@ -129,7 +129,7 @@ public interface ImageTransform {
                     }
 
                     @Override
-                    public <P extends L2Points.Mutable<P>> void run(
+                    public <P extends MutablePoints<P>> void run(
                             Context context, ImageReader<P> imageReader, Continuation<T> continuation)
                             throws Throwable {
                         boolean prepareLines=false;
@@ -147,7 +147,7 @@ public interface ImageTransform {
                         }
                     }
 
-                    private <P extends L2Points.Mutable<P>> void write(
+                    private <P extends MutablePoints<P>> void write(
                             Context context, ImageReader<P> imageReader, ImageWriter imageWriter,
                             Continuation<Void> continuation) throws Throwable {
                         int threads=Math.max(1, Math.min(context.executor().threads(), imageReader.height()));
@@ -185,6 +185,6 @@ public interface ImageTransform {
     /**
      * Multiple lines may run in parallel.
      */
-    <P extends L2Points.Mutable<P>>
+    <P extends MutablePoints<P>>
     void write(Context context, P inputLine, ImageWriter.Line outputLine, int dimension) throws Throwable;
 }

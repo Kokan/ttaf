@@ -1,7 +1,7 @@
 package dog.giraffe;
 
 public class MeanDouble {
-    public class Factory {
+    public static class Factory {
         private final Sum.Factory sumFactory;
 
         public Factory(Sum.Factory sumFactory) {

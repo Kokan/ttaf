@@ -1,9 +1,9 @@
 package dog.giraffe.image;
 
 import dog.giraffe.Context;
-import dog.giraffe.points.L2Points;
-import dog.giraffe.points.UnsignedByteArrayL2Points;
-import dog.giraffe.points.UnsignedShortArrayL2Points;
+import dog.giraffe.points.MutablePoints;
+import dog.giraffe.points.UnsignedByteArrayPoints;
+import dog.giraffe.points.UnsignedShortArrayPoints;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
@@ -17,7 +17,7 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
 
-public abstract class FileImageReader<P extends L2Points.Mutable<P>> implements ImageReader<P> {
+public abstract class FileImageReader<P extends MutablePoints<P>> implements ImageReader<P> {
     public static class Factory implements ImageReader.Factory {
         private final Path path;
 
@@ -82,34 +82,34 @@ public abstract class FileImageReader<P extends L2Points.Mutable<P>> implements 
         }
     }
 
-    private static class UnsignedByte extends FileImageReader<UnsignedByteArrayL2Points> {
+    private static class UnsignedByte extends FileImageReader<UnsignedByteArrayPoints> {
         public UnsignedByte(javax.imageio.ImageReader imageReader) throws Throwable {
             super(imageReader);
         }
 
         @Override
-        public UnsignedByteArrayL2Points createPoints(int dimensions, int expectedSize) {
-            return new UnsignedByteArrayL2Points(dimensions, expectedSize);
+        public UnsignedByteArrayPoints createPoints(int dimensions, int expectedSize) {
+            return new UnsignedByteArrayPoints(dimensions, expectedSize);
         }
 
         @Override
-        protected void set(UnsignedByteArrayL2Points points, int dimension, int index, int value) {
+        protected void set(UnsignedByteArrayPoints points, int dimension, int index, int value) {
             points.set(dimension, index, (byte)(value&0xff));
         }
     }
 
-    private static class UnsignedShort extends FileImageReader<UnsignedShortArrayL2Points> {
+    private static class UnsignedShort extends FileImageReader<UnsignedShortArrayPoints> {
         public UnsignedShort(javax.imageio.ImageReader imageReader) throws Throwable {
             super(imageReader);
         }
 
         @Override
-        public UnsignedShortArrayL2Points createPoints(int dimensions, int expectedSize) {
-            return new UnsignedShortArrayL2Points(dimensions, expectedSize);
+        public UnsignedShortArrayPoints createPoints(int dimensions, int expectedSize) {
+            return new UnsignedShortArrayPoints(dimensions, expectedSize);
         }
 
         @Override
-        protected void set(UnsignedShortArrayL2Points points, int dimension, int index, int value) {
+        protected void set(UnsignedShortArrayPoints points, int dimension, int index, int value) {
             points.set(dimension, index, (short)(value&0xffff));
         }
     }

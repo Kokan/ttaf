@@ -5,7 +5,6 @@ import dog.giraffe.InitialCenters;
 import dog.giraffe.QuickSort;
 import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
-import dog.giraffe.Vector;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +17,7 @@ import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 
-public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDTree<P>> {
+public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P>> {
     private static class NearestCenter {
         public Vector center;
         public double distance;
@@ -28,7 +27,7 @@ public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDT
     private static final DoubleBinaryOperator MAX=Math::max;
     private static final DoubleBinaryOperator MIN=Math::min;
 
-    private static class Branch<P extends L2Points.Mutable<P>> extends KDTree<P> {
+    private static class Branch<P extends MutablePoints<P>> extends KDTree<P> {
         private final KDTree<P> left;
         private final double maxValue;
         private final double minValue;
@@ -50,15 +49,14 @@ public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDT
 
         @Override
         public <C> void classify(
-                Function<C, Vector> centerPoint, List<C> centers,
-                Classification<C, Distance, Mean, StdDeviation, KDTree<P>, Vector> classification) {
+                Function<C, Vector> centerPoint, List<C> centers, Classification<C, KDTree<P>> classification) {
             centers=filterCenters(centerPoint, centers);
             left.classify(centerPoint, centers, classification);
             right.classify(centerPoint, centers, classification);
         }
 
         @Override
-        public void forEach(ForEach<Distance, Mean, StdDeviation, KDTree<P>, Vector> forEach) {
+        public void forEach(ForEach<KDTree<P>> forEach) {
             left.forEach(forEach);
             right.forEach(forEach);
         }
@@ -145,7 +143,7 @@ public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDT
         }
     }
 
-    private static class Leaf<P extends L2Points.Mutable<P>> extends KDTree<P> {
+    private static class Leaf<P extends MutablePoints<P>> extends KDTree<P> {
         private final P points;
 
         public Leaf(P points, List<Sum> sums) {
@@ -161,8 +159,7 @@ public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDT
 
         @Override
         public <C> void classify(
-                Function<C, Vector> centerPoint, List<C> centers,
-                Classification<C, Distance, Mean, StdDeviation, KDTree<P>, Vector> classification) {
+                Function<C, Vector> centerPoint, List<C> centers, Classification<C, KDTree<P>> classification) {
             centers=filterCenters(centerPoint, centers);
             if (1==centers.size()) {
                 classification.nearestCenter(centers.get(0), this);
@@ -198,7 +195,7 @@ public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDT
             double nd=Double.POSITIVE_INFINITY;
             for (int oo=0, ss=size; 0<ss; ++oo, --ss) {
                 Vector cc=points.get(oo);
-                double dd=L2Points.DISTANCE.distance(cc, point);
+                double dd=Distance.DISTANCE.distance(cc, point);
                 if (nd>dd) {
                     nc=cc;
                     nd=dd;
@@ -244,7 +241,7 @@ public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDT
         mean.addAll(size(), sum);
     }
 
-    public static <P extends L2Points.Mutable<P>> KDTree<P> create(
+    public static <P extends MutablePoints<P>> KDTree<P> create(
             int maxLeafSize, P points, Sum.Factory sum) {
         List<Sum> sums=new ArrayList<>(points.dimensions());
         for (int dd=0; points.dimensions()>dd; ++dd) {
@@ -253,7 +250,7 @@ public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDT
         return create(maxLeafSize, points, sums);
     }
 
-    private static <P extends L2Points.Mutable<P>> KDTree<P> create(
+    private static <P extends MutablePoints<P>> KDTree<P> create(
             int maxLeafSize, P points, List<Sum> sums) {
         if (1>maxLeafSize) {
             throw new IllegalArgumentException(Integer.toString(maxLeafSize));
@@ -306,9 +303,8 @@ public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDT
         return Collections.unmodifiableList(centers2);
     }
 
-    public static <P extends L2Points.Mutable<P>>
-    InitialCenters<L2Points.Distance, L2Points.Mean ,L2Points.StdDeviation, KDTree<P>, Vector> initialCenters(boolean notNear) {
-        ReplaceEmptyCluster<Distance, Mean, StdDeviation, KDTree<P>, Vector> fallback=ReplaceEmptyCluster.farthest(notNear);
+    public static <P extends MutablePoints<P>> InitialCenters<KDTree<P>> initialCenters(boolean notNear) {
+        ReplaceEmptyCluster<KDTree<P>> fallback=ReplaceEmptyCluster.farthest(notNear);
         return (clusters, context, maxIterations, points, points2, continuation)->{
             Deque<KDTree<P>> deque=new ArrayDeque<>(2);
             PriorityQueue<KDTree<P>> queue=new PriorityQueue<>(

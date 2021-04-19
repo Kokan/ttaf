@@ -1,19 +1,19 @@
 package dog.giraffe.image;
 
 import dog.giraffe.Context;
-import dog.giraffe.points.L2Points;
+import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 
 /**
  * Implementations must be thread-safe.
  */
-public interface ImageReader<P extends L2Points.Mutable<P>> {
+public interface ImageReader<P extends MutablePoints<P>> {
     interface Factory {
         <T> void run(Context context, ReadProcess<T> readProcess, Continuation<T> continuation) throws Throwable;
     }
 
     interface ReadProcess<T> {
-        <P extends L2Points.Mutable<P>> void run(
+        <P extends MutablePoints<P>> void run(
                 Context context, ImageReader<P> imageReader, Continuation<T> continuation) throws Throwable;
     }
 

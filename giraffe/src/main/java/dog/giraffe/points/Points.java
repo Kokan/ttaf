@@ -1,49 +1,62 @@
 package dog.giraffe.points;
 
-import dog.giraffe.Distance;
 import dog.giraffe.Sum;
-import dog.giraffe.VectorMean;
-import dog.giraffe.VectorStdDeviation;
 import java.util.List;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 
-public interface Points<D extends Distance<T>,
-                        M extends VectorMean<M, T>,
-                        S extends VectorStdDeviation<S, T>,
-                        P extends Points<D, M, S, P, T>,
-                        T> {
-    interface Classification<C, D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S,T>, P extends Points<D, M, S, P, T>, T> {
+public abstract class Points<P extends Points<P>> {
+    public interface Classification<C, P extends Points<P>> {
         void nearestCenter(C center, P points);
 
-        void nearestCenter(C center, P points, int index );
+        void nearestCenter(C center, P points, int index);
     }
 
-    interface ForEach<D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S,T>, P extends Points<D, M, S, P, T>, T> {
+    public interface ForEach<P extends Points<P>> {
         void point(P points, int index );
     }
 
-    default void addAllDistanceTo(T center, Sum sum) {
+    protected final int dimensions;
+    protected final Mean.Factory mean;
+    protected final Variance.Factory variance;
+
+    public Points(int dimensions) {
+        if (0>dimensions) {
+            throw new IllegalArgumentException(Integer.toString(dimensions));
+        }
+        this.dimensions=dimensions;
+        this.mean=new Mean.Factory(dimensions);
+        this.variance=new Variance.Factory(dimensions);
+    }
+
+    public void addAllDistanceTo(Vector center, Sum sum) {
         for (int ii=0; size()>ii; ++ii) {
             addDistanceTo(center, ii, sum);
         }
     }
 
-    default void addAllTo(M mean) {
+    public void addAllTo(Mean mean) {
         for (int ii=0; size()>ii; ++ii) {
             addTo(ii, mean);
         }
     }
 
-    default void addDistanceTo(T center, int index, Sum sum) {
-        distance().addDistanceTo(center, get(index), sum);
+    public void addDistanceTo(Vector center, int index, Sum sum) {
+        for (int dd=0; dimensions>dd; ++dd) {
+            double di=center.coordinate(dd)-get(dd, index);
+            sum.add(di*di);
+        }
     }
 
-    default void addTo(int index, M mean) {
-        mean.add(get(index));
+    public void addTo(int index, Mean mean) {
+        ++mean.addends;
+        for (int dd=0; dimensions>dd; ++dd) {
+            mean.sums.get(dd).add(get(dd, index));
+        }
     }
 
-    default <C> void classify(
-            Function<C, T> centerPoint, List<C> centers, Classification<C, D, M, S, P, T> classification) {
+    public <C> void classify(Function<C, Vector> centerPoint, List<C> centers, Classification<C, P> classification) {
         if (centers.isEmpty()) {
             throw new IllegalArgumentException();
         }
@@ -61,27 +74,105 @@ public interface Points<D extends Distance<T>,
         }
     }
 
-    D distance();
-    
-    default double distance(T center, int index) {
-        return distance().distance(center, get(index));
+    public int dimensions() {
+        return dimensions;
     }
 
-    T get(int index);
+    public Distance distance() {
+        return Distance.DISTANCE;
+    }
 
-    default void forEach(ForEach<D, M, S, P, T> forEach) {
+    public double distance(Vector center, int index) {
+        double distance=0.0;
+        for (int dd=0; dimensions>dd; ++dd) {
+            double di=center.coordinate(dd)-get(dd, index);
+            distance+=di*di;
+        }
+        return distance;
+    }
+
+    public Vector get(int index) {
+        Vector point=new Vector(dimensions);
+        for (int dd=0; dimensions()>dd; ++dd) {
+            point.coordinate(dd, get(dd, index));
+        }
+        return point;
+    }
+
+    public abstract double get(int dimension, int index);
+
+    public abstract double getNormalized(int dimension, int index);
+
+    public void forEach(ForEach<P> forEach) {
         for (int ii=0; size()>ii; ++ii) {
             forEach.point(self(), ii);
         }
     }
 
-    VectorMean.Factory<M, T> mean();
+    public abstract double maxValue();
 
-    VectorStdDeviation.Factory<S, T> dev();
-    
-    P self();
+    public Mean.Factory mean() {
+        return mean;
+    }
 
-    int size();
+    public abstract double minValue();
 
-    List<P> split(int parts);
+    public Vector perform(double defaultValue, int offset, DoubleBinaryOperator operator, int size) {
+        Vector result=new Vector(dimensions);
+        for (int dd=0; dimensions>dd; ++dd) {
+            result.coordinate(dd, defaultValue);
+        }
+        for (; 0<size; ++offset, --size) {
+            for (int dd=0; dimensions>dd; ++dd) {
+                result.coordinate(dd, operator.applyAsDouble(result.coordinate(dd), get(dd, offset)));
+            }
+        }
+        return result;
+    }
+
+    public abstract P self();
+
+    public abstract int size();
+
+    public abstract List<P> split(int parts);
+
+    public Vector sum(int offset, DoubleUnaryOperator operator, int size, List<Sum> sums) {
+        for (int dd=0; dimensions>dd; ++dd) {
+            sums.get(dd).clear();
+        }
+        Vector result=new Vector(dimensions);
+        for (; 0<size; ++offset, --size) {
+            for (int dd=0; dimensions>dd; ++dd) {
+                sums.get(dd).add(operator.applyAsDouble(get(dd, offset)));
+            }
+        }
+        for (int dd=0; dimensions>dd; ++dd) {
+            result.coordinate(dd, sums.get(dd).sum());
+        }
+        return result;
+    }
+
+    public Variance.Factory variance() {
+        return variance;
+    }
+
+    public int widestDimension() {
+        double widestDifference=Double.NEGATIVE_INFINITY;
+        int widestDimension=0;
+        for (int dd=0; dimensions>dd; ++dd) {
+            double max=Double.NEGATIVE_INFINITY;
+            double min=Double.POSITIVE_INFINITY;
+            for (int ii=0; size()>ii; ++ii) {
+                double value=get(dd, ii);
+                max=Math.max(max, value);
+                min=Math.min(min, value);
+            }
+            double di=max-min;
+            if (di>widestDifference) {
+                widestDifference=di;
+                widestDimension=dd;
+            }
+        }
+        return widestDimension;
+    }
 }

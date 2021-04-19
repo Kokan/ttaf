@@ -1,9 +1,6 @@
 package dog.giraffe;
 
-import dog.giraffe.EmptyClusterException;
-import dog.giraffe.InitialCenters;
 import dog.giraffe.kmeans.KMeans;
-import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.points.Points;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Block;
@@ -19,10 +16,8 @@ import java.util.TreeMap;
 import java.util.function.Function;
 
 @FunctionalInterface
-public interface ClusteringStrategy
-        <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T> {
-    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
-    ClusteringStrategy<D, M, S, P, T> best(List<ClusteringStrategy<D, M, S, P, T>> strategies) {
+public interface ClusteringStrategy<P extends Points<P>> {
+    static <P extends Points<P>> ClusteringStrategy<P> best(List<ClusteringStrategy<P>> strategies) {
         if (strategies.isEmpty()) {
             throw new IllegalArgumentException("empty strategies");
         }
@@ -30,14 +25,14 @@ public interface ClusteringStrategy
             return strategies.get(0);
         }
         return (context, points, continuation)->{
-            List<AsyncSupplier<Clusters<T>>> forks=new ArrayList<>(strategies.size());
-            for (ClusteringStrategy<D, M, S, P, T> strategy: strategies) {
+            List<AsyncSupplier<Clusters>> forks=new ArrayList<>(strategies.size());
+            for (ClusteringStrategy<P> strategy: strategies) {
                 forks.add((continuation2)->strategy.cluster(context, points, continuation2));
             }
-            Continuation<List<Clusters<T>>> join=Continuations.map(
+            Continuation<List<Clusters>> join=Continuations.map(
                     (clustersList, continuation2)->{
-                        Clusters<T> best=null;
-                        for (Clusters<T> clusters: clustersList) {
+                        Clusters best=null;
+                        for (Clusters clusters: clustersList) {
                             if ((null==best)
                                     || (best.error>clusters.error)) {
                                 best=clusters;
@@ -50,27 +45,25 @@ public interface ClusteringStrategy
         };
     }
 
-    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
-    ClusteringStrategy<D, M, S, P, T> best(int iterations, ClusteringStrategy<D, M, S, P, T> strategy) {
-        List<ClusteringStrategy<D, M, S, P, T>> strategies=new ArrayList<>(iterations);
+    static <P extends Points<P>> ClusteringStrategy<P> best(int iterations, ClusteringStrategy<P> strategy) {
+        List<ClusteringStrategy<P>> strategies=new ArrayList<>(iterations);
         for (; 0<iterations; --iterations) {
             strategies.add(strategy);
         }
         return best(strategies);
     }
 
-    void cluster(Context context, P points, Continuation<Clusters<T>> continuation) throws Throwable;
+    void cluster(Context context, P points, Continuation<Clusters> continuation) throws Throwable;
 
-    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
-    ClusteringStrategy<D, M, S, P, T> elbow(
+    static <P extends Points<P>> ClusteringStrategy<P> elbow(
             double errorLimit, int maxClusters, int minClusters,
-            Function<Integer, ClusteringStrategy<D, M, S, P, T>> strategy, int threads) {
+            Function<Integer, ClusteringStrategy<P>> strategy, int threads) {
         return (context, points, continuation)->{
             class ClustersOrEmpty {
-                public final Clusters<T> clusters;
+                public final Clusters clusters;
                 public final EmptyClusterException empty;
 
-                public ClustersOrEmpty(Clusters<T> clusters) {
+                public ClustersOrEmpty(Clusters clusters) {
                     this.clusters=Objects.requireNonNull(clusters, "clusters");
                     empty=null;
                 }
@@ -84,9 +77,9 @@ public interface ClusteringStrategy
                     (clusters, continuation2)->strategy.apply(clusters).cluster(
                             context,
                             points,
-                            new Continuation<Clusters<T>>() {
+                            new Continuation<Clusters>() {
                                 @Override
-                                public void completed(Clusters<T> result) throws Throwable {
+                                public void completed(Clusters result) throws Throwable {
                                     continuation2.completed(new ClustersOrEmpty(result));
                                 }
 
@@ -102,15 +95,15 @@ public interface ClusteringStrategy
                             }),
                     minClusters,
                     maxClusters+1,
-                    new ParallelSearch<ClustersOrEmpty, Clusters<T>>() {
+                    new ParallelSearch<ClustersOrEmpty, Clusters>() {
                         private final NavigableMap<Integer, ClustersOrEmpty> clusters=new TreeMap<>();
                         private int index;
-                        private Clusters<T> selected;
+                        private Clusters selected;
 
                         @Override
                         public void search(
                                 Map<Integer, ClustersOrEmpty> newElements, Block continueSearch,
-                                Continuation<Clusters<T>> continuation) throws Throwable {
+                                Continuation<Clusters> continuation) throws Throwable {
                             clusters.putAll(newElements);
                             while (true) {
                                 if (null==selected) {
@@ -160,10 +153,9 @@ public interface ClusteringStrategy
         };
     }
 
-    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
-    ClusteringStrategy<D, M, S, P, T> kMeans(
-            int clusters, double errorLimit, InitialCenters<D, M, S, P, T> initialCenters, int maxIterations,
-            ReplaceEmptyCluster<D, M, S, P, T> replaceEmptyCluster) {
+    static <P extends Points<P>> ClusteringStrategy<P> kMeans(
+            int clusters, double errorLimit, InitialCenters<P> initialCenters, int maxIterations,
+            ReplaceEmptyCluster<P> replaceEmptyCluster) {
         return (context, points, continuation)->KMeans.cluster(
                 clusters, context, continuation, errorLimit,
                 initialCenters, maxIterations, points, replaceEmptyCluster);

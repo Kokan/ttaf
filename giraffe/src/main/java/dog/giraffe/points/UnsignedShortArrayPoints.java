@@ -1,6 +1,5 @@
 package dog.giraffe.points;
 
-import dog.giraffe.Vector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,40 +8,40 @@ import java.util.List;
 /**
  * Sub-points are only mutable as far as swap goes.
  */
-public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
-    private float[] data;
+public class UnsignedShortArrayPoints extends MutablePoints<UnsignedShortArrayPoints> {
+    private short[] data;
     private final int offset;
     private int size;
 
-    public FloatArrayL2Points(float[] data, int dimensions, int offset, int size) {
+    public UnsignedShortArrayPoints(short[] data, int dimensions, int offset, int size) {
         super(dimensions);
         this.data=data;
         this.offset=offset;
         this.size=size;
     }
 
-    public FloatArrayL2Points(float[] data, int dimensions) {
+    public UnsignedShortArrayPoints(short[] data, int dimensions) {
         this(data, dimensions, 0, data.length/dimensions);
     }
 
-    public FloatArrayL2Points(int dimensions, int expectedSize) {
-        this(new float[dimensions*expectedSize], dimensions, 0, 0);
+    public UnsignedShortArrayPoints(int dimensions, int expectedSize) {
+        this(new short[dimensions*expectedSize], dimensions, 0, 0);
     }
 
-    public void add(float coordinate0) {
+    public void add(short coordinate0) {
         ensureSize(size+1);
         data[dimensions*size]=coordinate0;
         ++size;
     }
 
-    public void add(float coordinate0, float coordinate1) {
+    public void add(short coordinate0, short coordinate1) {
         ensureSize(size+1);
         data[dimensions*size]=coordinate0;
         data[dimensions*size+1]=coordinate1;
         ++size;
     }
 
-    public void add(float coordinate0, float coordinate1, float coordinate2) {
+    public void add(short coordinate0, short coordinate1, short coordinate2) {
         ensureSize(size+1);
         data[dimensions*size]=coordinate0;
         data[dimensions*size+1]=coordinate1;
@@ -50,7 +49,7 @@ public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
         ++size;
     }
 
-    public void add(float[] vector) {
+    public void add(short[] vector) {
         ensureSize(size+1);
         System.arraycopy(vector, 0, data, dimensions*size, dimensions);
         ++size;
@@ -60,18 +59,22 @@ public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
     public void add(Vector vector) {
         ensureSize(size+1);
         for (int dd=0; dimensions>dd; ++dd) {
-            data[dimensions*size+dd]=(float)vector.coordinate(dd);
+            data[dimensions*size+dd]=(short)vector.coordinate(dd);
         }
         ++size;
     }
 
     @Override
     public void addNormalized(Vector vector) {
-        add(vector);
+        ensureSize(size+1);
+        for (int dd=0; dimensions>dd; ++dd) {
+            data[dimensions*size+dd]=denormalize(vector.coordinate(dd));
+        }
+        ++size;
     }
 
     @Override
-    public void addTo(FloatArrayL2Points points, int from, int to) {
+    public void addTo(UnsignedShortArrayPoints points, int from, int to) {
         int length=to-from;
         points.ensureSize(points.size+length);
         System.arraycopy(
@@ -85,7 +88,11 @@ public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
     public void clear(int size) {
         ensureSize(size);
         this.size=size;
-        Arrays.fill(data, 0, dimensions*size, 0.0f);
+        Arrays.fill(data, 0, dimensions*size, (short)0);
+    }
+
+    public static short denormalize(double value) {
+        return (short)Math.max(0L, Math.min(65535L, Math.round(65535.0*value)));
     }
 
     private void ensureSize(int newSize) {
@@ -96,17 +103,17 @@ public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
 
     @Override
     public double get(int dimension, int index) {
-        return data[dimensions*(offset+index)+dimension];
+        return data[dimensions*(offset+index)+dimension]&0xffff;
     }
 
     @Override
     public double getNormalized(int dimension, int index) {
-        return get(dimension, index);
+        return get(dimension, index)/65535.0;
     }
 
     @Override
     public double maxValue() {
-        return 1.0;
+        return 65535.0;
     }
 
     @Override
@@ -115,18 +122,22 @@ public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
     }
 
     @Override
-    public FloatArrayL2Points self() {
+    public UnsignedShortArrayPoints self() {
         return this;
+    }
+
+    public void set(int dimension, int index, short value) {
+        data[dimension+dimensions*index]=value;
     }
 
     @Override
     public void set(int dimension, int index, double value) {
-        data[dimension+dimensions*(offset+index)]=(float)value;
+        data[dimension+dimensions*index]=(short)value;
     }
 
     @Override
     public void setNormalized(int dimension, int index, double value) {
-        set(dimension, index, value);
+        data[dimension+dimensions*index]=denormalize(value);
     }
 
     @Override
@@ -135,13 +146,13 @@ public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
     }
 
     @Override
-    public List<FloatArrayL2Points> split(int parts) {
+    public List<UnsignedShortArrayPoints> split(int parts) {
         if ((2>parts)
                 || (2>size())) {
             return Collections.singletonList(this);
         }
         parts=Math.min(parts, size());
-        List<FloatArrayL2Points> result=new ArrayList<>(parts);
+        List<UnsignedShortArrayPoints> result=new ArrayList<>(parts);
         for (int ii=0; parts>ii; ++ii) {
             result.add(subPoints(ii*size/parts, (ii+1)*size/parts));
         }
@@ -149,8 +160,8 @@ public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
     }
 
     @Override
-    public FloatArrayL2Points subPoints(int fromIndex, int toIndex) {
-        return new FloatArrayL2Points(data, dimensions, offset+fromIndex, toIndex-fromIndex);
+    public UnsignedShortArrayPoints subPoints(int fromIndex, int toIndex) {
+        return new UnsignedShortArrayPoints(data, dimensions, offset+fromIndex, toIndex-fromIndex);
     }
 
     @Override
@@ -158,7 +169,7 @@ public class FloatArrayL2Points extends L2Points.Mutable<FloatArrayL2Points> {
         index0=dimensions*(offset+index0);
         index1=dimensions*(offset+index1);
         for (int dd=dimensions; 0<dd; --dd, ++index0, ++index1) {
-            float temp=data[index0];
+            short temp=data[index0];
             data[index0]=data[index1];
             data[index1]=temp;
         }

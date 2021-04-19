@@ -1,11 +1,10 @@
 package dog.giraffe.points;
 
-import dog.giraffe.Vector;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class VectorList extends L2Points.Mutable<VectorList> {
+public class VectorList extends MutablePoints<VectorList> {
     private final List<Vector> points;
 
     public VectorList(List<Vector> points) {

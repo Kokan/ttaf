@@ -1,9 +1,9 @@
-package dog.giraffe;
+package dog.giraffe.points;
 
 import java.util.Arrays;
 import java.util.Objects;
 
-public class Vector implements Arith<Vector> {
+public class Vector {
     private final double[] coordinates;
 
     public Vector(double[] coordinates) {
@@ -21,7 +21,6 @@ public class Vector implements Arith<Vector> {
         this(new double[dimensions]);
     }
 
-    @Override
     public Vector add(Vector other) {
         final int dim = dimensions();
         double[] d = new double[dim];
@@ -51,7 +50,6 @@ public class Vector implements Arith<Vector> {
         return coordinates.length;
     }
 
-    @Override
     public Vector div(double divisor) {
         final int dim = dimensions();
         double[] d = new double[dim];
@@ -76,7 +74,6 @@ public class Vector implements Arith<Vector> {
         return Arrays.hashCode(coordinates);
     }
 
-    @Override
     public Vector mul(double multiplier) {
         final int dim = dimensions();
         double[] d = new double[dim];
@@ -92,7 +89,6 @@ public class Vector implements Arith<Vector> {
         return result;
     }
 
-    @Override
     public Vector pow() {
         final int dim = dimensions();
         double[] d = new double[dim];
@@ -100,7 +96,6 @@ public class Vector implements Arith<Vector> {
         return new Vector(d);
     }
 
-    @Override
     public Vector sub(Vector other) {
         final int dim = dimensions();
         double d[] = new double[dim];
@@ -108,7 +103,6 @@ public class Vector implements Arith<Vector> {
         return new Vector(d);
     }
 
-    @Override
     public Vector sqrt() {
         final int dim = dimensions();
         double[] d = new double[dim];
