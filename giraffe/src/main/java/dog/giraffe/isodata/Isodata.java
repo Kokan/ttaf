@@ -87,6 +87,34 @@ public class Isodata<P extends Points<P>> {
     private final ReplaceEmptyCluster<P> replaceEmptyCluster;
     private final List<Sum> sums;
 
+    private final Map<String, Integer> stats;
+
+    private void increment(String name) {
+        int new_value = stats.containsKey(name) ? stats.get(name) + 1 : 1;
+
+        stats.put(name, new_value);
+    }
+
+    private void stats_set(String name, Integer value) {
+        stats.put(name, value);
+    }
+
+    private void reset(String name) {
+        stats.put(name, 0);
+    }
+
+    public Map<String, Integer> getStats() {
+        return stats;
+    }
+
+    public void printStats() {
+        System.out.println("Isodata stats:");
+        System.out.println("=========================");
+        for (Map.Entry<String, Integer> stat : stats.entrySet()) {
+            System.out.println(stat.getKey() + ": " + stat.getValue());
+        }
+    }
+
     public static class Comp implements MaxComponent<Double, Vector> {
        private int maxInd(Vector self) {
           Double max = self.coordinate(0);
@@ -146,6 +174,7 @@ public class Isodata<P extends Points<P>> {
         this.points2=points2;
         this.replaceEmptyCluster=replaceEmptyCluster;
         this.sums=sums;
+        this.stats=new HashMap<>();
     }
 
     public static <P extends Points<P>>
@@ -203,12 +232,12 @@ public class Isodata<P extends Points<P>> {
                             }
                             Clusterss p = new Clusterss(clusters, pointlist);
                             Isodata<P> isodata=new Isodata<>(
-                                    N_c,
-                                    K,
-                                    (int)(0.05*points.size()),
-                                    3,
-                                    3,
-                                    5,
+                                    N_c, //number of cluster
+                                    K,   //desrired cluster
+                                    (int)(0.05*points.size()), //min cluster size
+                                    3, //lumping
+                                    3, //L
+                                    5, //std_deviation
                                     context,
                                     errorLimit,
                                     maxIterations,
@@ -241,10 +270,14 @@ public class Isodata<P extends Points<P>> {
             for (Vector center : p.getCenters()) {
                 a.put(center,new ArrayList<>());
             }
+            stats_set("iteration", iteration);
+            stats_set("number_of_cluster", a.size());
+            printStats();
             continuation.completed(a);
             return;
         }
 
+        increment("distribute");
 
         List<Vector> points = Collections.unmodifiableList(p.points);
         List<Vector> centers = p.getCenters();
@@ -293,6 +326,9 @@ public class Isodata<P extends Points<P>> {
     // Step 3, discard samples that has fewer then theta_N number of points
     public void discard_sample(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration)
             throws Throwable {
+
+         increment("discard_sample");
+
          List<Cluster> clusters2=new ArrayList<>();
          boolean discarded=false;
          for (Vector v : p.getCenters()) {
@@ -300,6 +336,8 @@ public class Isodata<P extends Points<P>> {
              if (cluster.points.size() >= theta_N) {
                 clusters2.add(cluster);
                 discarded=true;
+
+                increment("discarded_cluster");
              }
          }
          if (discarded) {
@@ -337,6 +375,10 @@ public class Isodata<P extends Points<P>> {
     // Step 11, Step 12, finding pairwise center distance and lumping clusters
     public void lumping(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration)
             throws Throwable {
+
+
+         increment("lumping");
+
          double dist[][] = new double[p.clusters.size()][p.clusters.size()];
          List<Map.Entry<Integer,Integer>> map = new ArrayList<>();
          for (int i=0;i<p.clusters.size();++i) {
@@ -380,6 +422,7 @@ public class Isodata<P extends Points<P>> {
     // Step 10, split clusters
     public void split_cluster(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration)
             throws Throwable {
+        increment("split_cluster");
         boolean split=false;
         List<Cluster> new_clusters = new ArrayList<>();
         List<Cluster> rm_clusters = new ArrayList<>();
@@ -397,6 +440,8 @@ public class Isodata<P extends Points<P>> {
                         new_clusters.add(z_plus);
                         new_clusters.add(z_minus);
 
+                        increment("splitted_cluster");
+
                 }
         }
         p.clusters.removeAll(rm_clusters);
@@ -412,6 +457,9 @@ public class Isodata<P extends Points<P>> {
 
     //Step 4, update each cluster centers
     public void update_centers(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
+
+        increment("update_centers");
+
         List<Cluster> clusters = Collections.unmodifiableList(p.clusters);
         List<Vector> points = Collections.unmodifiableList(p.points);
 
