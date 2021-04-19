@@ -6,15 +6,15 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 
-public abstract class Points<P extends Points<P>> {
-    public interface Classification<C, P extends Points<P>> {
-        void nearestCenter(C center, P points);
+public abstract class Points {
+    public interface Classification<C> {
+        void nearestCenter(C center, Points points);
 
-        void nearestCenter(C center, P points, int index);
+        void nearestCenter(C center, Points points, int index);
     }
 
-    public interface ForEach<P extends Points<P>> {
-        void point(P points, int index );
+    public interface ForEach {
+        void point(Points points, int index );
     }
 
     protected final int dimensions;
@@ -56,7 +56,7 @@ public abstract class Points<P extends Points<P>> {
         }
     }
 
-    public <C> void classify(Function<C, Vector> centerPoint, List<C> centers, Classification<C, P> classification) {
+    public <C> void classify(Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) {
         if (centers.isEmpty()) {
             throw new IllegalArgumentException();
         }
@@ -70,7 +70,7 @@ public abstract class Points<P extends Points<P>> {
                     nd=dd;
                 }
             }
-            classification.nearestCenter(nc, self(), ii);
+            classification.nearestCenter(nc, this, ii);
         }
     }
 
@@ -103,9 +103,9 @@ public abstract class Points<P extends Points<P>> {
 
     public abstract double getNormalized(int dimension, int index);
 
-    public void forEach(ForEach<P> forEach) {
+    public void forEach(ForEach forEach) {
         for (int ii=0; size()>ii; ++ii) {
-            forEach.point(self(), ii);
+            forEach.point(this, ii);
         }
     }
 
@@ -130,11 +130,9 @@ public abstract class Points<P extends Points<P>> {
         return result;
     }
 
-    public abstract P self();
-
     public abstract int size();
 
-    public abstract List<P> split(int parts);
+    public abstract List<Points> split(int parts);
 
     public Vector sum(int offset, DoubleUnaryOperator operator, int size, List<Sum> sums) {
         for (int dd=0; dimensions>dd; ++dd) {

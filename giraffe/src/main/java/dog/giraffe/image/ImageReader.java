@@ -7,13 +7,13 @@ import dog.giraffe.threads.Continuation;
 /**
  * Implementations must be thread-safe.
  */
-public interface ImageReader<P extends MutablePoints<P>> {
+public interface ImageReader<P extends MutablePoints> {
     interface Factory {
         <T> void run(Context context, ReadProcess<T> readProcess, Continuation<T> continuation) throws Throwable;
     }
 
     interface ReadProcess<T> {
-        <P extends MutablePoints<P>> void run(
+        <P extends MutablePoints> void run(
                 Context context, ImageReader<P> imageReader, Continuation<T> continuation) throws Throwable;
     }
 

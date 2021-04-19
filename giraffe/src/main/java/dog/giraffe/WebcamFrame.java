@@ -125,19 +125,19 @@ public class WebcamFrame extends JFrame {
             }
 
             @Override
-            public void project(byte[] buf, Color.Converter colorConverter, int offset, int rgb) {
+            public void project(byte[] buf, ColorConverter colorConverter, int offset, int rgb) {
                 colorConverter.rgbToHslv(rgb);
-                buf[offset]=(byte)Color.Converter.toInt255(colorConverter.hue/(2.0*Math.PI));
+                buf[offset]=(byte)ColorConverter.toInt255(colorConverter.hue/(2.0*Math.PI));
             }
 
             @Override
-            public void project(Color.Converter colorConverter, UnsignedByteArrayPoints points, int rgb) {
+            public void project(ColorConverter colorConverter, UnsignedByteArrayPoints points, int rgb) {
                 colorConverter.rgbToHslv(rgb);
-                points.add((byte)Color.Converter.toInt255(colorConverter.hue/(2.0*Math.PI)));
+                points.add((byte)ColorConverter.toInt255(colorConverter.hue/(2.0*Math.PI)));
             }
 
             @Override
-            public int rgb(Color.Converter colorConverter, Vector point) {
+            public int rgb(ColorConverter colorConverter, Vector point) {
                 colorConverter.hsvToRgb(
                         2.0*Math.PI*point.coordinate(0)/255.0, 1.0, 1.0);
                 return colorConverter.toRGB();
@@ -151,33 +151,33 @@ public class WebcamFrame extends JFrame {
             }
 
             @Override
-            public void project(byte[] buf, Color.Converter colorConverter, int offset, int rgb) {
+            public void project(byte[] buf, ColorConverter colorConverter, int offset, int rgb) {
                 buf[offset]=(byte)(rgb&0xff);
                 buf[offset+1]=(byte)((rgb>>8)&0xff);
                 buf[offset+2]=(byte)((rgb>>16)&0xff);
             }
 
             @Override
-            public void project(Color.Converter colorConverter, UnsignedByteArrayPoints points, int rgb) {
+            public void project(ColorConverter colorConverter, UnsignedByteArrayPoints points, int rgb) {
                 points.add((byte)(rgb&0xff), (byte)((rgb>>8)&0xff), (byte)((rgb>>16)&0xff));
             }
 
             @Override
-            public int rgb(Color.Converter colorConverter, Vector point) {
+            public int rgb(ColorConverter colorConverter, Vector point) {
                 return 0xff000000
-                        |Color.Converter.toInt(point.coordinate(0))
-                        |(Color.Converter.toInt(point.coordinate(1))<<8)
-                        |(Color.Converter.toInt(point.coordinate(2))<<16);
+                        |ColorConverter.toInt(point.coordinate(0))
+                        |(ColorConverter.toInt(point.coordinate(1))<<8)
+                        |(ColorConverter.toInt(point.coordinate(2))<<16);
             }
         };
 
         int dimensions();
 
-        void project(byte[] buf, Color.Converter colorConverter, int offset, int rgb);
+        void project(byte[] buf, ColorConverter colorConverter, int offset, int rgb);
 
-        void project(Color.Converter colorConverter, UnsignedByteArrayPoints points, int rgb);
+        void project(ColorConverter colorConverter, UnsignedByteArrayPoints points, int rgb);
 
-        int rgb(Color.Converter colorConverter, Vector point);
+        int rgb(ColorConverter colorConverter, Vector point);
 
         default void set(int c) {
         }
@@ -236,17 +236,17 @@ public class WebcamFrame extends JFrame {
         }
 
         @Override
-        public void project(byte[] buf, Color.Converter colorConverter, int offset, int rgb) {
+        public void project(byte[] buf, ColorConverter colorConverter, int offset, int rgb) {
            projection.project(buf, colorConverter, offset, rgb);
         }
 
         @Override
-        public void project(Color.Converter colorConverter, UnsignedByteArrayPoints points, int rgb) {
+        public void project(ColorConverter colorConverter, UnsignedByteArrayPoints points, int rgb) {
              projection.project(colorConverter, points, rgb);
         }
 
         @Override
-        public int rgb(Color.Converter colorConverter, Vector point) {
+        public int rgb(ColorConverter colorConverter, Vector point) {
             //return projection.rgb(colorConverter, replace_point(point));
             return projection.rgb(colorConverter, point);
         }
@@ -400,11 +400,10 @@ public class WebcamFrame extends JFrame {
         setVisible(true);
     }
 
-    private ClusteringStrategy<KDTree<UnsignedByteArrayPoints>> isodataStrategy(
-            int startClusters, int desiredClusters) {
+    private ClusteringStrategy<KDTree> isodataStrategy(int startClusters, int desiredClusters) {
         double errorLimit=0.95;
         int maxIterations=100;
-        List<ClusteringStrategy<KDTree<UnsignedByteArrayPoints>>> strategies=new ArrayList<>();
+        List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>();
         strategies.add((context, points, cont)->
                 Isodata.cluster(
                         startClusters,
@@ -420,12 +419,12 @@ public class WebcamFrame extends JFrame {
         return ClusteringStrategy.best(strategies);
     }
 
-    private ClusteringStrategy<KDTree<UnsignedByteArrayPoints>> kMeansStrategy(int clusters) {
-        Function<Integer, ClusteringStrategy<KDTree<UnsignedByteArrayPoints>>> strategyGenerator=(clusters2)->{
+    private ClusteringStrategy<KDTree> kMeansStrategy(int clusters) {
+        Function<Integer, ClusteringStrategy<KDTree>> strategyGenerator=(clusters2)->{
             double errorLimit=0.95;
             int maxIterations=1000;
-            List<ClusteringStrategy<KDTree<UnsignedByteArrayPoints>>> strategies=new ArrayList<>();
-            strategies.add(ClusteringStrategy.<KDTree<UnsignedByteArrayPoints>>kMeans(
+            List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>();
+            strategies.add(ClusteringStrategy.<KDTree>kMeans(
                     clusters2,
                     errorLimit,
                     InitialCenters.meanAndFarthest(false),
@@ -480,7 +479,7 @@ public class WebcamFrame extends JFrame {
             int maxIterations=10;
             int[] pixels=new int[height*width];
             image.getRGB(0, 0, width, height, pixels, 0, width);
-            Color.Converter colorConverter=new Color.Converter();
+            ColorConverter colorConverter=new ColorConverter();
             UnsignedByteArrayPoints points
                     =new UnsignedByteArrayPoints(projection.dimensions(), height*width);
             for (int rgb: pixels) {
@@ -524,12 +523,12 @@ public class WebcamFrame extends JFrame {
 
     private AsyncFunction<BufferedImage, BufferedImage> kMeans(int clusters, Projection projection) {
         return (image, continuation)->{
-            ClusteringStrategy<KDTree<UnsignedByteArrayPoints>> strategy=kMeansStrategy(clusters);
+            ClusteringStrategy<KDTree> strategy=kMeansStrategy(clusters);
             int height=image.getHeight();
             int width=image.getWidth();
             int[] pixels=new int[height*width];
             image.getRGB(0, 0, width, height, pixels, 0, width);
-            Color.Converter colorConverter=new Color.Converter();
+            ColorConverter colorConverter=new ColorConverter();
             UnsignedByteArrayPoints points=new UnsignedByteArrayPoints(projection.dimensions(), height*width);
             for (int rgb: pixels) {
                 projection.project(colorConverter, points, rgb);
@@ -610,17 +609,16 @@ public class WebcamFrame extends JFrame {
         };
     }
 
-    private AsyncFunction<BufferedImage, BufferedImage> saturationBased(
-            ClusteringStrategy<KDTree<UnsignedByteArrayPoints>> strategy) {
+    private AsyncFunction<BufferedImage, BufferedImage> saturationBased(ClusteringStrategy<KDTree> strategy) {
         return (image, continuation)->{
-            Predicate<Color.Converter> predicate=(colorConverter)->
+            Predicate<ColorConverter> predicate=(colorConverter)->
                     1.0-0.8*colorConverter.value>=colorConverter.saturationValue;
                     //(0.1>colorConverter.saturationValue) || (0.1>colorConverter.value);
             int height=image.getHeight();
             int width=image.getWidth();
             int[] pixels=new int[height*width];
             image.getRGB(0, 0, width, height, pixels, 0, width);
-            Color.Converter colorConverter=new Color.Converter();
+            ColorConverter colorConverter=new ColorConverter();
             UnsignedByteArrayPoints grayPoints=new UnsignedByteArrayPoints(1, height*width/2);
             UnsignedByteArrayPoints truePoints=new UnsignedByteArrayPoints(1, height*width/2);
             for (int rgb: pixels) {

@@ -12,18 +12,18 @@ import java.util.List;
 import java.util.Set;
 
 @FunctionalInterface
-public interface InitialCenters<P extends Points<P>> {
+public interface InitialCenters<P extends Points> {
     void initialCenters(
-            int clusters, Context context, int maxIterations, P points, List<P> points2,
+            int clusters, Context context, int maxIterations, P points, List<Points> points2,
             Continuation<List<Vector>> continuation) throws Throwable;
 
-    static <P extends Points<P>> InitialCenters<P> meanAndFarthest(boolean notNear) {
+    static <P extends Points> InitialCenters<P> meanAndFarthest(boolean notNear) {
         ReplaceEmptyCluster<P> replaceEmptyClustersFirst
                 =(centers, context, maxIterations, points, points2, continuation)->{
                     List<AsyncSupplier<Mean>> forks=new ArrayList<>(points2.size());
                     for (int pp=0; points2.size()>pp; ++pp) {
                         int expected=((0==pp)?points:(points2.get(pp))).size();
-                        P points3=points2.get(pp);
+                        Points points3=points2.get(pp);
                         forks.add((continuation2)->{
                             Mean mean=points3.mean().create(expected, context.sum());
                             points3.addAllTo(mean);
@@ -56,9 +56,9 @@ public interface InitialCenters<P extends Points<P>> {
                     replaceEmptyClustersRest);
     }
 
-    static <P extends Points<P>> void newCenters(
+    static <P extends Points> void newCenters(
             Set<Vector> centers, int clusters, Context context, Continuation<List<Vector>> continuation,
-            int maxIterations, P points, List<P> points2, ReplaceEmptyCluster<P> replaceEmptyClusterFirst,
+            int maxIterations, P points, List<Points> points2, ReplaceEmptyCluster<P> replaceEmptyClusterFirst,
             ReplaceEmptyCluster<P> replaceEmptyClusterRest) throws Throwable {
         List<Vector> centers2=List.copyOf(centers);
         if (centers2.size()>=clusters) {
@@ -89,7 +89,7 @@ public interface InitialCenters<P extends Points<P>> {
                         context.executor()));
     }
 
-    static <P extends Points<P>> InitialCenters<P> random() {
+    static <P extends Points> InitialCenters<P> random() {
         return (clusters, context, maxIterations, points, points2, continuation)->{
             Set<Vector> centers=new HashSet<>(clusters);
             for (int ii=maxIterations*clusters; clusters>centers.size(); --ii) {

@@ -10,31 +10,31 @@ import java.util.List;
 import java.util.function.Function;
 
 @FunctionalInterface
-public interface ReplaceEmptyCluster<P extends Points<P>> {
-    static <P extends Points<P>> ReplaceEmptyCluster<P> error() {
+public interface ReplaceEmptyCluster<P extends Points> {
+    static <P extends Points> ReplaceEmptyCluster<P> error() {
         return (centers, context, maxIterations, points, points2, continuation)->
                 continuation.failed(new EmptyClusterException());
     }
 
-    static <P extends Points<P>> ReplaceEmptyCluster<P> farthest(boolean notNear) {
+    static <P extends Points> ReplaceEmptyCluster<P> farthest(boolean notNear) {
         return (centers, context, maxIterations, points, points2, continuation)->{
             class Candidate {
                 public final double distance;
                 public final int index;
-                public final P points;
+                public final Points points;
 
-                public Candidate(double distance, int index, P points) {
+                public Candidate(double distance, int index, Points points) {
                     this.distance=distance;
                     this.index=index;
                     this.points=points;
                 }
             }
             List<AsyncSupplier<Candidate>> forks=new ArrayList<>(points2.size());
-            for (P points3: points2) {
+            for (Points points3: points2) {
                 forks.add(new AsyncSupplier<>() {
                     private double bestDistance;
                     private int bestIndex;
-                    private P bestPoints;
+                    private Points bestPoints;
 
                     @Override
                     public void get(Continuation<Candidate> continuation2) throws Throwable {
@@ -42,16 +42,16 @@ public interface ReplaceEmptyCluster<P extends Points<P>> {
                             points3.classify(
                                     Function.identity(),
                                     centers,
-                                    new Points.Classification<Vector, P>() {
+                                    new Points.Classification<>() {
                                         @Override
-                                        public void nearestCenter(Vector center, P points) {
+                                        public void nearestCenter(Vector center, Points points) {
                                             for (int ii=0; points.size()>ii; ++ii) {
                                                 nearestCenter(center, points, ii);
                                             }
                                         }
 
                                         @Override
-                                        public void nearestCenter(Vector center, P points, int index) {
+                                        public void nearestCenter(Vector center, Points points, int index) {
                                             double dd=points.distance(center, index);
                                             if (dd>bestDistance) {
                                                 bestDistance=dd;
@@ -109,10 +109,10 @@ public interface ReplaceEmptyCluster<P extends Points<P>> {
     }
 
     void newCenter(
-            List<Vector> centers, Context context, int maxIterations, P points, List<P> points2,
+            List<Vector> centers, Context context, int maxIterations, P points, List<Points> points2,
             Continuation<Vector> continuation) throws Throwable;
 
-    static <P extends Points<P>> ReplaceEmptyCluster<P> random() {
+    static <P extends Points> ReplaceEmptyCluster<P> random() {
         return (centers, context, maxIterations, points, points2, continuation)->{
             for (int ii=maxIterations; 0<ii; --ii) {
                 Vector point=points.get(context.random().nextInt(points.size()));

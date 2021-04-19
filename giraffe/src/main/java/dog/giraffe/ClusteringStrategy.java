@@ -16,8 +16,8 @@ import java.util.TreeMap;
 import java.util.function.Function;
 
 @FunctionalInterface
-public interface ClusteringStrategy<P extends Points<P>> {
-    static <P extends Points<P>> ClusteringStrategy<P> best(List<ClusteringStrategy<P>> strategies) {
+public interface ClusteringStrategy<P extends Points> {
+    static <P extends Points> ClusteringStrategy<P> best(List<ClusteringStrategy<P>> strategies) {
         if (strategies.isEmpty()) {
             throw new IllegalArgumentException("empty strategies");
         }
@@ -45,7 +45,7 @@ public interface ClusteringStrategy<P extends Points<P>> {
         };
     }
 
-    static <P extends Points<P>> ClusteringStrategy<P> best(int iterations, ClusteringStrategy<P> strategy) {
+    static <P extends Points> ClusteringStrategy<P> best(int iterations, ClusteringStrategy<P> strategy) {
         List<ClusteringStrategy<P>> strategies=new ArrayList<>(iterations);
         for (; 0<iterations; --iterations) {
             strategies.add(strategy);
@@ -55,7 +55,7 @@ public interface ClusteringStrategy<P extends Points<P>> {
 
     void cluster(Context context, P points, Continuation<Clusters> continuation) throws Throwable;
 
-    static <P extends Points<P>> ClusteringStrategy<P> elbow(
+    static <P extends Points> ClusteringStrategy<P> elbow(
             double errorLimit, int maxClusters, int minClusters,
             Function<Integer, ClusteringStrategy<P>> strategy, int threads) {
         return (context, points, continuation)->{
@@ -153,7 +153,7 @@ public interface ClusteringStrategy<P extends Points<P>> {
         };
     }
 
-    static <P extends Points<P>> ClusteringStrategy<P> kMeans(
+    static <P extends Points> ClusteringStrategy<P> kMeans(
             int clusters, double errorLimit, InitialCenters<P> initialCenters, int maxIterations,
             ReplaceEmptyCluster<P> replaceEmptyCluster) {
         return (context, points, continuation)->KMeans.cluster(

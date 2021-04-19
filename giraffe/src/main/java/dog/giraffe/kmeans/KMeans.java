@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public class KMeans<P extends Points<P>> {
+public class KMeans<P extends Points> {
     private static class Center {
         public final int index;
         public final Vector point;
@@ -60,13 +60,13 @@ public class KMeans<P extends Points<P>> {
     private final int maxIterations;
     private final List<List<Mean>> means;
     private final P points;
-    private final List<P> points2;
+    private final List<Points> points2;
     private final ReplaceEmptyCluster<P> replaceEmptyCluster;
     private final List<Sum> sums;
 
     private KMeans(
             int clusters, Context context, double errorLimit, int maxIterations, List<List<Mean>> means, P points,
-            List<P> points2, ReplaceEmptyCluster<P> replaceEmptyCluster, List<Sum> sums) {
+            List<Points> points2, ReplaceEmptyCluster<P> replaceEmptyCluster, List<Sum> sums) {
         this.clusters=clusters;
         this.context=context;
         this.errorLimit=errorLimit;
@@ -78,7 +78,7 @@ public class KMeans<P extends Points<P>> {
         this.sums=sums;
     }
 
-    public static <P extends Points<P>> void cluster(
+    public static <P extends Points> void cluster(
             int clusters, Context context, Continuation<Clusters> continuation, double errorLimit,
             InitialCenters<P> initialCenters, int maxIterations, P points, ReplaceEmptyCluster<P> replaceEmptyCluster)
             throws Throwable {
@@ -91,10 +91,10 @@ public class KMeans<P extends Points<P>> {
                     "too few data points; clusters: %1$d, data points: %2$d", clusters, points.size())));
             return;
         }
-        List<P> points2=points.split(context.executor().threads());
+        List<Points> points2=points.split(context.executor().threads());
         List<List<Mean>> means=new ArrayList<>(points2.size());
         List<Sum> sums=new ArrayList<>(points2.size());
-        for (P points3: points2) {
+        for (Points points3: points2) {
             List<Mean> means2=new ArrayList<>(clusters);
             for (int ii=clusters; 0<ii; --ii) {
                 means2.add(points.mean().create((means.isEmpty()?points:points3).size(), context.sum()));
@@ -122,20 +122,20 @@ public class KMeans<P extends Points<P>> {
                         continuation));
     }
 
-    private AsyncSupplier<Void> classify(List<Center> centers, List<Mean> means, P points, Sum sum) {
+    private AsyncSupplier<Void> classify(List<Center> centers, List<Mean> means, Points points, Sum sum) {
         return (continuation2)->{
             points.classify(
                     centerPoint,
                     centers,
-                    new Points.Classification<Center, P>() {
+                    new Points.Classification<Center>() {
                         @Override
-                        public void nearestCenter(Center center, P points) {
+                        public void nearestCenter(Center center, Points points) {
                             points.addAllTo(means.get(center.index));
                             points.addAllDistanceTo(center.point, sum);
                         }
 
                         @Override
-                        public void nearestCenter(Center center, P points, int index) {
+                        public void nearestCenter(Center center, Points points, int index) {
                             points.addTo(index, means.get(center.index));
                             points.addDistanceTo(center.point, index, sum);
                         }

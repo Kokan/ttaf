@@ -4,7 +4,6 @@ import dog.giraffe.CannotSelectInitialCentersException;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
 import dog.giraffe.InitialCenters;
-import dog.giraffe.MaxComponent;
 import dog.giraffe.MeanDouble;
 import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
@@ -25,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public class Isodata<P extends Points<P>> {
+public class Isodata<P extends Points> {
     public static class Clusterss {
       public final List<Cluster> clusters;
       public final List<Vector> points;
@@ -83,7 +82,7 @@ public class Isodata<P extends Points<P>> {
     private final int maxIterations;
     private final List<List<Mean>> means;
     private final P points;
-    private final List<P> points2;
+    private final List<Points> points2;
     private final ReplaceEmptyCluster<P> replaceEmptyCluster;
     private final List<Sum> sums;
 
@@ -115,9 +114,9 @@ public class Isodata<P extends Points<P>> {
         }
     }
 
-    public static class Comp implements MaxComponent<Double, Vector> {
+    public static class Comp {
        private int maxInd(Vector self) {
-          Double max = self.coordinate(0);
+          double max = self.coordinate(0);
           int maxid = 0;
           for (int i=1;i<self.dimensions();++i) {
             if (max < self.coordinate(i)) {
@@ -128,12 +127,10 @@ public class Isodata<P extends Points<P>> {
           return maxid;
        }
          
-       @Override
-       public Double max(Vector self) { 
+       public Double max(Vector self) {
           return self.coordinate(maxInd(self));
        }
 
-       @Override
        public Vector maxVec(Vector self) {
           Vector v = new Vector(self.dimensions());
 
@@ -143,7 +140,8 @@ public class Isodata<P extends Points<P>> {
           return v;
        }
     }
-    private final MaxComponent<Double,Vector> max = new Comp();
+
+    private final Comp max = new Comp();
 
     private Isodata(
             int N_c,
@@ -157,7 +155,7 @@ public class Isodata<P extends Points<P>> {
             int maxIterations,
             List<List<Mean>> means,
             P points,
-            List<P> points2,
+            List<Points> points2,
             ReplaceEmptyCluster<P> replaceEmptyCluster,
             List<Sum> sums){
         this.N_c=N_c;
@@ -177,8 +175,7 @@ public class Isodata<P extends Points<P>> {
         this.stats=new HashMap<>();
     }
 
-    public static <P extends Points<P>>
-    void cluster(
+    public static <P extends Points> void cluster(
             int N_c,
             int K,
             Context context,
@@ -198,10 +195,10 @@ public class Isodata<P extends Points<P>> {
             return;
         }
         List<Vector> pointss = new ArrayList<>(points.size());
-        List<P> points2=points.split(context.executor().threads());
+        List<Points> points2=points.split(context.executor().threads());
         List<List<Mean>> means=new ArrayList<>(points2.size());
         List<Sum> sums=new ArrayList<>(points2.size());
-        for (P points3: points2) {
+        for (Points points3: points2) {
             List<Mean> means2=new ArrayList<>(N_c);
             for (int ii=N_c; 0<ii; --ii) {
                 means2.add(points.mean().create((means.isEmpty()?points:points3).size(), context.sum()));

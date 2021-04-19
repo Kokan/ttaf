@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class VectorList extends MutablePoints<VectorList> {
+public class VectorList extends MutablePoints {
     private final List<Vector> points;
 
     public VectorList(List<Vector> points) {
@@ -23,8 +23,10 @@ public class VectorList extends MutablePoints<VectorList> {
     }
 
     @Override
-    public void addTo(VectorList points, int from, int to) {
-        points.points.addAll(this.points.subList(from, to));
+    public void addTo(MutablePoints points, int from, int to) {
+        for (; to>from; ++from) {
+            points.add(this.points.get(from));
+        }
     }
 
     @Override
@@ -68,11 +70,6 @@ public class VectorList extends MutablePoints<VectorList> {
     }
 
     @Override
-    public VectorList self() {
-        return this;
-    }
-
-    @Override
     public void set(int dimension, int index, double value) {
         points.get(index).coordinate(dimension, value);
     }
@@ -88,7 +85,7 @@ public class VectorList extends MutablePoints<VectorList> {
     }
 
     @Override
-    public List<VectorList> split(int parts) {
+    public List<Points> split(int parts) {
         if ((2>parts)
                 || (2>points.size())) {
             return Collections.singletonList(this);

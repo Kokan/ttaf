@@ -98,7 +98,7 @@ public class Vector {
 
     public Vector sub(Vector other) {
         final int dim = dimensions();
-        double d[] = new double[dim];
+        double[] d = new double[dim];
         for (int i=0;i<dim;++i) d[i] = this.coordinates[i] - other.coordinates[i];
         return new Vector(d);
     }

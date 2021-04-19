@@ -5,13 +5,13 @@ import dog.giraffe.points.MutablePoints;
 import dog.giraffe.points.Points;
 import dog.giraffe.points.Vector;
 
-public interface Projection1<P extends Points<P>> {
+public interface Projection1<P extends Points> {
     interface Factory {
         interface Callback {
-            <P extends MutablePoints<P>> void projection(Projection1<P> projection);
+            <P extends MutablePoints> void projection(Projection1<P> projection);
         }
 
-        <P extends MutablePoints<P>>void create(ImageReader<P> imageReader, Callback callback);
+        <P extends MutablePoints>void create(ImageReader<P> imageReader, Callback callback);
     }
 
     P createPoints(int expectedSize);
@@ -21,7 +21,7 @@ public interface Projection1<P extends Points<P>> {
     static Factory multidimensionalHue(int... selectedDimensions) {
         return new Factory() {
             @Override
-            public <P extends MutablePoints<P>> void create(ImageReader<P> imageReader, Callback callback) {
+            public <P extends MutablePoints> void create(ImageReader<P> imageReader, Callback callback) {
                 callback.projection(new Projection1<FloatArrayPoints>() {
                     @Override
                     public FloatArrayPoints createPoints(int expectedSize) {
@@ -34,7 +34,7 @@ public interface Projection1<P extends Points<P>> {
                     }
 
                     @Override
-                    public void project(Points<?> input, FloatArrayPoints output) {
+                    public void project(Points input, FloatArrayPoints output) {
                         Vector vector=new Vector(selectedDimensions.length);
                         for (int ii=0; input.size()>ii; ++ii) {
                             project(input, ii, vector);
@@ -43,7 +43,7 @@ public interface Projection1<P extends Points<P>> {
                     }
 
                     @Override
-                    public void project(Points<?> input, int index, Vector output) {
+                    public void project(Points input, int index, Vector output) {
                         double dotProduct=0.0;
                         for (int dd=0; selectedDimensions.length>dd; ++dd) {
                             double cc=(input.get(selectedDimensions[dd], index)-input.minValue())
@@ -64,7 +64,7 @@ public interface Projection1<P extends Points<P>> {
     static Factory multidimensionalHueNormalized(double maxZero, int... selectedDimensions) {
         return new Factory() {
             @Override
-            public <P extends MutablePoints<P>> void create(ImageReader<P> imageReader, Callback callback) {
+            public <P extends MutablePoints> void create(ImageReader<P> imageReader, Callback callback) {
                 callback.projection(new Projection1<FloatArrayPoints>() {
                     @Override
                     public FloatArrayPoints createPoints(int expectedSize) {
@@ -77,7 +77,7 @@ public interface Projection1<P extends Points<P>> {
                     }
 
                     @Override
-                    public void project(Points<?> input, FloatArrayPoints output) {
+                    public void project(Points input, FloatArrayPoints output) {
                         Vector vector=new Vector(selectedDimensions.length);
                         for (int ii=0; input.size()>ii; ++ii) {
                             project(input, ii, vector);
@@ -86,7 +86,7 @@ public interface Projection1<P extends Points<P>> {
                     }
 
                     @Override
-                    public void project(Points<?> input, int index, Vector output) {
+                    public void project(Points input, int index, Vector output) {
                         double dotProduct=0.0;
                         for (int dd=0; selectedDimensions.length>dd; ++dd) {
                             double cc=(input.get(selectedDimensions[dd], index)-input.minValue())
@@ -118,14 +118,14 @@ public interface Projection1<P extends Points<P>> {
         };
     }
 
-    void project(Points<?> input, P output);
+    void project(Points input, P output);
 
-    void project(Points<?> input, int index, Vector output);
+    void project(Points input, int index, Vector output);
 
     static Factory select(int... selectedDimensions) {
         return new Factory() {
             @Override
-            public <P extends MutablePoints<P>> void create(ImageReader<P> imageReader, Callback callback) {
+            public <P extends MutablePoints> void create(ImageReader<P> imageReader, Callback callback) {
                 callback.projection(new Projection1<P>() {
                     @Override
                     public P createPoints(int expectedSize) {
@@ -138,7 +138,7 @@ public interface Projection1<P extends Points<P>> {
                     }
 
                     @Override
-                    public void project(Points<?> input, P output) {
+                    public void project(Points input, P output) {
                         Vector vector=new Vector(selectedDimensions.length);
                         for (int ii=0; input.size()>ii; ++ii) {
                             project(input, ii, vector);
@@ -147,7 +147,7 @@ public interface Projection1<P extends Points<P>> {
                     }
 
                     @Override
-                    public void project(Points<?> input, int index, Vector output) {
+                    public void project(Points input, int index, Vector output) {
                         for (int dd=0; selectedDimensions.length>dd; ++dd) {
                             output.coordinate(dd, input.get(selectedDimensions[dd], index));
                         }

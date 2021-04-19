@@ -29,20 +29,20 @@ public class KDTreeTest {
             final int dimensions=random.nextInt(4)+1;
             List<Vector> centers=Collections.unmodifiableList(create(dimensions, random, 10));
             VectorList points=new VectorList(create(dimensions, random, 1000));
-            KDTree<VectorList> tree=KDTree.create(random.nextInt(10)+1, points, Sum.HEAP);
+            KDTree tree=KDTree.create(random.nextInt(10)+1, points, Sum.HEAP);
             tree.classify(
                     Function.identity(),
                     centers,
-                    new Points.Classification<Vector, KDTree<VectorList>>() {
+                    new Points.Classification<>() {
                         @Override
-                        public void nearestCenter(Vector center, KDTree<VectorList> points) {
+                        public void nearestCenter(Vector center, Points points) {
                             for (int ii=0; points.size()>ii; ++ii) {
                                 nearestCenter(center, points, ii);
                             }
                         }
 
                         @Override
-                        public void nearestCenter(Vector center, KDTree<VectorList> points, int index) {
+                        public void nearestCenter(Vector center, Points points, int index) {
                             Vector point=points.get(index);
                             Vector center2=Distance.nearestCenter(centers, point);
                             if (!center.equals(center2)) {

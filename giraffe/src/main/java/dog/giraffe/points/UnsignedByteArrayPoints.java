@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Sub-points are only mutable as far as swap goes.
  */
-public class UnsignedByteArrayPoints extends MutablePoints<UnsignedByteArrayPoints> {
+public class UnsignedByteArrayPoints extends MutablePoints {
     private byte[] data;
     private final int offset;
     private int size;
@@ -65,6 +65,17 @@ public class UnsignedByteArrayPoints extends MutablePoints<UnsignedByteArrayPoin
     }
 
     @Override
+    public void addFrom(UnsignedByteArrayPoints points, int from, int to) {
+        int length=to-from;
+        ensureSize(size+length);
+        System.arraycopy(
+                points.data, points.dimensions*(points.offset+from),
+                data, dimensions*size,
+                dimensions*length);
+        size+=length;
+    }
+
+    @Override
     public void addNormalized(Vector vector) {
         ensureSize(size+1);
         for (int dd=0; dimensions>dd; ++dd) {
@@ -74,14 +85,8 @@ public class UnsignedByteArrayPoints extends MutablePoints<UnsignedByteArrayPoin
     }
 
     @Override
-    public void addTo(UnsignedByteArrayPoints points, int from, int to) {
-        int length=to-from;
-        points.ensureSize(points.size+length);
-        System.arraycopy(
-                data, dimensions*(offset+from),
-                points.data, dimensions*points.size,
-                dimensions*length);
-        points.size+=length;
+    public void addTo(MutablePoints points, int from, int to) {
+        points.addFrom(this, from, to);
     }
 
     @Override
@@ -121,11 +126,6 @@ public class UnsignedByteArrayPoints extends MutablePoints<UnsignedByteArrayPoin
         return 0.0;
     }
 
-    @Override
-    public UnsignedByteArrayPoints self() {
-        return this;
-    }
-
     public void set(int dimension, int index, byte value) {
         data[dimension+dimensions*index]=value;
     }
@@ -146,7 +146,7 @@ public class UnsignedByteArrayPoints extends MutablePoints<UnsignedByteArrayPoin
     }
 
     @Override
-    public List<UnsignedByteArrayPoints> split(int parts) {
+    public List<Points> split(int parts) {
         if ((2>parts)
                 || (2>size())) {
             return Collections.singletonList(this);

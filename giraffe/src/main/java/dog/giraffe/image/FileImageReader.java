@@ -17,7 +17,7 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
 
-public abstract class FileImageReader<P extends MutablePoints<P>> implements ImageReader<P> {
+public abstract class FileImageReader<P extends MutablePoints> implements ImageReader<P> {
     public static class Factory implements ImageReader.Factory {
         private final Path path;
 

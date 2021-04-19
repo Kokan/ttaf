@@ -17,11 +17,11 @@ import java.util.function.Function;
 
 public class Cluster1Transform implements ImageTransform {
     public interface Strategy {
-        <P extends MutablePoints<P>> void cluster(
-                Context context, KDTree<P> points, Continuation<Clusters> continuation) throws Throwable;
+        <P extends MutablePoints> void cluster(
+                Context context, KDTree points, Continuation<Clusters> continuation) throws Throwable;
     }
 
-    private class State<P extends MutablePoints<P>, Q extends MutablePoints<Q>> {
+    private class State<P extends MutablePoints, Q extends MutablePoints> {
         private List<Vector> centers;
         private Map<Vector, Vector> colorMap;
         private Clusters clusters;
@@ -54,7 +54,7 @@ public class Cluster1Transform implements ImageTransform {
                             continuation));
         }
 
-        public void write(MutablePoints<?> inputLine, ImageWriter.Line outputLine, int dimension) {
+        public void write(MutablePoints inputLine, ImageWriter.Line outputLine, int dimension) {
             Vector point=new Vector(projection.dimensions());
             Function<Vector, Vector> nearestCenter=(16>centers.size())
                     ?Distance.nearestCenter(centers)
@@ -87,25 +87,25 @@ public class Cluster1Transform implements ImageTransform {
     }
 
     @Override
-    public <P extends MutablePoints<P>> void prepare(ImageReader<P> imageReader) {
+    public <P extends MutablePoints> void prepare(ImageReader<P> imageReader) {
         projection.create(
                 imageReader,
                 new Projection1.Factory.Callback() {
                     @Override
-                    public <R extends MutablePoints<R>> void projection(Projection1<R> projection) {
+                    public <R extends MutablePoints> void projection(Projection1<R> projection) {
                         state=new State<>(imageReader, projection);
                     }
                 });
     }
 
     @Override
-    public <P extends MutablePoints<P>> void prepare(
+    public <P extends MutablePoints> void prepare(
             Context context, ImageReader<P> imageReader, Continuation<Void> continuation) throws Throwable {
         state.prepare(context, continuation);
     }
 
     @Override
-    public <P extends MutablePoints<P>> void prepare(Context context, ImageReader<P> imageReader, P inputLine) {
+    public <P extends MutablePoints> void prepare(Context context, ImageReader<P> imageReader, P inputLine) {
     }
 
     @Override
@@ -114,7 +114,7 @@ public class Cluster1Transform implements ImageTransform {
     }
 
     @Override
-    public <P extends MutablePoints<P>> void write(
+    public <P extends MutablePoints> void write(
             Context context, P inputLine, ImageWriter.Line outputLine, int dimension) {
         state.write(inputLine, outputLine, dimension);
     }

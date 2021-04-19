@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 
-public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P>> {
+public abstract class KDTree extends Points {
     private static class NearestCenter {
         public Vector center;
         public double distance;
@@ -27,13 +27,13 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
     private static final DoubleBinaryOperator MAX=Math::max;
     private static final DoubleBinaryOperator MIN=Math::min;
 
-    private static class Branch<P extends MutablePoints<P>> extends KDTree<P> {
-        private final KDTree<P> left;
+    private static class Branch extends KDTree {
+        private final KDTree left;
         private final double maxValue;
         private final double minValue;
-        private final KDTree<P> right;
+        private final KDTree right;
 
-        public Branch(KDTree<P> left, KDTree<P> right) {
+        public Branch(KDTree left, KDTree right) {
             super(
                     left.dimensions,
                     perform(MAX, left.max, right.max),
@@ -48,15 +48,14 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
         }
 
         @Override
-        public <C> void classify(
-                Function<C, Vector> centerPoint, List<C> centers, Classification<C, KDTree<P>> classification) {
+        public <C> void classify(Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) {
             centers=filterCenters(centerPoint, centers);
             left.classify(centerPoint, centers, classification);
             right.classify(centerPoint, centers, classification);
         }
 
         @Override
-        public void forEach(ForEach<KDTree<P>> forEach) {
+        public void forEach(ForEach forEach) {
             left.forEach(forEach);
             right.forEach(forEach);
         }
@@ -117,7 +116,7 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
             }
         }
 
-        private double nearestCenterHeuristic(KDTree<?> tree, Vector point) {
+        private double nearestCenterHeuristic(KDTree tree, Vector point) {
             double distance=0.0;
             for (int dd=0; dimensions>dd; ++dd) {
                 double c0=point.coordinate(dd);
@@ -136,17 +135,17 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
         }
 
         @Override
-        protected boolean split(Deque<KDTree<P>> deque) {
+        protected boolean split(Deque<KDTree> deque) {
             deque.addFirst(right);
             deque.addFirst(left);
             return true;
         }
     }
 
-    private static class Leaf<P extends MutablePoints<P>> extends KDTree<P> {
-        private final P points;
+    private static class Leaf extends KDTree {
+        private final MutablePoints points;
 
-        public Leaf(P points, List<Sum> sums) {
+        public Leaf(MutablePoints points, List<Sum> sums) {
             super(
                     points.dimensions(),
                     points.perform(Double.NEGATIVE_INFINITY, 0, MAX, points.size()),
@@ -158,8 +157,7 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
         }
 
         @Override
-        public <C> void classify(
-                Function<C, Vector> centerPoint, List<C> centers, Classification<C, KDTree<P>> classification) {
+        public <C> void classify(Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) {
             centers=filterCenters(centerPoint, centers);
             if (1==centers.size()) {
                 classification.nearestCenter(centers.get(0), this);
@@ -206,7 +204,7 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
         }
 
         @Override
-        protected boolean split(Deque<KDTree<P>> deque) {
+        protected boolean split(Deque<KDTree> deque) {
             return false;
         }
     }
@@ -241,8 +239,7 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
         mean.addAll(size(), sum);
     }
 
-    public static <P extends MutablePoints<P>> KDTree<P> create(
-            int maxLeafSize, P points, Sum.Factory sum) {
+    public static KDTree create(int maxLeafSize, MutablePoints points, Sum.Factory sum) {
         List<Sum> sums=new ArrayList<>(points.dimensions());
         for (int dd=0; points.dimensions()>dd; ++dd) {
             sums.add(sum.create(maxLeafSize));
@@ -250,13 +247,12 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
         return create(maxLeafSize, points, sums);
     }
 
-    private static <P extends MutablePoints<P>> KDTree<P> create(
-            int maxLeafSize, P points, List<Sum> sums) {
+    private static KDTree create(int maxLeafSize, MutablePoints points, List<Sum> sums) {
         if (1>maxLeafSize) {
             throw new IllegalArgumentException(Integer.toString(maxLeafSize));
         }
         if (maxLeafSize>=points.size()) {
-            return new Leaf<>(points, sums);
+            return new Leaf(points, sums);
         }
         int widestDimension=points.widestDimension();
         int middle=QuickSort.medianSplit(
@@ -265,7 +261,7 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
                 0,
                 points,
                 points.size());
-        return new Branch<>(
+        return new Branch(
                 create(maxLeafSize, points.subPoints(0, middle), sums),
                 create(maxLeafSize, points.subPoints(middle, points.size()), sums));
     }
@@ -303,15 +299,15 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
         return Collections.unmodifiableList(centers2);
     }
 
-    public static <P extends MutablePoints<P>> InitialCenters<KDTree<P>> initialCenters(boolean notNear) {
-        ReplaceEmptyCluster<KDTree<P>> fallback=ReplaceEmptyCluster.farthest(notNear);
+    public static InitialCenters<KDTree> initialCenters(boolean notNear) {
+        ReplaceEmptyCluster<KDTree> fallback=ReplaceEmptyCluster.farthest(notNear);
         return (clusters, context, maxIterations, points, points2, continuation)->{
-            Deque<KDTree<P>> deque=new ArrayDeque<>(2);
-            PriorityQueue<KDTree<P>> queue=new PriorityQueue<>(
-                    clusters, Comparator.<KDTree<P>>comparingDouble((tree)->tree.variance).reversed());
+            Deque<KDTree> deque=new ArrayDeque<>(2);
+            PriorityQueue<KDTree> queue=new PriorityQueue<>(
+                    clusters, Comparator.<KDTree>comparingDouble((tree)->tree.variance).reversed());
             queue.add(points);
             while (queue.size()<clusters) {
-                KDTree<P> tree=queue.remove();
+                KDTree tree=queue.remove();
                 if (tree.split(deque)) {
                     while (!deque.isEmpty()) {
                         queue.add(deque.removeFirst());
@@ -323,7 +319,7 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
                 }
             }
             Set<Vector> centers=new HashSet<>(queue.size());
-            for (KDTree<P> tree: queue) {
+            for (KDTree tree: queue) {
                 centers.add(tree.mean);
             }
             InitialCenters.newCenters(
@@ -341,7 +337,7 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
 
     public static Function<Vector, Vector> nearestCenter(List<Vector> centers, Sum.Factory sum) {
         NearestCenter nearestCenter=new NearestCenter();
-        KDTree<?> tree=KDTree.create(1, new VectorList(new ArrayList<>(centers)), sum);
+        KDTree tree=KDTree.create(1, new VectorList(new ArrayList<>(centers)), sum);
         return (point)->{
             tree.nearestCenter(nearestCenter, point);
             return nearestCenter.center;
@@ -351,49 +347,44 @@ public abstract class KDTree<P extends MutablePoints<P>> extends Points<KDTree<P
     protected abstract void nearestCenter(NearestCenter nearestCenter, Vector point);
 
     @Override
-    public KDTree<P> self() {
-        return this;
-    }
-
-    @Override
     public int size() {
         return size;
     }
 
-    protected abstract boolean split(Deque<KDTree<P>> deque);
+    protected abstract boolean split(Deque<KDTree> deque);
 
     @Override
-    public List<KDTree<P>> split(int parts) {
+    public List<Points> split(int parts) {
         if (2>parts) {
             return Collections.singletonList(this);
         }
         int maxSize=size()/(4*parts);
-        Deque<KDTree<P>> deque=new ArrayDeque<>();
-        List<KDTree<P>> trees=new ArrayList<>();
+        Deque<KDTree> deque=new ArrayDeque<>();
+        List<KDTree> trees=new ArrayList<>();
         deque.addFirst(this);
         while (!deque.isEmpty()) {
-            KDTree<P> tree=deque.removeFirst();
+            KDTree tree=deque.removeFirst();
             if ((tree.size()<=maxSize)
                     || (!tree.split(deque))) {
                 trees.add(tree);
             }
         }
         if (trees.size()<=parts) {
-            return Collections.unmodifiableList(new ArrayList<>(trees));
+            return List.copyOf(trees);
         }
-        List<KDTree<P>> trees2=new ArrayList<>(parts);
+        List<KDTree> trees2=new ArrayList<>(parts);
         for (int ii=0; parts>ii; ++ii) {
             trees2.add(split(ii*trees.size()/parts, (ii+1)*trees.size()/parts, trees));
         }
-        return Collections.unmodifiableList(new ArrayList<>(trees2));
+        return List.copyOf(trees2);
     }
 
-    private KDTree<P> split(int from, int to, List<KDTree<P>> trees) {
+    private KDTree split(int from, int to, List<KDTree> trees) {
         if (2>to-from) {
             return trees.get(from);
         }
         int middle=(from+to)/2;
-        return new Branch<>(
+        return new Branch(
                 split(from, middle, trees),
                 split(middle, to, trees));
     }

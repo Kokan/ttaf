@@ -13,7 +13,7 @@ import java.util.Set;
 public interface ClusterColors {
     abstract class Abstract implements ClusterColors {
         @Override
-        public Map<Vector, Vector> colors(List<List<Vector>> clusters, Points<?> points) {
+        public Map<Vector, Vector> colors(List<List<Vector>> clusters, Points points) {
             if (1>=clusters.size()) {
                 throw new RuntimeException("too few clusters "+clusters.size());
             }
@@ -36,7 +36,7 @@ public interface ClusterColors {
 
         protected abstract Map<Vector, Vector> colors(
                 List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized,
-                Points<?> points);
+                Points points);
     }
 
     abstract class Gray extends Abstract {
@@ -56,7 +56,7 @@ public interface ClusterColors {
                 @Override
                 protected Map<Vector, Vector> colors(
                         List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized,
-                        Points<?> points) {
+                        Points points) {
                     Set<Double> remainingGrays=new HashSet<>(clusters.size());
                     Map<List<Vector>, Void> remainingClusters=new IdentityHashMap<>(clusters.size());
                     for (int cc=0; clusters.size()>cc; ++cc) {
@@ -111,8 +111,8 @@ public interface ClusterColors {
                 @Override
                 protected Map<Vector, Vector> colors(
                         List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized,
-                        Points<?> points) {
-                    Color.Converter colorConverter=new Color.Converter();
+                        Points points) {
+                    ColorConverter colorConverter=new ColorConverter();
                     Map<Vector, Double> hues=new IdentityHashMap<>(normalized.size());
                     normalized.forEach((vector, vector2)->{
                         colorConverter.rgbToHslv(
@@ -175,7 +175,7 @@ public interface ClusterColors {
         }*/
     }
 
-    Map<Vector, Vector> colors(List<List<Vector>> clusters, Points<?> points);
+    Map<Vector, Vector> colors(List<List<Vector>> clusters, Points points);
 
     int dimensions();
 }

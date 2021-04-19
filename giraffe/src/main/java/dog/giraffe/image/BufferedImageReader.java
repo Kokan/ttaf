@@ -13,7 +13,7 @@ import java.awt.image.Raster;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
 
-public abstract class BufferedImageReader<P extends MutablePoints<P>> implements ImageReader<P> {
+public abstract class BufferedImageReader<P extends MutablePoints> implements ImageReader<P> {
     public static class Factory implements ImageReader.Factory {
         private final AsyncSupplier<BufferedImage> supplier;
 

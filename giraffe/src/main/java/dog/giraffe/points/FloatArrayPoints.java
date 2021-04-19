@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Sub-points are only mutable as far as swap goes.
  */
-public class FloatArrayPoints extends MutablePoints<FloatArrayPoints> {
+public class FloatArrayPoints extends MutablePoints {
     private float[] data;
     private final int offset;
     private int size;
@@ -65,19 +65,24 @@ public class FloatArrayPoints extends MutablePoints<FloatArrayPoints> {
     }
 
     @Override
+    public void addFrom(FloatArrayPoints points, int from, int to) {
+        int length=to-from;
+        ensureSize(size+length);
+        System.arraycopy(
+                points.data, points.dimensions*(points.offset+from),
+                data, dimensions*size,
+                dimensions*length);
+        size+=length;
+    }
+
+    @Override
     public void addNormalized(Vector vector) {
         add(vector);
     }
 
     @Override
-    public void addTo(FloatArrayPoints points, int from, int to) {
-        int length=to-from;
-        points.ensureSize(points.size+length);
-        System.arraycopy(
-                data, dimensions*(offset+from),
-                points.data, dimensions*points.size,
-                dimensions*length);
-        points.size+=length;
+    public void addTo(MutablePoints points, int from, int to) {
+        points.addFrom(this, from, to);
     }
 
     @Override
@@ -114,11 +119,6 @@ public class FloatArrayPoints extends MutablePoints<FloatArrayPoints> {
     }
 
     @Override
-    public FloatArrayPoints self() {
-        return this;
-    }
-
-    @Override
     public void set(int dimension, int index, double value) {
         data[dimension+dimensions*(offset+index)]=(float)value;
     }
@@ -134,7 +134,7 @@ public class FloatArrayPoints extends MutablePoints<FloatArrayPoints> {
     }
 
     @Override
-    public List<FloatArrayPoints> split(int parts) {
+    public List<Points> split(int parts) {
         if ((2>parts)
                 || (2>size())) {
             return Collections.singletonList(this);
