@@ -47,14 +47,14 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
         @Override
         public <C> void classify(
                 Function<C, Vector> centerPoint, List<C> centers,
-                Classification<C, Distance, Mean, KDTree<P>, Vector> classification) {
+                Classification<C, Distance, Mean, StdDeviation, KDTree<P>, Vector> classification) {
             centers=filterCenters(centerPoint, centers);
             left.classify(centerPoint, centers, classification);
             right.classify(centerPoint, centers, classification);
         }
 
         @Override
-        public void forEach(ForEach<Distance, Mean, KDTree<P>, Vector> forEach) {
+        public void forEach(ForEach<Distance, Mean, StdDeviation, KDTree<P>, Vector> forEach) {
             left.forEach(forEach);
             right.forEach(forEach);
         }
@@ -141,7 +141,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
         @Override
         public <C> void classify(
                 Function<C, Vector> centerPoint, List<C> centers,
-                Classification<C, Distance, Mean, KDTree<P>, Vector> classification) {
+                Classification<C, Distance, Mean, StdDeviation, KDTree<P>, Vector> classification) {
             centers=filterCenters(centerPoint, centers);
             if (1==centers.size()) {
                 classification.nearestCenter(centers.get(0), this);
@@ -271,8 +271,8 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
     }
 
     public static <P extends L2Points<P> & QuickSort.Swap & SubPoints<P>>
-    InitialCenters<L2Points.Distance, L2Points.Mean, KDTree<P>, Vector> initialCenters(boolean notNear) {
-        ReplaceEmptyCluster<Distance, Mean, KDTree<P>, Vector> fallback=ReplaceEmptyCluster.farthest(notNear);
+    InitialCenters<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<P>, Vector> initialCenters(boolean notNear) {
+        ReplaceEmptyCluster<Distance, Mean, StdDeviation, KDTree<P>, Vector> fallback=ReplaceEmptyCluster.farthest(notNear);
         return (clusters, context, maxIterations, points, points2, continuation)->{
             Deque<KDTree<P>> deque=new ArrayDeque<>(2);
             PriorityQueue<KDTree<P>> queue=new PriorityQueue<>(

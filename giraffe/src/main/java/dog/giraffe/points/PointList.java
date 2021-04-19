@@ -3,6 +3,7 @@ package dog.giraffe.points;
 import dog.giraffe.Distance;
 import dog.giraffe.QuickSort;
 import dog.giraffe.VectorMean;
+import dog.giraffe.VectorStdDeviation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,26 +11,28 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class PointList<D extends Distance<T>, M extends VectorMean<M, T>, T>
-        implements Points<D, M, PointList<D, M, T>, T>, QuickSort.Swap, SubPoints<PointList<D, M, T>> {
+public class PointList<D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S,T>, T>
+        implements Points<D, M, S, PointList<D, M, S, T>, T>, QuickSort.Swap, SubPoints<PointList<D, M, S, T>> {
     private final D distance;
     private final VectorMean.Factory<M, T> mean;
+    private final VectorStdDeviation.Factory<S, T> dev;
     private final List<T> points;
 
-    private PointList(D distance, VectorMean.Factory<M, T> mean, List<T> points) {
+    private PointList(D distance, VectorMean.Factory<M, T> mean, VectorStdDeviation.Factory<S, T> dev, List<T> points) {
         this.distance=Objects.requireNonNull(distance, "distance");
         this.mean=Objects.requireNonNull(mean, "mean");
+        this.dev=Objects.requireNonNull(dev, "dev");
         this.points=Objects.requireNonNull(points, "points");
     }
 
-    public PointList(D distance, VectorMean.Factory<M, T> mean, Collection<T> points) {
-        this(distance, mean, Collections.unmodifiableList(new ArrayList<>(points)));
+    public PointList(D distance, VectorMean.Factory<M, T> mean, VectorStdDeviation.Factory<S, T> dev, Collection<T> points) {
+        this(distance, mean, dev, Collections.unmodifiableList(new ArrayList<>(points)));
     }
 
     @Override
     public <C> void classify(
             Function<C, T> centerPoint, List<C> centers,
-            Classification<C, D, M, PointList<D, M, T>, T> classification) {
+            Classification<C, D, M, S, PointList<D, M, S, T>, T> classification) {
         if (centers.isEmpty()) {
             throw new IllegalArgumentException();
         }
@@ -63,7 +66,12 @@ public class PointList<D extends Distance<T>, M extends VectorMean<M, T>, T>
     }
 
     @Override
-    public PointList<D, M, T> self() {
+    public VectorStdDeviation.Factory<S, T> dev() {
+        return dev;
+    }
+
+    @Override
+    public PointList<D, M, S, T> self() {
         return this;
     }
 
@@ -73,23 +81,23 @@ public class PointList<D extends Distance<T>, M extends VectorMean<M, T>, T>
     }
 
     @Override
-    public List<PointList<D, M, T>> split(int parts) {
+    public List<PointList<D, M, S, T>> split(int parts) {
         if ((2>parts)
                 || (2>points.size())) {
             return Collections.singletonList(this);
         }
         parts=Math.min(parts, points.size());
-        List<PointList<D, M, T>> result=new ArrayList<>(parts);
+        List<PointList<D, M, S, T>> result=new ArrayList<>(parts);
         for (int ii=0; parts>ii; ++ii) {
             result.add(new PointList<>(
-                    distance, mean, points.subList(ii*points.size()/parts, (ii+1)*points.size()/parts)));
+                    distance, mean, dev, points.subList(ii*points.size()/parts, (ii+1)*points.size()/parts)));
         }
         return Collections.unmodifiableList(result);
     }
 
     @Override
-    public PointList<D, M, T> subPoints(int fromIndex, int toIndex) {
-        return new PointList<>(distance, mean, points.subList(fromIndex, toIndex));
+    public PointList<D, M, S, T> subPoints(int fromIndex, int toIndex) {
+        return new PointList<>(distance, mean, dev, points.subList(fromIndex, toIndex));
     }
 
     @Override

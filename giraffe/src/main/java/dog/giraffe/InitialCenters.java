@@ -14,14 +14,14 @@ import java.util.List;
 import java.util.Set;
 
 @FunctionalInterface
-public interface InitialCenters<D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T> {
+public interface InitialCenters<D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T> {
     void initialCenters(
             int clusters, Context context, int maxIterations, P points, List<P> points2,
             Continuation<List<T>> continuation) throws Throwable;
 
-    static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
-    InitialCenters<D, M, P, T> meanAndFarthest(boolean notNear) {
-        ReplaceEmptyCluster<D, M, P, T> replaceEmptyClustersFirst
+    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
+    InitialCenters<D, M, S, P, T> meanAndFarthest(boolean notNear) {
+        ReplaceEmptyCluster<D, M, S, P, T> replaceEmptyClustersFirst
                 =(centers, context, maxIterations, points, points2, continuation)->{
                     List<AsyncSupplier<M>> forks=new ArrayList<>(points2.size());
                     for (int pp=0; points2.size()>pp; ++pp) {
@@ -45,7 +45,7 @@ public interface InitialCenters<D extends Distance<T>, M extends VectorMean<M, T
                             continuation);
                     Continuations.forkJoin(forks, join, context.executor());
                 };
-        ReplaceEmptyCluster<D, M, P, T> replaceEmptyClustersRest=ReplaceEmptyCluster.farthest(notNear);
+        ReplaceEmptyCluster<D, M, S, P, T> replaceEmptyClustersRest=ReplaceEmptyCluster.farthest(notNear);
         return (clusters, context, maxIterations, points, points2, continuation)->{
             newCenters(
                     new HashSet<>(0),
@@ -60,11 +60,11 @@ public interface InitialCenters<D extends Distance<T>, M extends VectorMean<M, T
         };
     }
 
-    static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
+    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
     void newCenters(
             Set<T> centers, int clusters, Context context, Continuation<List<T>> continuation, int maxIterations,
-            P points, List<P> points2, ReplaceEmptyCluster<D, M, P, T> replaceEmptyClusterFirst,
-            ReplaceEmptyCluster<D, M, P, T> replaceEmptyClusterRest) throws Throwable {
+            P points, List<P> points2, ReplaceEmptyCluster<D, M, S, P, T> replaceEmptyClusterFirst,
+            ReplaceEmptyCluster<D, M, S, P, T> replaceEmptyClusterRest) throws Throwable {
         List<T> centers2=Collections.unmodifiableList(new ArrayList<>(centers));
         if (centers2.size()>=clusters) {
                 continuation.completed(centers2);
@@ -94,8 +94,8 @@ public interface InitialCenters<D extends Distance<T>, M extends VectorMean<M, T
                         context.executor()));
     }
 
-    static <D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T>
-    InitialCenters<D, M, P, T> random() {
+    static <D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S, T>, P extends Points<D, M, S, P, T>, T>
+    InitialCenters<D, M, S, P, T> random() {
         return (clusters, context, maxIterations, points, points2, continuation)->{
             Set<T> centers=new HashSet<>(clusters);
             for (int ii=maxIterations*clusters; clusters>centers.size(); --ii) {

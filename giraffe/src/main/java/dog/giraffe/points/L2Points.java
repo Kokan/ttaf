@@ -11,7 +11,7 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 
 public abstract class L2Points<P extends L2Points<P>>
-        implements Points<L2Points.Distance, L2Points.Mean, P, Vector> {
+        implements Points<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> {
     public static class Distance implements dog.giraffe.Distance<Vector> {
         private Distance() {
         }
@@ -106,8 +106,8 @@ public abstract class L2Points<P extends L2Points<P>>
         }
     }
 
-    public static class StdDeviation implements VectorStdDeviation<Vector> {
-        public static class Factory implements VectorStdDeviation.Factory<Vector> {
+    public static class StdDeviation implements VectorStdDeviation<StdDeviation, Vector> {
+        public static class Factory implements VectorStdDeviation.Factory<StdDeviation, Vector> {
             private final int dimensions;
 
             public Factory(int dimensions) {
@@ -115,7 +115,7 @@ public abstract class L2Points<P extends L2Points<P>>
             }
 
             @Override
-            public VectorStdDeviation<Vector> create(Vector mean, int addends, Sum.Factory sumFactory) {
+            public VectorStdDeviation<StdDeviation, Vector> create(Vector mean, int addends, Sum.Factory sumFactory) {
                 List<Sum> sums=new ArrayList<>(dimensions);
                 for (int i=0; i<dimensions; ++i) {
                     sums.add(sumFactory.create(addends));
@@ -136,19 +136,21 @@ public abstract class L2Points<P extends L2Points<P>>
         }
 
         @Override
-        public VectorStdDeviation<Vector> add(Vector addend) {
+        public void add(Vector addend) {
             ++addends;
             for (int i=0;i<addend.dimensions(); ++i) {
                sums.get(i).add( Math.pow(addend.coordinate(i) - meanValue.coordinate(i), 2) );
             }
-            return this;
         }
 
         @Override
-        public VectorStdDeviation<Vector> clear() {
+        public void addTo(StdDeviation dev) {
+        }
+
+        @Override
+        public void clear() {
             sums.forEach(Sum::clear);
             addends=0;
-            return this;
         }
 
         @Override
@@ -233,7 +235,8 @@ public abstract class L2Points<P extends L2Points<P>>
         return mean;
     }
 
-    public VectorStdDeviation.Factory<Vector> dev() {
+    @Override
+    public VectorStdDeviation.Factory<StdDeviation, Vector> dev() {
          return dev;
     }
 

@@ -88,7 +88,7 @@ public class Isodata<P extends L2Points<P>> {
     private final List<List<L2Points.Mean>> means;
     private final P points;
     private final List<P> points2;
-    private final ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, P, Vector> replaceEmptyCluster;
+    private final ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> replaceEmptyCluster;
     private final List<Sum> sums;
 
     public static class Comp implements MaxComponent<Double, Vector> {
@@ -134,7 +134,7 @@ public class Isodata<P extends L2Points<P>> {
             List<List<L2Points.Mean>> means,
             P points,
             List<P> points2,
-            ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, P, Vector> replaceEmptyCluster,
+            ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> replaceEmptyCluster,
             List<Sum> sums){
         this.N_c=N_c;
         this.K=K;
@@ -159,10 +159,10 @@ public class Isodata<P extends L2Points<P>> {
             Context context,
             Continuation<Clusters<Vector>> continuation,
             double errorLimit,
-            InitialCenters<L2Points.Distance, L2Points.Mean, P, Vector> initialCenters,
+            InitialCenters<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> initialCenters,
             int maxIterations,
             P points,
-            ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, P, Vector> replaceEmptyCluster) throws Throwable {
+            ReplaceEmptyCluster<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> replaceEmptyCluster) throws Throwable {
         if (0>=N_c) {
             continuation.failed(new IllegalStateException(Integer.toString(N_c)));
             return;
@@ -210,9 +210,9 @@ public class Isodata<P extends L2Points<P>> {
                                     N_c,
                                     K,
                                     (int)(0.05*points.size()),
-                                    0.3,
                                     3,
-                                    0.01,
+                                    3,
+                                    5,
                                     context,
                                     errorLimit,
                                     maxIterations,
@@ -306,9 +306,11 @@ public class Isodata<P extends L2Points<P>> {
                 discarded=true;
              }
          }
-         N_c=clusters2.size();
-         p.clusters.clear();
-         p.clusters.addAll(clusters2);
+         if (discarded) {
+            N_c=clusters2.size();
+            p.clusters.clear();
+            p.clusters.addAll(clusters2);
+         }
 
          update_centers(p, continuation, error, iteration);
     }
@@ -505,9 +507,9 @@ public class Isodata<P extends L2Points<P>> {
         List<AsyncSupplier<Void>> forks=new ArrayList<>(clusters.size());
         for (Cluster cluster : clusters) {
             forks.add((continuation2)->{
-                VectorStdDeviation<Vector> dev = this.points.dev().create(cluster.center, 0, context.sum());
+                VectorStdDeviation<L2Points.StdDeviation,Vector> dev = this.points.dev().create(cluster.center, 0, context.sum());
                 for (Vector point: cluster.points) {
-                    dev=dev.add(point);
+                    dev.add(point);
                 }
                 cluster.std_dev = dev.deviation();
                 continuation2.completed(null);

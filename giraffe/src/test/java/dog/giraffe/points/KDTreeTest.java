@@ -35,7 +35,7 @@ public class KDTreeTest {
             tree.classify(
                     Function.identity(),
                     centers,
-                    new Points.Classification<Vector, L2Points.Distance, L2Points.Mean, KDTree<VectorList>, Vector>() {
+                    new Points.Classification<Vector, L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<VectorList>, Vector>() {
                         @Override
                         public void nearestCenter(Vector center, KDTree<VectorList> points) {
                             for (int ii=0; points.size()>ii; ++ii) {

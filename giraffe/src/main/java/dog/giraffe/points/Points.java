@@ -3,17 +3,22 @@ package dog.giraffe.points;
 import dog.giraffe.Distance;
 import dog.giraffe.Sum;
 import dog.giraffe.VectorMean;
+import dog.giraffe.VectorStdDeviation;
 import java.util.List;
 import java.util.function.Function;
 
-public interface Points<D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T> {
-    interface Classification<C, D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T> {
+public interface Points<D extends Distance<T>,
+                        M extends VectorMean<M, T>,
+                        S extends VectorStdDeviation<S, T>,
+                        P extends Points<D, M, S, P, T>,
+                        T> {
+    interface Classification<C, D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S,T>, P extends Points<D, M, S, P, T>, T> {
         void nearestCenter(C center, P points);
 
         void nearestCenter(C center, P points, int index );
     }
 
-    interface ForEach<D extends Distance<T>, M extends VectorMean<M, T>, P extends Points<D, M, P, T>, T> {
+    interface ForEach<D extends Distance<T>, M extends VectorMean<M, T>, S extends VectorStdDeviation<S,T>, P extends Points<D, M, S, P, T>, T> {
         void point(P points, int index );
     }
 
@@ -38,7 +43,7 @@ public interface Points<D extends Distance<T>, M extends VectorMean<M, T>, P ext
     }
 
     default <C> void classify(
-            Function<C, T> centerPoint, List<C> centers, Classification<C, D, M, P, T> classification) {
+            Function<C, T> centerPoint, List<C> centers, Classification<C, D, M, S, P, T> classification) {
         if (centers.isEmpty()) {
             throw new IllegalArgumentException();
         }
@@ -64,13 +69,15 @@ public interface Points<D extends Distance<T>, M extends VectorMean<M, T>, P ext
 
     T get(int index);
 
-    default void forEach(ForEach<D, M, P, T> forEach) {
+    default void forEach(ForEach<D, M, S, P, T> forEach) {
         for (int ii=0; size()>ii; ++ii) {
             forEach.point(self(), ii);
         }
     }
 
     VectorMean.Factory<M, T> mean();
+
+    VectorStdDeviation.Factory<S, T> dev();
     
     P self();
 
