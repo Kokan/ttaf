@@ -4,6 +4,7 @@ import dog.giraffe.QuickSort;
 import dog.giraffe.Sum;
 import dog.giraffe.Vector;
 import dog.giraffe.VectorMean;
+import dog.giraffe.VectorStdDeviation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 
 public abstract class L2Points<P extends L2Points<P>>
-        implements Points<L2Points.Distance, L2Points.Mean, P, Vector> {
+        implements Points<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, P, Vector> {
     public static class Distance implements dog.giraffe.Distance<Vector> {
         private Distance() {
         }
@@ -137,17 +138,82 @@ public abstract class L2Points<P extends L2Points<P>>
         public abstract P subPoints(int fromIndex, int toIndex);
     }
 
+    public static class StdDeviation implements VectorStdDeviation<StdDeviation, Vector> {
+        public static class Factory implements VectorStdDeviation.Factory<StdDeviation, Vector> {
+            private final int dimensions;
+
+            public Factory(int dimensions) {
+                 this.dimensions = dimensions;
+            }
+
+            @Override
+            public VectorStdDeviation<StdDeviation, Vector> create(Vector mean, int addends, Sum.Factory sumFactory) {
+                List<Sum> sums=new ArrayList<>(dimensions);
+                for (int i=0; i<dimensions; ++i) {
+                    sums.add(sumFactory.create(addends));
+                }
+
+                return new StdDeviation(mean, addends, Collections.unmodifiableList(sums));
+            }
+        }
+
+        private int addends;
+        private final Vector meanValue;
+        private final List<Sum> sums;
+
+        public StdDeviation(Vector mean, int addends, List<Sum> sums) {
+          this.addends = 0;
+          this.meanValue = mean;
+          this.sums = sums;
+        }
+
+        @Override
+        public void add(Vector addend) {
+            ++addends;
+            for (int i=0;i<addend.dimensions(); ++i) {
+               sums.get(i).add( Math.pow(addend.coordinate(i) - meanValue.coordinate(i), 2) );
+            }
+        }
+
+        @Override
+        public void addTo(StdDeviation dev) {
+        }
+
+        @Override
+        public void clear() {
+            sums.forEach(Sum::clear);
+            addends=0;
+        }
+
+        @Override
+        public Vector mean() {
+            return meanValue;
+        }
+
+        @Override
+        public Vector deviation() {
+            if (addends==0) throw new RuntimeException("dividing by zero");
+            Vector dev=new Vector(sums.size());
+            for (int i=0;i<sums.size(); ++i) {
+               dev.coordinate(i, Math.sqrt( sums.get(i).sum() / addends ) );
+            }
+            return dev;
+        }
+    }
+
     public static final Distance DISTANCE=new Distance();
 
     protected final int dimensions;
     protected final Mean.Factory mean;
+    protected final StdDeviation.Factory dev;
 
     public L2Points(int dimensions) {
         if (0>dimensions) {
             throw new IllegalArgumentException(Integer.toString(dimensions));
         }
         this.dimensions=dimensions;
-        mean=new Mean.Factory(dimensions);
+        this.mean=new Mean.Factory(dimensions);
+        this.dev=new StdDeviation.Factory(dimensions);
     }
 
     @Override
@@ -203,6 +269,11 @@ public abstract class L2Points<P extends L2Points<P>>
     @Override
     public VectorMean.Factory<Mean, Vector> mean() {
         return mean;
+    }
+
+    @Override
+    public VectorStdDeviation.Factory<StdDeviation, Vector> dev() {
+         return dev;
     }
 
     public abstract double minValue();

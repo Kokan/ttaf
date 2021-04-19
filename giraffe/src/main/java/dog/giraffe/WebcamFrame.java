@@ -177,10 +177,20 @@ public class WebcamFrame extends JFrame {
         void project(Color.Converter colorConverter, UnsignedByteArrayL2Points points, int rgb);
 
         int rgb(Color.Converter colorConverter, Vector point);
+
+        default void set(int c) {
+        }
     }
 
     private class ReplaceCenters implements Projection {
-        private Projection projection;
+        private final Projection projection;
+        private int c;
+
+
+        @Override
+        public void set(int c) {
+            this.c=c;
+        }
 
         public ReplaceCenters(Projection projection) {
            this.projection=projection;
@@ -236,7 +246,8 @@ public class WebcamFrame extends JFrame {
 
         @Override
         public int rgb(Color.Converter colorConverter, Vector point) {
-            return projection.rgb(colorConverter, replace_point(point));
+            //return projection.rgb(colorConverter, replace_point(point));
+            return projection.rgb(colorConverter, point);
         }
     };
 
@@ -388,11 +399,11 @@ public class WebcamFrame extends JFrame {
         setVisible(true);
     }
 
-    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector> isodataStrategy(
+    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<UnsignedByteArrayL2Points>, Vector> isodataStrategy(
             int start_clusters, int desired_clusters) {
             double errorLimit=0.95;
             int maxIterations=100;
-            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector>>
+            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<UnsignedByteArrayL2Points>, Vector>>
                     strategies=new ArrayList<>();
             strategies.add((contex,points,cont)-> {
 
@@ -403,7 +414,7 @@ public class WebcamFrame extends JFrame {
                     cont,
                     0.95,
                     InitialCenters.meanAndFarthest(false),
-                    100,
+                    maxIterations,
                     points,
                     ReplaceEmptyCluster.farthest(false)
                     );
@@ -412,23 +423,23 @@ public class WebcamFrame extends JFrame {
             return ClusteringStrategy.best(strategies);
     }
 
-    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector> kMeansStrategy(
+    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<UnsignedByteArrayL2Points>, Vector> kMeansStrategy(
             int clusters) {
-        Function<Integer, ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector>>
+        Function<Integer, ClusteringStrategy<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<UnsignedByteArrayL2Points>, Vector>>
                 strategyGenerator=(clusters2)->{
             double errorLimit=0.95;
             int maxIterations=1000;
-            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector>>
+            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<UnsignedByteArrayL2Points>, Vector>>
                     strategies=new ArrayList<>();
             strategies.add(ClusteringStrategy.
-                    <L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector>kMeans(
+                    <L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<UnsignedByteArrayL2Points>, Vector>kMeans(
                             clusters2,
                             errorLimit,
                             InitialCenters.meanAndFarthest(false),
                             maxIterations,
                             ReplaceEmptyCluster.farthest(false)));
                         /*strategies.add(ClusteringStrategy.
-                                <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                                <L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<ByteArrayL2Points>, Vector>kMeans(
                                         clusters2,
                                         errorLimit,
                                         InitialCenters.meanAndFarthest(true),
@@ -449,7 +460,7 @@ public class WebcamFrame extends JFrame {
                         /*strategies.add(ClusteringStrategy.best(
                                 5,
                                 ClusteringStrategy.
-                                        <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                                        <L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<ByteArrayL2Points>, Vector>kMeans(
                                                 clusters2,
                                                 errorLimit,
                                                 InitialCenters.random(),
@@ -458,7 +469,7 @@ public class WebcamFrame extends JFrame {
                         /*strategies.add(ClusteringStrategy.best(
                                 5,
                                 ClusteringStrategy.
-                                        <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                                        <L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<ByteArrayL2Points>, Vector>kMeans(
                                                 clusters2,
                                                 errorLimit,
                                                 InitialCenters.random(),
@@ -475,6 +486,7 @@ public class WebcamFrame extends JFrame {
         return (image, continuation)->{
             int height=image.getHeight();
             int width=image.getWidth();
+            int maxIterations=10;
             int[] pixels=new int[height*width];
             image.getRGB(0, 0, width, height, pixels, 0, width);
             Color.Converter colorConverter=new Color.Converter();
@@ -511,7 +523,7 @@ public class WebcamFrame extends JFrame {
                             continuation),
                     0.95,
                     InitialCenters.meanAndFarthest(false),
-                    100,
+                    maxIterations,
                     KDTree.create(4096, points, context.sum()),
                     ReplaceEmptyCluster.farthest(false)
                     );
@@ -520,7 +532,7 @@ public class WebcamFrame extends JFrame {
 
     private AsyncFunction<BufferedImage, BufferedImage> kMeans(int clusters, Projection projection) {
         return (image, continuation)->{
-            ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector> strategy
+            ClusteringStrategy<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<UnsignedByteArrayL2Points>, Vector> strategy
                     =kMeansStrategy(clusters);
             int height=image.getHeight();
             int width=image.getWidth();
@@ -608,7 +620,7 @@ public class WebcamFrame extends JFrame {
     }
 
     private AsyncFunction<BufferedImage, BufferedImage> saturationBased(
-            ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector> strategy) {
+            ClusteringStrategy<L2Points.Distance, L2Points.Mean, L2Points.StdDeviation, KDTree<UnsignedByteArrayL2Points>, Vector> strategy) {
         return (image, continuation)->{
             Predicate<Color.Converter> predicate=(colorConverter)->
                     1.0-0.8*colorConverter.value>=colorConverter.saturationValue;

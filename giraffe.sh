@@ -14,5 +14,4 @@ if [ "0" != "$?" ]; then
 	exit 1
 fi
 cd ..
-#${JAVA} ${JAVA_ARG} -cp "giraffe/build/libs/*" dog.giraffe.WebcamFrame "$@"
-java -Xmx8g -cp "giraffe/build/libs/*" dog.giraffe.WebcamFrame "$@"
+${JAVA} ${JAVA_ARG} -cp "giraffe/build/libs/*" dog.giraffe.WebcamFrame "$@"

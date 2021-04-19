@@ -1,13 +1,15 @@
 package dog.giraffe;
 
-public interface VectorStdDeviation<T> {
-    interface Factory<T> {
-        VectorStdDeviation<T> create(T mean, int addends);
+public interface VectorStdDeviation<S extends VectorStdDeviation<S, T>, T> {
+    interface Factory<S extends VectorStdDeviation<S,T>, T> {
+        VectorStdDeviation<S, T> create(T mean, int addends, Sum.Factory sumFactory);
     }
 
-    VectorStdDeviation<T> add(T addend);
+    void add(T addend);
 
-    VectorStdDeviation<T> clear();
+    void addTo(S dev);
+
+    void clear();
 
     T mean();
 
