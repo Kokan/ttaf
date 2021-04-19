@@ -1,11 +1,11 @@
 package dog.giraffe.points;
 
 import dog.giraffe.Doubles;
+import dog.giraffe.InitialCenters;
 import dog.giraffe.QuickSort;
+import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
 import dog.giraffe.Vector;
-import dog.giraffe.InitialCenters;
-import dog.giraffe.ReplaceEmptyCluster;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 
-public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> extends L2Points<KDTree<P>> {
+public abstract class KDTree<P extends L2Points.Mutable<P>> extends L2Points<KDTree<P>> {
     private static class NearestCenter {
         public Vector center;
         public double distance;
@@ -28,8 +28,10 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
     private static final DoubleBinaryOperator MAX=Math::max;
     private static final DoubleBinaryOperator MIN=Math::min;
 
-    private static class Branch<P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> extends KDTree<P> {
+    private static class Branch<P extends L2Points.Mutable<P>> extends KDTree<P> {
         private final KDTree<P> left;
+        private final double maxValue;
+        private final double minValue;
         private final KDTree<P> right;
 
         public Branch(KDTree<P> left, KDTree<P> right) {
@@ -42,6 +44,8 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
                     perform(ADD, left.sum2, right.sum2));
             this.left=left;
             this.right=right;
+            maxValue=left.maxValue();
+            minValue=left.minValue();
         }
 
         @Override
@@ -64,6 +68,23 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
             return (left.size()>index)
                     ?left.get(dimension, index)
                     :right.get(dimension, index-left.size());
+        }
+
+        @Override
+        public double getNormalized(int dimension, int index) {
+            return (left.size()>index)
+                    ?left.getNormalized(dimension, index)
+                    :right.getNormalized(dimension, index-left.size());
+        }
+
+        @Override
+        public double maxValue() {
+            return maxValue;
+        }
+
+        @Override
+        public double minValue() {
+            return minValue;
         }
 
         @Override
@@ -124,7 +145,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
         }
     }
 
-    private static class Leaf<P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> extends KDTree<P> {
+    private static class Leaf<P extends L2Points.Mutable<P>> extends KDTree<P> {
         private final P points;
 
         public Leaf(P points, List<Sum> sums) {
@@ -154,6 +175,21 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
         @Override
         public double get(int dimension, int index) {
             return points.get(dimension, index);
+        }
+
+        @Override
+        public double getNormalized(int dimension, int index) {
+            return points.getNormalized(dimension, index);
+        }
+
+        @Override
+        public double maxValue() {
+            return points.maxValue();
+        }
+
+        @Override
+        public double minValue() {
+            return points.minValue();
         }
 
         @Override
@@ -208,7 +244,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
         mean.addAll(size(), sum);
     }
 
-    public static <P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> KDTree<P> create(
+    public static <P extends L2Points.Mutable<P>> KDTree<P> create(
             int maxLeafSize, P points, Sum.Factory sum) {
         List<Sum> sums=new ArrayList<>(points.dimensions());
         for (int dd=0; points.dimensions()>dd; ++dd) {
@@ -217,7 +253,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
         return create(maxLeafSize, points, sums);
     }
 
-    private static <P extends L2Points<P> & QuickSort.Swap & SubPoints<P>> KDTree<P> create(
+    private static <P extends L2Points.Mutable<P>> KDTree<P> create(
             int maxLeafSize, P points, List<Sum> sums) {
         if (1>maxLeafSize) {
             throw new IllegalArgumentException(Integer.toString(maxLeafSize));
@@ -270,7 +306,7 @@ public abstract class KDTree<P extends L2Points<P> & QuickSort.Swap & SubPoints<
         return Collections.unmodifiableList(centers2);
     }
 
-    public static <P extends L2Points<P> & QuickSort.Swap & SubPoints<P>>
+    public static <P extends L2Points.Mutable<P>>
     InitialCenters<L2Points.Distance, L2Points.Mean, KDTree<P>, Vector> initialCenters(boolean notNear) {
         ReplaceEmptyCluster<Distance, Mean, KDTree<P>, Vector> fallback=ReplaceEmptyCluster.farthest(notNear);
         return (clusters, context, maxIterations, points, points2, continuation)->{

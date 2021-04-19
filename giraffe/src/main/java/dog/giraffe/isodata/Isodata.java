@@ -282,7 +282,7 @@ public class Isodata<P extends L2Points<P>> {
                                                for (Vector c : res.keySet()) {
                                                   cl.add(c);
                                                }
-                                               cont.completed(new Clusters<>(cl, error));
+                                               cont.completed(Clusters.create(cl, error));
                                              },continuation), error, 0);
                         },
                         continuation));

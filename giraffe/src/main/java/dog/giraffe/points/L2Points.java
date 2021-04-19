@@ -1,5 +1,6 @@
 package dog.giraffe.points;
 
+import dog.giraffe.QuickSort;
 import dog.giraffe.Sum;
 import dog.giraffe.Vector;
 import dog.giraffe.VectorMean;
@@ -105,6 +106,37 @@ public abstract class L2Points<P extends L2Points<P>>
         }
     }
 
+    public static abstract class Mutable<P extends Mutable<P>> extends L2Points<P> implements QuickSort.Swap {
+        public interface Factor<P extends Mutable<P>> {
+            P create(int expectedSize);
+        }
+
+        public Mutable(int dimensions) {
+            super(dimensions);
+        }
+
+        public abstract void add(Vector vector);
+
+        public abstract void addNormalized(Vector vector);
+
+        public abstract void addTo(P points, int from, int to);
+
+        public void clear() {
+            clear(0);
+        }
+
+        public abstract void clear(int size);
+
+        public abstract void set(int dimension, int index, double value);
+
+        public abstract void setNormalized(int dimension, int index, double value);
+
+        /**
+         * The only mutator method sub-points have to support is swap().
+         */
+        public abstract P subPoints(int fromIndex, int toIndex);
+    }
+
     public static final Distance DISTANCE=new Distance();
 
     protected final int dimensions;
@@ -164,10 +196,16 @@ public abstract class L2Points<P extends L2Points<P>>
 
     public abstract double get(int dimension, int index);
 
+    public abstract double getNormalized(int dimension, int index);
+
+    public abstract double maxValue();
+
     @Override
     public VectorMean.Factory<Mean, Vector> mean() {
         return mean;
     }
+
+    public abstract double minValue();
 
     public Vector perform(double defaultValue, int offset, DoubleBinaryOperator operator, int size) {
         Vector result=new Vector(dimensions);

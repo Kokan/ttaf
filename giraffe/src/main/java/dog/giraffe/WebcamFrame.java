@@ -1,18 +1,16 @@
 package dog.giraffe;
 
 import com.github.sarxos.webcam.Webcam;
-import dog.giraffe.InitialCenters;
-import dog.giraffe.ReplaceEmptyCluster;
-import dog.giraffe.points.ByteArrayL2Points;
+import dog.giraffe.isodata.Isodata;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.points.L2Points;
+import dog.giraffe.points.UnsignedByteArrayL2Points;
 import dog.giraffe.threads.AsyncFunction;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Block;
 import dog.giraffe.threads.Consumer;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
-import dog.giraffe.isodata.Isodata;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
@@ -22,9 +20,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.function.Function;
 import java.util.function.IntToDoubleFunction;
 import java.util.function.Predicate;
@@ -132,7 +130,7 @@ public class WebcamFrame extends JFrame {
             }
 
             @Override
-            public void project(Color.Converter colorConverter, ByteArrayL2Points.Builder points, int rgb) {
+            public void project(Color.Converter colorConverter, UnsignedByteArrayL2Points points, int rgb) {
                 colorConverter.rgbToHslv(rgb);
                 points.add((byte)Color.Converter.toInt255(colorConverter.hue/(2.0*Math.PI)));
             }
@@ -159,7 +157,7 @@ public class WebcamFrame extends JFrame {
             }
 
             @Override
-            public void project(Color.Converter colorConverter, ByteArrayL2Points.Builder points, int rgb) {
+            public void project(Color.Converter colorConverter, UnsignedByteArrayL2Points points, int rgb) {
                 points.add((byte)(rgb&0xff), (byte)((rgb>>8)&0xff), (byte)((rgb>>16)&0xff));
             }
 
@@ -176,7 +174,7 @@ public class WebcamFrame extends JFrame {
 
         void project(byte[] buf, Color.Converter colorConverter, int offset, int rgb);
 
-        void project(Color.Converter colorConverter, ByteArrayL2Points.Builder points, int rgb);
+        void project(Color.Converter colorConverter, UnsignedByteArrayL2Points points, int rgb);
 
         int rgb(Color.Converter colorConverter, Vector point);
     }
@@ -232,7 +230,7 @@ public class WebcamFrame extends JFrame {
         }
 
         @Override
-        public void project(Color.Converter colorConverter, ByteArrayL2Points.Builder points, int rgb) {
+        public void project(Color.Converter colorConverter, UnsignedByteArrayL2Points points, int rgb) {
              projection.project(colorConverter, points, rgb);
         }
 
@@ -302,12 +300,11 @@ public class WebcamFrame extends JFrame {
         @Override
         public void run() {
             try {
-                    if (frame.context.stopped()) {
-                       return;
-                    }
-                    BufferedImage image2=ImageIO.read(file);
-
-                    frame.context.executor().execute(()->frame.image.accept(image2));
+                if (frame.context.stopped()) {
+                   return;
+                }
+                BufferedImage image2=ImageIO.read(file);
+                frame.context.executor().execute(()->frame.image.accept(image2));
             }
             catch (Throwable throwable) {
                 throwable.printStackTrace(System.err);
@@ -324,10 +321,10 @@ public class WebcamFrame extends JFrame {
 
     private static final long serialVersionUID=0L;
 
-    private final Context context;
+    private final SwingContext context;
     private final Consumer<BufferedImage> image;
 
-    public WebcamFrame(Context context) throws Throwable {
+    public WebcamFrame(SwingContext context) throws Throwable {
         super("Giraffe webcam");
         this.context=context;
 
@@ -349,14 +346,18 @@ public class WebcamFrame extends JFrame {
                         0x0000ff))));
         //functions.add(kMeans(2, Projection.RGB));
         //functions.add(kMeans(3, Projection.RGB));
-        functions.add(kMeans(-13, new ReplaceCenters(Projection.RGB)));
+        //functions.add(kMeans(-13, new ReplaceCenters(Projection.RGB)));
+        functions.add(kMeans(-13, Projection.RGB));
         //functions.add(kMeans(2, Projection.HUE));
         //functions.add(kMeans(3, Projection.HUE));
-        functions.add(kMeans(-13, new ReplaceCenters(Projection.HUE)));
+        //functions.add(kMeans(-13, new ReplaceCenters(Projection.HUE)));
+        functions.add(kMeans(-13, Projection.HUE));
         functions.add(saturationBased(kMeansStrategy(-13)));
 
-        functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.RGB)));
-        functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.HUE)));
+        //functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.RGB)));
+        functions.add(Isodata( 2, 30, Projection.RGB));
+        //functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.HUE)));
+        functions.add(Isodata( 2, 30, Projection.HUE));
         functions.add(saturationBased(isodataStrategy(2,30)));
 
         addWindowListener(new WindowListenerImpl());
@@ -387,11 +388,11 @@ public class WebcamFrame extends JFrame {
         setVisible(true);
     }
 
-    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> isodataStrategy(
+    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector> isodataStrategy(
             int start_clusters, int desired_clusters) {
             double errorLimit=0.95;
             int maxIterations=100;
-            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>>
+            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector>>
                     strategies=new ArrayList<>();
             strategies.add((contex,points,cont)-> {
 
@@ -411,16 +412,16 @@ public class WebcamFrame extends JFrame {
             return ClusteringStrategy.best(strategies);
     }
 
-    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> kMeansStrategy(
+    private ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector> kMeansStrategy(
             int clusters) {
-        Function<Integer, ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>>
+        Function<Integer, ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector>>
                 strategyGenerator=(clusters2)->{
             double errorLimit=0.95;
             int maxIterations=1000;
-            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>>
+            List<ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector>>
                     strategies=new ArrayList<>();
             strategies.add(ClusteringStrategy.
-                    <L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector>kMeans(
+                    <L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector>kMeans(
                             clusters2,
                             errorLimit,
                             InitialCenters.meanAndFarthest(false),
@@ -477,10 +478,9 @@ public class WebcamFrame extends JFrame {
             int[] pixels=new int[height*width];
             image.getRGB(0, 0, width, height, pixels, 0, width);
             Color.Converter colorConverter=new Color.Converter();
-            ByteArrayL2Points.Builder pointsBuilder
-                    =new ByteArrayL2Points.Builder(projection.dimensions(), height*width);
+            UnsignedByteArrayL2Points points=new UnsignedByteArrayL2Points(projection.dimensions(), height*width);
             for (int rgb: pixels) {
-                projection.project(colorConverter, pointsBuilder, rgb);
+                projection.project(colorConverter, points, rgb);
             }
 
             Isodata.cluster(
@@ -489,13 +489,13 @@ public class WebcamFrame extends JFrame {
                     context,
                     Continuations.map(
                             (clusters2, continuation2)->{
-                                List<Vector> centers=clusters2.centers;
+                                List<Vector> centersFlat=Lists.flatten(clusters2.centers);
                                 byte[] buf=new byte[projection.dimensions()];
                                 Vector point=new Vector(projection.dimensions());
                                 int[] pixels2=new int[height*width];
-                                Function<Vector, Vector> nearestCenter=(16>centers.size())
-                                        ?Distance.nearestCenter(centers, L2Points.DISTANCE)
-                                        :KDTree.nearestCenter(centers, Sum.PREFERRED);
+                                Function<Vector, Vector> nearestCenter=(16>centersFlat.size())
+                                        ?Distance.nearestCenter(centersFlat, L2Points.DISTANCE)
+                                        :KDTree.nearestCenter(centersFlat, Sum.PREFERRED);
                                 for (int ii=0; pixels.length>ii; ++ii) {
                                     projection.project(buf, colorConverter, 0, pixels[ii]);
                                     for (int dd=0; projection.dimensions()>dd; ++dd) {
@@ -512,7 +512,7 @@ public class WebcamFrame extends JFrame {
                     0.95,
                     InitialCenters.meanAndFarthest(false),
                     100,
-                    KDTree.create(4096, pointsBuilder.create(), context.sum()),
+                    KDTree.create(4096, points, context.sum()),
                     ReplaceEmptyCluster.farthest(false)
                     );
         };
@@ -520,24 +520,23 @@ public class WebcamFrame extends JFrame {
 
     private AsyncFunction<BufferedImage, BufferedImage> kMeans(int clusters, Projection projection) {
         return (image, continuation)->{
-            ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> strategy
+            ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector> strategy
                     =kMeansStrategy(clusters);
             int height=image.getHeight();
             int width=image.getWidth();
             int[] pixels=new int[height*width];
             image.getRGB(0, 0, width, height, pixels, 0, width);
             Color.Converter colorConverter=new Color.Converter();
-            ByteArrayL2Points.Builder pointsBuilder
-                    =new ByteArrayL2Points.Builder(projection.dimensions(), height*width);
+            UnsignedByteArrayL2Points points=new UnsignedByteArrayL2Points(projection.dimensions(), height*width);
             for (int rgb: pixels) {
-                projection.project(colorConverter, pointsBuilder, rgb);
+                projection.project(colorConverter, points, rgb);
             }
             strategy.cluster(
                     context,
-                    KDTree.create(4096, pointsBuilder.create(), context.sum()),
+                    KDTree.create(4096, points, context.sum()),
                     Continuations.map(
                             (clusters2, continuation2)->{
-                                List<Vector> centers=clusters2.centers;
+                                List<Vector> centers=Lists.flatten(clusters2.centers);
                                 byte[] buf=new byte[projection.dimensions()];
                                 Vector point=new Vector(projection.dimensions());
                                 int[] pixels2=new int[height*width];
@@ -568,7 +567,7 @@ public class WebcamFrame extends JFrame {
 
     public static void main(String[] args) throws Throwable {
         boolean error=true;
-        Context threads=new SwingContext();
+        SwingContext threads=new SwingContext();
         try {
             new Thread(grabberFactory(new WebcamFrame(threads), args))
                     .start();
@@ -609,7 +608,7 @@ public class WebcamFrame extends JFrame {
     }
 
     private AsyncFunction<BufferedImage, BufferedImage> saturationBased(
-            ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<ByteArrayL2Points>, Vector> strategy) {
+            ClusteringStrategy<L2Points.Distance, L2Points.Mean, KDTree<UnsignedByteArrayL2Points>, Vector> strategy) {
         return (image, continuation)->{
             Predicate<Color.Converter> predicate=(colorConverter)->
                     1.0-0.8*colorConverter.value>=colorConverter.saturationValue;
@@ -619,23 +618,20 @@ public class WebcamFrame extends JFrame {
             int[] pixels=new int[height*width];
             image.getRGB(0, 0, width, height, pixels, 0, width);
             Color.Converter colorConverter=new Color.Converter();
-            ByteArrayL2Points.Builder grayBuilder
-                    =new ByteArrayL2Points.Builder(1, height*width/2);
-            ByteArrayL2Points.Builder trueBuilder
-                    =new ByteArrayL2Points.Builder(1, height*width/2);
+            UnsignedByteArrayL2Points grayPoints=new UnsignedByteArrayL2Points(1, height*width/2);
+            UnsignedByteArrayL2Points truePoints=new UnsignedByteArrayL2Points(1, height*width/2);
             for (int rgb: pixels) {
                 colorConverter.rgbToHslv(rgb);
                 if (predicate.test(colorConverter)) {
-                    grayBuilder.add((byte)(255.0*colorConverter.value));
+                    grayPoints.add((byte)(255.0*colorConverter.value));
                 }
                 else {
-                    trueBuilder.add((byte)(127.5*colorConverter.hue/Math.PI));
+                    truePoints.add((byte)(127.5*colorConverter.hue/Math.PI));
                 }
             }
             List<AsyncSupplier<Clusters<Vector>>> forks=new ArrayList<>(2);
-            for (ByteArrayL2Points.Builder builder: new ByteArrayL2Points.Builder[]{grayBuilder, trueBuilder}) {
+            for (UnsignedByteArrayL2Points points: new UnsignedByteArrayL2Points[]{grayPoints, truePoints}) {
                 forks.add((continuation2)->{
-                    ByteArrayL2Points points=builder.create();
                     if (0>=points.size()) {
                         continuation2.completed(new Clusters<>(Collections.emptyList(), 0.0));
                     }
@@ -647,8 +643,8 @@ public class WebcamFrame extends JFrame {
             }
             Continuation<List<Clusters<Vector>>> join=Continuations.map(
                     (clusters2, continuation2)->{
-                        List<Vector> grayCenters=clusters2.get(0).centers;
-                        List<Vector> trueCenters=clusters2.get(1).centers;
+                        List<Vector> grayCenters=Lists.flatten(clusters2.get(0).centers);
+                        List<Vector> trueCenters=Lists.flatten(clusters2.get(1).centers);
                         Vector point=new Vector(1);
                         int[] pixels2=new int[height*width];
                         Function<Vector, Vector> nearestGrayCenter=(16>grayCenters.size())

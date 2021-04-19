@@ -1,17 +1,46 @@
 package dog.giraffe.points;
 
-import dog.giraffe.QuickSort;
 import dog.giraffe.Vector;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class VectorList extends L2Points<VectorList> implements QuickSort.Swap, SubPoints<VectorList> {
+public class VectorList extends L2Points.Mutable<VectorList> {
     private final List<Vector> points;
 
     public VectorList(List<Vector> points) {
         super(points.get(0).dimensions());
         this.points=points;
+    }
+
+    @Override
+    public void add(Vector vector) {
+        points.add(vector.copy());
+    }
+
+    @Override
+    public void addNormalized(Vector vector) {
+        add(vector);
+    }
+
+    @Override
+    public void addTo(VectorList points, int from, int to) {
+        points.points.addAll(this.points.subList(from, to));
+    }
+
+    @Override
+    public void clear(int size) {
+        if (points.size()>size) {
+            points.subList(size, points.size()).clear();
+        }
+        for (Vector vector: points) {
+            vector.clear();
+        }
+        if (points.size()<size) {
+            while (points.size()<size) {
+                points.add(new Vector(dimensions()));
+            }
+        }
     }
 
     @Override
@@ -25,8 +54,33 @@ public class VectorList extends L2Points<VectorList> implements QuickSort.Swap, 
     }
 
     @Override
+    public double getNormalized(int dimension, int index) {
+        return get(dimension, index);
+    }
+
+    @Override
+    public double maxValue() {
+        return 1.0;
+    }
+
+    @Override
+    public double minValue() {
+        return 0.0;
+    }
+
+    @Override
     public VectorList self() {
         return this;
+    }
+
+    @Override
+    public void set(int dimension, int index, double value) {
+        points.get(index).coordinate(dimension, value);
+    }
+
+    @Override
+    public void setNormalized(int dimension, int index, double value) {
+        set(dimension, index, value);
     }
 
     @Override

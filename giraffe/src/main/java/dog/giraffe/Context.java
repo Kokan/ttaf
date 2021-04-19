@@ -17,8 +17,6 @@ public interface Context extends AutoCloseable {
 
     Executor executor();
 
-    Executor executorGui();
-
     Continuation<Throwable> logger();
 
     Random random();

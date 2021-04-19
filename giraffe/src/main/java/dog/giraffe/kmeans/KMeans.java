@@ -1,11 +1,11 @@
 package dog.giraffe.kmeans;
 
-import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.CannotSelectInitialCentersException;
-import dog.giraffe.InitialCenters;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
 import dog.giraffe.Distance;
+import dog.giraffe.InitialCenters;
+import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
 import dog.giraffe.VectorMean;
 import dog.giraffe.points.Points;
@@ -148,7 +148,7 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
             List<T> centers, Continuation<Clusters<T>> continuation, double error, int iteration) throws Throwable {
         context.checkStopped();
         if (maxIterations<=iteration) {
-            continuation.completed(new Clusters<>(Collections.unmodifiableList(new ArrayList<>(centers)), error));
+            continuation.completed(Clusters.create(centers, error));
             return;
         }
         for (List<M> means2: means) {
@@ -204,7 +204,7 @@ public class KMeans<D extends Distance<T>, M extends VectorMean<M, T>, P extends
                             (newCenters, continuation2)->{
                                 double error2=sum2.sum();
                                 if (error*errorLimit<=error2) {
-                                    continuation2.completed(new Clusters<>(newCenters, error2));
+                                    continuation2.completed(Clusters.create(newCenters, error2));
                                 }
                                 else {
                                     fork(newCenters, continuation2, error2, iteration+1);

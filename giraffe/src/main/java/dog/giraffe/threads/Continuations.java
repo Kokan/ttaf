@@ -33,6 +33,28 @@ public class Continuations {
         });
     }
 
+    public static <T> Continuation<T> catchBlock(AsyncFunction<Throwable, T> block, Continuation<T> continuation) {
+        return singleRun(new Continuation<T>() {
+            @Override
+            public void completed(T result) throws Throwable {
+                continuation.completed(result);
+            }
+
+            @Override
+            public void failed(Throwable throwable) throws Throwable {
+                try {
+                    block.apply(throwable, continuation);
+                }
+                catch (Throwable throwable2) {
+                    if (null!=throwable) {
+                        throwable2.addSuppressed(throwable);
+                    }
+                    continuation.failed(throwable2);
+                }
+            }
+        });
+    }
+
     public static <T> Continuation<T> consume(Consumer<T> consumer, Continuation<Throwable> logger) {
         return singleRun(new Continuation<T>() {
             @Override
@@ -43,6 +65,41 @@ public class Continuations {
             @Override
             public void failed(Throwable throwable) throws Throwable {
                 logger.failed(throwable);
+            }
+        });
+    }
+
+    public static <T> Continuation<T> finallyBlock(Block block, Continuation<T> continuation) {
+        return singleRun(new Continuation<T>() {
+            @Override
+            public void completed(T result) throws Throwable {
+                boolean noError=false;
+                try {
+                    block.run();
+                    noError=true;
+                }
+                catch (Throwable throwable) {
+                    continuation.failed(throwable);
+                }
+                if (noError) {
+                    continuation.completed(result);
+                }
+            }
+
+            @Override
+            public void failed(Throwable throwable) throws Throwable {
+                try {
+                    block.run();
+                }
+                catch (Throwable throwable2) {
+                    if (null==throwable) {
+                        throwable=throwable2;
+                    }
+                    else {
+                        throwable.addSuppressed(throwable2);
+                    }
+                }
+                continuation.failed(throwable);
             }
         });
     }

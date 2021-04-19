@@ -21,12 +21,26 @@ public class Vector implements Arith<Vector> {
         this(new double[dimensions]);
     }
 
+    @Override
+    public Vector add(Vector other) {
+        final int dim = dimensions();
+        double[] d = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = this.coordinates[i] + other.coordinates[i];
+        return new Vector(d);
+    }
+
     public double coordinate(int dimension) {
         return coordinates[dimension];
     }
 
     public void coordinate(int dimension, double coordinate) {
         coordinates[dimension]=coordinate;
+    }
+
+    public void clear() {
+        for (int dd=0; dimensions()>dd; ++dd) {
+            coordinate(dd, 0.0);
+        }
     }
 
     public Vector copy() {
@@ -38,49 +52,9 @@ public class Vector implements Arith<Vector> {
     }
 
     @Override
-    public Vector add(Vector other) {
-        final int dim = dimensions();
-        double d[] = new double[dim];
-        for (int i=0;i<dim;++i) d[i] = this.coordinates[i] + other.coordinates[i];
-        return new Vector(d);
-    }
-
-    @Override
-    public Vector sub(Vector other) {
-        final int dim = dimensions();
-        double d[] = new double[dim];
-        for (int i=0;i<dim;++i) d[i] = this.coordinates[i] - other.coordinates[i];
-        return new Vector(d);
-    }
-
-    @Override
-    public Vector pow() {
-        final int dim = dimensions();
-        double d[] = new double[dim];
-        for (int i=0;i<dim;++i) d[i] = Math.pow(this.coordinates[i], 2);
-        return new Vector(d);
-    }
-
-    @Override
-    public Vector sqrt() {
-        final int dim = dimensions();
-        double d[] = new double[dim];
-        for (int i=0;i<dim;++i) d[i] = Math.sqrt(this.coordinates[i]);
-        return new Vector(d);
-    }
-
-    @Override
-    public Vector mul(double multiplier) {
-        final int dim = dimensions();
-        double d[] = new double[dim];
-        for (int i=0;i<dim;++i) d[i] = multiplier * this.coordinates[i];
-        return new Vector(d);
-    }
-
-    @Override
     public Vector div(double divisor) {
         final int dim = dimensions();
-        double d[] = new double[dim];
+        double[] d = new double[dim];
         for (int i=0;i<dim;++i) d[i] = this.coordinates[i] / divisor;
         return new Vector(d);
     }
@@ -100,6 +74,46 @@ public class Vector implements Arith<Vector> {
     @Override
     public int hashCode() {
         return Arrays.hashCode(coordinates);
+    }
+
+    @Override
+    public Vector mul(double multiplier) {
+        final int dim = dimensions();
+        double[] d = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = multiplier * this.coordinates[i];
+        return new Vector(d);
+    }
+
+    public double normSquared() {
+        double result=0.0;
+        for (double value: coordinates) {
+            result+=value*value;
+        }
+        return result;
+    }
+
+    @Override
+    public Vector pow() {
+        final int dim = dimensions();
+        double[] d = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = Math.pow(this.coordinates[i], 2);
+        return new Vector(d);
+    }
+
+    @Override
+    public Vector sub(Vector other) {
+        final int dim = dimensions();
+        double d[] = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = this.coordinates[i] - other.coordinates[i];
+        return new Vector(d);
+    }
+
+    @Override
+    public Vector sqrt() {
+        final int dim = dimensions();
+        double[] d = new double[dim];
+        for (int i=0;i<dim;++i) d[i] = Math.sqrt(this.coordinates[i]);
+        return new Vector(d);
     }
 
     @Override
