@@ -10,8 +10,10 @@ import dog.giraffe.points.Distance;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.points.Vector;
+import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -42,25 +44,42 @@ public class Cluster1Transform implements ImageTransform {
 
     @Override
     public void prepare(Context context, ImageReader imageReader, Continuation<Void> continuation) throws Throwable {
-        Projection1 projection2=projection.create(imageReader);
-        MutablePoints points=projection2.createPoints(imageReader.width()*imageReader.height());
-        MutablePoints line=imageReader.createPoints(imageReader.width());
-        for (int yy=0; imageReader.height()>yy; ++yy) {
-            line.clear();
-            imageReader.addLineTo(yy, line);
-            projection2.project(line, points);
+        MutablePoints points=projection.create(imageReader)
+                .createPoints(imageReader.width()*imageReader.height());
+        points.size(imageReader.width()*imageReader.height());
+        int threads=Math.max(1, Math.min(context.executor().threads(), imageReader.height()));
+        List<AsyncSupplier<Void>> forks=new ArrayList<>(threads);
+        for (int tt=0; threads>tt; ++tt) {
+            int from=tt*imageReader.height()/threads;
+            int to=(tt+1)*imageReader.height()/threads;
+            forks.add((continuation2)->{
+                MutablePoints line=imageReader.createPoints(imageReader.width());
+                Projection1 projection2=projection.create(imageReader);
+                for (int yy=from; to>yy; ++yy) {
+                    line.clear();
+                    imageReader.addLineTo(yy, line);
+                    projection2.setProjection(line, points, imageReader.width()*yy);
+                }
+                continuation2.completed(null);
+            });
         }
-        strategy.cluster(
-                context,
-                KDTree.create(4096, points, context.sum()),
+        Continuations.forkJoin(
+                forks,
                 Continuations.map(
-                        (result, continuation2)->{
-                            clusters=result;
-                            centers=Lists.flatten(clusters.centers);
-                            colorMap=colors.colors(clusters.centers, points);
-                            continuation2.completed(null);
-                        },
-                        continuation));
+                        (result, continuation2)->
+                            strategy.cluster(
+                                    context,
+                                    KDTree.create(4096, points, context.sum()),
+                                    Continuations.map(
+                                            (result2, continuation3)->{
+                                                clusters=result2;
+                                                centers=Lists.flatten(clusters.centers);
+                                                colorMap=colors.colors(clusters.centers, points);
+                                                continuation3.completed(null);
+                                            },
+                                            continuation2)),
+                        continuation),
+                context.executor());
     }
 
     @Override

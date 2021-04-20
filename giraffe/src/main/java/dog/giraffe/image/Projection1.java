@@ -16,15 +16,23 @@ public interface Projection1 {
         }
 
         @Override
+        public void addProjection(Points input, MutablePoints output) {
+            for (int ii=0; input.size()>ii; ++ii) {
+                project(input, ii, vector);
+                output.add(vector);
+            }
+        }
+
+        @Override
         public int dimensions() {
             return selectedDimensions.length;
         }
 
         @Override
-        public void project(Points input, MutablePoints output) {
-            for (int ii=0; input.size()>ii; ++ii) {
+        public void setProjection(Points input, MutablePoints output, int outputOffset) {
+            for (int ii=0; input.size()>ii; ++ii, ++outputOffset) {
                 project(input, ii, vector);
-                output.add(vector);
+                output.set(outputOffset, vector);
             }
         }
     }
@@ -32,6 +40,8 @@ public interface Projection1 {
     interface Factory {
         Projection1 create(ImageReader imageReader);
     }
+
+    void addProjection(Points input, MutablePoints output);
 
     MutablePoints createPoints(int expectedSize);
 
@@ -97,9 +107,9 @@ public interface Projection1 {
         };
     }
 
-    void project(Points input, MutablePoints output);
-
     void project(Points input, int index, Vector output);
+
+    void setProjection(Points input, MutablePoints output, int outputOffset);
 
     static Factory select(int... selectedDimensions) {
         return (imageReader)->new Projection1.Abstract(selectedDimensions) {

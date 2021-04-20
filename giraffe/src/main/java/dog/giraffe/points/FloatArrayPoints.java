@@ -124,6 +124,13 @@ public class FloatArrayPoints extends MutablePoints {
     }
 
     @Override
+    public void set(int index, Vector vector) {
+        for (int dd=0, ii=dimensions*(offset+index); dimensions>dd; ++dd, ++ii) {
+            data[ii]=(float)vector.coordinate(dd);
+        }
+    }
+
+    @Override
     public void setNormalized(int dimension, int index, double value) {
         set(dimension, index, value);
     }
@@ -131,6 +138,12 @@ public class FloatArrayPoints extends MutablePoints {
     @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public void size(int size) {
+        ensureSize(size);
+        this.size=size;
     }
 
     @Override
