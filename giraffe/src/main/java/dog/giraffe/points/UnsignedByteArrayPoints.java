@@ -126,6 +126,7 @@ public class UnsignedByteArrayPoints extends MutablePoints {
         return 0.0;
     }
 
+    @Override
     public void set(int dimension, int index, byte value) {
         data[dimension+dimensions*index]=value;
     }

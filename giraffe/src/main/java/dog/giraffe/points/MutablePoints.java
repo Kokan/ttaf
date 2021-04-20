@@ -45,6 +45,14 @@ public abstract class MutablePoints extends Points implements QuickSort.Swap  {
 
     public abstract void clear(int size);
 
+    public void set(int dimension, int index, byte value) {
+        set(dimension, index, value&0xff);
+    }
+
+    public void set(int dimension, int index, short value) {
+        set(dimension, index, value&0xffff);
+    }
+
     public abstract void set(int dimension, int index, double value);
 
     public abstract void setNormalized(int dimension, int index, double value);

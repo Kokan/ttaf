@@ -183,7 +183,7 @@ public class WebcamFrame extends JFrame {
         }
     }
 
-    private class ReplaceCenters implements Projection {
+    private static class ReplaceCenters implements Projection {
         private final Projection projection;
         private int c;
 
@@ -250,7 +250,7 @@ public class WebcamFrame extends JFrame {
             //return projection.rgb(colorConverter, replace_point(point));
             return projection.rgb(colorConverter, point);
         }
-    };
+    }
 
     private static class WebcamGrabber implements Runnable {
         private final WebcamFrame frame;

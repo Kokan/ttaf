@@ -17,7 +17,7 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
 
-public abstract class FileImageReader<P extends MutablePoints> implements ImageReader<P> {
+public abstract class FileImageReader implements ImageReader {
     public static class Factory implements ImageReader.Factory {
         private final Path path;
 
@@ -82,7 +82,7 @@ public abstract class FileImageReader<P extends MutablePoints> implements ImageR
         }
     }
 
-    private static class UnsignedByte extends FileImageReader<UnsignedByteArrayPoints> {
+    private static class UnsignedByte extends FileImageReader {
         public UnsignedByte(javax.imageio.ImageReader imageReader) throws Throwable {
             super(imageReader);
         }
@@ -93,12 +93,12 @@ public abstract class FileImageReader<P extends MutablePoints> implements ImageR
         }
 
         @Override
-        protected void set(UnsignedByteArrayPoints points, int dimension, int index, int value) {
+        protected void set(MutablePoints points, int dimension, int index, int value) {
             points.set(dimension, index, (byte)(value&0xff));
         }
     }
 
-    private static class UnsignedShort extends FileImageReader<UnsignedShortArrayPoints> {
+    private static class UnsignedShort extends FileImageReader {
         public UnsignedShort(javax.imageio.ImageReader imageReader) throws Throwable {
             super(imageReader);
         }
@@ -109,7 +109,7 @@ public abstract class FileImageReader<P extends MutablePoints> implements ImageR
         }
 
         @Override
-        protected void set(UnsignedShortArrayPoints points, int dimension, int index, int value) {
+        protected void set(MutablePoints points, int dimension, int index, int value) {
             points.set(dimension, index, (short)(value&0xffff));
         }
     }
@@ -128,7 +128,7 @@ public abstract class FileImageReader<P extends MutablePoints> implements ImageR
     }
 
     @Override
-    public void addLineTo(int yy, P points) throws Throwable {
+    public void addLineTo(int yy, MutablePoints points) throws Throwable {
         int size=points.size();
         ImageReadParam readParam=new ImageReadParam();
         readParam.setSourceRegion(new Rectangle(0, yy, width, 1));
@@ -156,7 +156,7 @@ public abstract class FileImageReader<P extends MutablePoints> implements ImageR
         return height;
     }
 
-    protected abstract void set(P points, int dimension, int index, int value);
+    protected abstract void set(MutablePoints points, int dimension, int index, int value);
 
     @Override
     public int width() {

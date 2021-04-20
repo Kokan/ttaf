@@ -127,7 +127,7 @@ public class KMeans<P extends Points> {
             points.classify(
                     centerPoint,
                     centers,
-                    new Points.Classification<Center>() {
+                    new Points.Classification<>() {
                         @Override
                         public void nearestCenter(Center center, Points points) {
                             points.addAllTo(means.get(center.index));

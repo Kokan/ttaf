@@ -10,28 +10,72 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public interface ImageTransform {
+    interface Closeable {
+        void close() throws Throwable;
+
+        static void closeAll(List<? extends Closeable> list, Throwable throwable) throws Throwable {
+            while (!list.isEmpty()) {
+                Closeable closeable=list.remove(list.size()-1);
+                try {
+                    closeable.close();
+                }
+                catch (Throwable throwable2) {
+                    if (null==throwable) {
+                        throwable=throwable2;
+                    }
+                    else {
+                        throwable.addSuppressed(throwable2);
+                    }
+                }
+            }
+            if (null!=throwable) {
+                throw throwable;
+            }
+        }
+    }
+
+    interface PrepareLine extends Closeable {
+        void prepare(Context context, ImageReader imageReader, MutablePoints inputLine) throws Throwable;
+    }
+
+    interface Write extends Closeable {
+        void write(
+                Context context, MutablePoints inputLine, ImageWriter.Line outputLine, int dimension) throws Throwable;
+    }
+
     int dimensions();
 
     static ImageTransform noop() {
         return new ImageTransform() {
+            private final Write write=new Write() {
+                @Override
+                public void close() {
+                }
+
+                @Override
+                public void write(
+                        Context context, MutablePoints inputLine, ImageWriter.Line outputLine, int dimension) {
+                }
+            };
+
             @Override
             public int dimensions() {
                 return 0;
             }
 
             @Override
-            public <P extends MutablePoints> void prepare(ImageReader<P> imageReader) {
+            public void prepare(ImageReader imageReader) {
             }
 
             @Override
-            public <P extends MutablePoints> void prepare(
-                    Context context, ImageReader<P> imageReader, Continuation<Void> continuation) throws Throwable {
+            public void prepare(
+                    Context context, ImageReader imageReader, Continuation<Void> continuation) throws Throwable {
                 continuation.completed(null);
             }
 
             @Override
-            public <P extends MutablePoints> void prepare(
-                    Context context, ImageReader<P> imageReader, P inputLine) {
+            public PrepareLine prepareLine(Context context, ImageReader imageReader) {
+                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -40,22 +84,20 @@ public interface ImageTransform {
             }
 
             @Override
-            public <P extends MutablePoints> void write(
-                    Context context, P inputLine, ImageWriter.Line outputLine, int dimension) {
+            public Write write(Context context, ImageReader imageReader, ImageWriter imageWriter, int dimension) {
+                return write;
             }
         };
     }
 
-    <P extends MutablePoints> void prepare(ImageReader<P> imageReader) throws Throwable;
+    void prepare(ImageReader imageReader) throws Throwable;
 
-    <P extends MutablePoints>
-    void prepare(Context context, ImageReader<P> imageReader, Continuation<Void> continuation) throws Throwable;
+    void prepare(Context context, ImageReader imageReader, Continuation<Void> continuation) throws Throwable;
 
     /**
      * Multiple lines may run in parallel.
      */
-    <P extends MutablePoints> void prepare(
-            Context context, ImageReader<P> imageReader, P inputLine) throws Throwable;
+    PrepareLine prepareLine(Context context, ImageReader imageReader) throws Throwable;
 
     boolean prepareLines();
 
@@ -65,8 +107,8 @@ public interface ImageTransform {
         reader.run(
                 context,
                 new ImageReader.ReadProcess<>() {
-                    private <P extends MutablePoints> void prepare(
-                            Context context, ImageReader<P> imageReader, int index, Continuation<T> continuation)
+                    private void prepare(
+                            Context context, ImageReader imageReader, int index, Continuation<T> continuation)
                             throws Throwable {
                         if (transforms.size()<=index) {
                             int dimensions=0;
@@ -97,9 +139,8 @@ public interface ImageTransform {
                         }
                     }
 
-                    private <P extends MutablePoints> void prepareLines(
-                            Context context, ImageReader<P> imageReader, Continuation<T> continuation)
-                            throws Throwable {
+                    private void prepareLines(
+                            Context context, ImageReader imageReader, Continuation<T> continuation) throws Throwable {
                         int threads=Math.max(1, Math.min(context.executor().threads(), imageReader.height()));
                         List<ImageTransform> prepareTransforms=transforms.stream()
                                 .filter(ImageTransform::prepareLines)
@@ -109,14 +150,25 @@ public interface ImageTransform {
                             int from=tt*imageReader.height()/threads;
                             int to=(tt+1)*imageReader.height()/threads;
                             forks.add((continuation2)->{
-                                P inputLine=imageReader.createPoints(imageReader.width());
-                                for (int yy=from; to>yy; ++yy) {
-                                    inputLine.clear();
-                                    imageReader.addLineTo(yy, inputLine);
+                                Throwable throwable=null;
+                                List<PrepareLine> prepareLines=new ArrayList<>(prepareTransforms.size());
+                                try {
                                     for (ImageTransform transform: prepareTransforms) {
-                                        transform.prepare(context, imageReader, inputLine);
+                                        prepareLines.add(transform.prepareLine(context, imageReader));
+                                    }
+                                    MutablePoints inputLine=imageReader.createPoints(imageReader.width());
+                                    for (int yy=from; to>yy; ++yy) {
+                                        inputLine.clear();
+                                        imageReader.addLineTo(yy, inputLine);
+                                        for (PrepareLine prepareLine: prepareLines) {
+                                            prepareLine.prepare(context, imageReader, inputLine);
+                                        }
                                     }
                                 }
+                                catch (Throwable throwable2) {
+                                    throwable=throwable2;
+                                }
+                                Closeable.closeAll(prepareLines, throwable);
                                 continuation2.completed(null);
                             });
                         }
@@ -129,9 +181,8 @@ public interface ImageTransform {
                     }
 
                     @Override
-                    public <P extends MutablePoints> void run(
-                            Context context, ImageReader<P> imageReader, Continuation<T> continuation)
-                            throws Throwable {
+                    public void run(
+                            Context context, ImageReader imageReader, Continuation<T> continuation) throws Throwable {
                         boolean prepareLines=false;
                         for (ImageTransform transform: transforms) {
                             transform.prepare(imageReader);
@@ -147,8 +198,8 @@ public interface ImageTransform {
                         }
                     }
 
-                    private <P extends MutablePoints> void write(
-                            Context context, ImageReader<P> imageReader, ImageWriter imageWriter,
+                    private void write(
+                            Context context, ImageReader imageReader, ImageWriter imageWriter,
                             Continuation<Void> continuation) throws Throwable {
                         int threads=Math.max(1, Math.min(context.executor().threads(), imageReader.height()));
                         List<AsyncSupplier<Void>> forks=new ArrayList<>(threads);
@@ -156,18 +207,31 @@ public interface ImageTransform {
                             int from=tt*imageReader.height()/threads;
                             int to=(tt+1)*imageReader.height()/threads;
                             forks.add((continuation2)->{
-                                P inputLine=imageReader.createPoints(imageReader.width());
-                                for (int yy=from; to>yy; ++yy) {
-                                    inputLine.clear();
-                                    imageReader.addLineTo(yy, inputLine);
-                                    ImageWriter.Line outputLine=imageWriter.getLine(yy);
-                                    for (int dd=0, tt1=0; transforms.size()>tt1; ++tt1) {
-                                        ImageTransform transform=transforms.get(tt1);
-                                        transform.write(context, inputLine, outputLine, dd);
+                                Throwable throwable=null;
+                                List<Write> writes=new ArrayList<>(transforms.size());
+                                try {
+                                    for (int dd=0, tr=0; transforms.size()>tr; ++tr) {
+                                        ImageTransform transform=transforms.get(tr);
+                                        writes.add(transform.write(context, imageReader, imageWriter, dd));
                                         dd+=transform.dimensions();
                                     }
-                                    outputLine.write();
+                                    MutablePoints inputLine=imageReader.createPoints(imageReader.width());
+                                    for (int yy=from; to>yy; ++yy) {
+                                        inputLine.clear();
+                                        imageReader.addLineTo(yy, inputLine);
+                                        ImageWriter.Line outputLine=imageWriter.getLine(yy);
+                                        for (int dd=0, tr=0; transforms.size()>tr; ++tr) {
+                                            ImageTransform transform=transforms.get(tr);
+                                            writes.get(tr).write(context, inputLine, outputLine, dd);
+                                            dd+=transform.dimensions();
+                                        }
+                                        outputLine.write();
+                                    }
                                 }
+                                catch (Throwable throwable2) {
+                                    throwable=throwable2;
+                                }
+                                Closeable.closeAll(writes, throwable);
                                 continuation2.completed(null);
                             });
                         }
@@ -185,6 +249,5 @@ public interface ImageTransform {
     /**
      * Multiple lines may run in parallel.
      */
-    <P extends MutablePoints>
-    void write(Context context, P inputLine, ImageWriter.Line outputLine, int dimension) throws Throwable;
+    Write write(Context context, ImageReader imageReader, ImageWriter imageWriter, int dimension) throws Throwable;
 }

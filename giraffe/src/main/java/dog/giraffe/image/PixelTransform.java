@@ -15,8 +15,7 @@ public abstract class PixelTransform implements ImageTransform {
     public static PixelTransform constNormalizedOutput(int dimensions, double value) {
         return new PixelTransform(dimensions) {
             @Override
-            protected <P extends MutablePoints> void write(
-                    P inputLine, ImageWriter.Line outputLine, int dimension, int xx) {
+            protected void write(MutablePoints inputLine, ImageWriter.Line outputLine, int dimension, int xx) {
                 for (int dd=0; dimensions>dd; ++dd) {
                     outputLine.setNormalized(dimension+dd, xx, value);
                 }
@@ -32,11 +31,10 @@ public abstract class PixelTransform implements ImageTransform {
     public static PixelTransform intensity(int... selectedDimensions) {
         return new PixelTransform(1) {
             @Override
-            protected <P extends MutablePoints> void write(
-                    P inputLine, ImageWriter.Line outputLine, int dimension, int xx) {
+            protected void write(MutablePoints inputLine, ImageWriter.Line outputLine, int dimension, int xx) {
                 double value=0.0;
-                for (int dd=0; selectedDimensions.length>dd; ++dd) {
-                    value+=Doubles.square(inputLine.getNormalized(selectedDimensions[dd], xx));
+                for (int selectedDimension: selectedDimensions) {
+                    value+=Doubles.square(inputLine.getNormalized(selectedDimension, xx));
                 }
                 outputLine.setNormalized(dimension, xx, Math.sqrt(value/selectedDimensions.length));
             }
@@ -46,8 +44,7 @@ public abstract class PixelTransform implements ImageTransform {
     public static PixelTransform normalizedDifferenceVegetationIndex(int nirDimension, int redDimension) {
         return new PixelTransform(2) {
             @Override
-            protected <P extends MutablePoints> void write(
-                    P inputLine, ImageWriter.Line outputLine, int dimension, int xx) {
+            protected void write(MutablePoints inputLine, ImageWriter.Line outputLine, int dimension, int xx) {
                 double nir=inputLine.getNormalized(nirDimension, xx);
                 double red=inputLine.getNormalized(redDimension, xx);
                 double value;
@@ -70,17 +67,17 @@ public abstract class PixelTransform implements ImageTransform {
     }
 
     @Override
-    public <P extends MutablePoints> void prepare(ImageReader<P> imageReader) {
+    public void prepare(ImageReader imageReader) {
     }
 
     @Override
-    public <P extends MutablePoints> void prepare(
-            Context context, ImageReader<P> imageReader, Continuation<Void> continuation) throws Throwable {
+    public void prepare(Context context, ImageReader imageReader, Continuation<Void> continuation) throws Throwable {
         continuation.completed(null);
     }
 
     @Override
-    public <P extends MutablePoints> void prepare(Context context, ImageReader<P> imageReader, P inputLine) {
+    public PrepareLine prepareLine(Context context, ImageReader imageReader) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -91,8 +88,7 @@ public abstract class PixelTransform implements ImageTransform {
     public static PixelTransform select(int... selectedDimensions) {
         return new PixelTransform(selectedDimensions.length) {
             @Override
-            protected <P extends MutablePoints> void write(
-                    P inputLine, ImageWriter.Line outputLine, int dimension, int xx) {
+            protected void write(MutablePoints inputLine, ImageWriter.Line outputLine, int dimension, int xx) {
                 for (int dd=0; selectedDimensions.length>dd; ++dd) {
                     outputLine.setNormalized(
                             dimension+dd, xx, inputLine.getNormalized(selectedDimensions[dd], xx));
@@ -102,13 +98,23 @@ public abstract class PixelTransform implements ImageTransform {
     }
 
     @Override
-    public <P extends MutablePoints> void write(
-            Context context, P inputLine, ImageWriter.Line outputLine, int dimension) throws Throwable {
-        for (int xx=0; inputLine.size()>xx; ++xx) {
-            write(inputLine, outputLine, dimension, xx);
-        }
+    public Write write(Context context, ImageReader imageReader, ImageWriter imageWriter, int dimension) {
+        return new Write() {
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public void write(
+                    Context context, MutablePoints inputLine, ImageWriter.Line outputLine, int dimension)
+                    throws Throwable {
+                for (int xx=0; inputLine.size()>xx; ++xx) {
+                    PixelTransform.this.write(inputLine, outputLine, dimension, xx);
+                }
+            }
+        };
     }
 
-    protected abstract <P extends MutablePoints> void write(
-            P inputLine, ImageWriter.Line outputLine, int dimension, int xx) throws Throwable;
+    protected abstract void write(
+            MutablePoints inputLine, ImageWriter.Line outputLine, int dimension, int xx) throws Throwable;
 }

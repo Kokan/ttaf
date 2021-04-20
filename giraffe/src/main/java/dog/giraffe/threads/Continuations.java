@@ -10,7 +10,7 @@ public class Continuations {
 
     public static <T> Continuation<T> async(Continuation<T> continuation, Executor executor) {
         Continuation<T> continuation2=singleRun(continuation);
-        return singleRun(new Continuation<T>() {
+        return singleRun(new Continuation<>() {
             @Override
             public void completed(T result) throws Throwable {
                 try {
@@ -34,7 +34,7 @@ public class Continuations {
     }
 
     public static <T> Continuation<T> catchBlock(AsyncFunction<Throwable, T> block, Continuation<T> continuation) {
-        return singleRun(new Continuation<T>() {
+        return singleRun(new Continuation<>() {
             @Override
             public void completed(T result) throws Throwable {
                 continuation.completed(result);
@@ -56,7 +56,7 @@ public class Continuations {
     }
 
     public static <T> Continuation<T> consume(Consumer<T> consumer, Continuation<Throwable> logger) {
-        return singleRun(new Continuation<T>() {
+        return singleRun(new Continuation<>() {
             @Override
             public void completed(T result) throws Throwable {
                 consumer.accept(result);
@@ -70,7 +70,7 @@ public class Continuations {
     }
 
     public static <T> Continuation<T> finallyBlock(Block block, Continuation<T> continuation) {
-        return singleRun(new Continuation<T>() {
+        return singleRun(new Continuation<>() {
             @Override
             public void completed(T result) throws Throwable {
                 boolean noError=false;
@@ -113,7 +113,7 @@ public class Continuations {
         }
         AtomicInteger remaining=new AtomicInteger(forks.size());
         List<T> results=new ArrayList<>(forks.size());
-        Continuation<Void> continuation=new Continuation<Void>() {
+        Continuation<Void> continuation=new Continuation<>() {
             @Override
             public void completed(Void result) throws Throwable {
                 while (true) {
@@ -176,7 +176,7 @@ public class Continuations {
 
     public static <T, U> Continuation<T> map(AsyncFunction<T, U> function, Continuation<U> continuation) {
         Continuation<U> continuation2=singleRun(continuation);
-        return singleRun(new Continuation<T>() {
+        return singleRun(new Continuation<>() {
             @Override
             public void completed(T result) throws Throwable {
                 try {

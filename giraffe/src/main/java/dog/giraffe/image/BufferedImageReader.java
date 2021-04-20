@@ -13,7 +13,7 @@ import java.awt.image.Raster;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
 
-public abstract class BufferedImageReader<P extends MutablePoints> implements ImageReader<P> {
+public abstract class BufferedImageReader implements ImageReader {
     public static class Factory implements ImageReader.Factory {
         private final AsyncSupplier<BufferedImage> supplier;
 
@@ -61,7 +61,7 @@ public abstract class BufferedImageReader<P extends MutablePoints> implements Im
             }
             readProcess.run(
                     context,
-                    new BufferedImageReader<>(height, new UnsignedByteArrayPoints(data, dimensions), width) {
+                    new BufferedImageReader(height, new UnsignedByteArrayPoints(data, dimensions), width) {
                         @Override
                         public UnsignedByteArrayPoints createPoints(int dimensions, int expectedSize) {
                             return new UnsignedByteArrayPoints(dimensions, expectedSize);
@@ -87,7 +87,7 @@ public abstract class BufferedImageReader<P extends MutablePoints> implements Im
             }
             readProcess.run(
                     context,
-                    new BufferedImageReader<>(height, new UnsignedShortArrayPoints(data, dimensions), width) {
+                    new BufferedImageReader(height, new UnsignedShortArrayPoints(data, dimensions), width) {
                         @Override
                         public UnsignedShortArrayPoints createPoints(int dimensions, int expectedSize) {
                             return new UnsignedShortArrayPoints(dimensions, expectedSize);
@@ -98,17 +98,17 @@ public abstract class BufferedImageReader<P extends MutablePoints> implements Im
     }
 
     private final int height;
-    private final P points;
+    private final MutablePoints points;
     private final int width;
 
-    private BufferedImageReader(int height, P points, int width) {
+    private BufferedImageReader(int height, MutablePoints points, int width) {
         this.height=height;
         this.points=points;
         this.width=width;
     }
 
     @Override
-    public void addLineTo(int yy, P points) {
+    public void addLineTo(int yy, MutablePoints points) {
         this.points.addTo(points, yy*width, (yy+1)*width);
     }
 

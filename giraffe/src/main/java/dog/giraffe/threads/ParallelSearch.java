@@ -3,6 +3,7 @@ package dog.giraffe.threads;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 public interface ParallelSearch<T, U> {
     void search(Map<Integer, T> newElements, Block continueSearch, Continuation<U> continuation) throws Throwable;
@@ -107,6 +108,7 @@ public interface ParallelSearch<T, U> {
 
             @Override
             public void run(Block wakeup, Block sleep, Continuation<U> continuation) throws Throwable {
+                Objects.requireNonNull(sleep, "sleep");
                 Block block=null;
                 Map<Integer, T> newElements2=null;
                 int running2=0;

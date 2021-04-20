@@ -37,7 +37,8 @@ public class FileImageWriter implements ImageWriter {
             boolean error=true;
             ImageOutputStream ios=new FileImageOutputStream(path.toFile());
             try {
-                javax.imageio.ImageWriter iw=Objects.requireNonNull(ImageIO.getImageWritersByFormatName(format).next(), "imageWriter");
+                javax.imageio.ImageWriter iw=Objects.requireNonNull(
+                        ImageIO.getImageWritersByFormatName(format).next(), "imageWriter");
                 try {
                     iw.setOutput(ios);
                     iw.prepareWriteEmpty(
@@ -55,7 +56,7 @@ public class FileImageWriter implements ImageWriter {
                             null);
                     iw.endWriteEmpty();
                     iw.prepareReplacePixels(0, new Rectangle(0, 0, width, height));
-                    imageWriter=new FileImageWriter(dimensions, height, iw, width);
+                    imageWriter=new FileImageWriter(dimensions, iw, width);
                     continuation2=Continuations.finallyBlock(
                             ()->{
                                 try {
@@ -128,14 +129,12 @@ public class FileImageWriter implements ImageWriter {
     }
 
     private final int dimensions;
-    private final int height;
     private final javax.imageio.ImageWriter imageWriter;
     protected final Object lock=new Object();
     private final int width;
 
-    public FileImageWriter(int dimensions, int height, javax.imageio.ImageWriter imageWriter, int width) {
+    public FileImageWriter(int dimensions, javax.imageio.ImageWriter imageWriter, int width) {
         this.dimensions=dimensions;
-        this.height=height;
         this.imageWriter=imageWriter;
         this.width=width;
     }

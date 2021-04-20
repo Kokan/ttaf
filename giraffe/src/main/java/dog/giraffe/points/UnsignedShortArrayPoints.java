@@ -126,6 +126,12 @@ public class UnsignedShortArrayPoints extends MutablePoints {
         return 0.0;
     }
 
+    @Override
+    public void set(int dimension, int index, byte value) {
+        data[dimension+dimensions*index]=(short)(value&0xff);
+    }
+
+    @Override
     public void set(int dimension, int index, short value) {
         data[dimension+dimensions*index]=value;
     }

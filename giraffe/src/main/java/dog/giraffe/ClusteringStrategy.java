@@ -77,7 +77,7 @@ public interface ClusteringStrategy<P extends Points> {
                     (clusters, continuation2)->strategy.apply(clusters).cluster(
                             context,
                             points,
-                            new Continuation<Clusters>() {
+                            new Continuation<>() {
                                 @Override
                                 public void completed(Clusters result) throws Throwable {
                                     continuation2.completed(new ClustersOrEmpty(result));
