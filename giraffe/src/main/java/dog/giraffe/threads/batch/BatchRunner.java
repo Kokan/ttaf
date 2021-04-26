@@ -174,14 +174,8 @@ public class BatchRunner {
 
     private static <T> void runSingleThreaded(
             Batch<T> batch, Context context, SingleThreadedExecutor executor, T value) throws Throwable {
-        Join join=new Join();
+        SingleThreadedJoin join=new SingleThreadedJoin();
         batch.process(context, value, join);
-        while (!join.completed()) {
-            context.checkStopped();
-            if (executor.isEmpty()) {
-                throw new RuntimeException("process not completed");
-            }
-            executor.runOne();
-        }
+        executor.runJoin(context, join);
     }
 }

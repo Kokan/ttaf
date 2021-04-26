@@ -1,43 +1,12 @@
 package dog.giraffe.image;
 
-import dog.giraffe.Context;
-import dog.giraffe.Pair;
 import dog.giraffe.points.UnsignedByteArrayPoints;
-import dog.giraffe.threads.Continuation;
-import dog.giraffe.threads.Continuations;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
 
 public class BufferedImageWriter implements ImageWriter {
-    public static class FileFactory implements ImageWriter.Factory<Void> {
-        private final String format;
-        private final Path path;
-
-        public FileFactory(String format, Path path) {
-            this.format=format;
-            this.path=path;
-        }
-
-        @Override
-        public <U> void run(
-                Context context, int width, int height, int dimensions, WriteProcess<U> writeProcess,
-                Continuation<Pair<Void, U>> continuation) throws Throwable {
-            BufferedImageWriter imageWriter=new BufferedImageWriter(dimensions, height, width);
-            writeProcess.run(
-                    context,
-                    imageWriter,
-                    Continuations.map(
-                            (result, continuation2)->{
-                                if (!ImageIO.write(imageWriter.createImage(), format, path.toFile())) {
-                                    throw new RuntimeException("no image writer for "+format);
-                                }
-                                continuation2.completed(new Pair<>(null, result));
-                            },
-                            continuation));
-        }
-    }
-
     private class LineImpl implements Line {
         private final int yy;
 
@@ -60,22 +29,6 @@ public class BufferedImageWriter implements ImageWriter {
         }
     }
 
-    public static class MemoryFactory implements ImageWriter.Factory<BufferedImage> {
-        @Override
-        public <U> void run(
-                Context context, int width, int height, int dimensions, WriteProcess<U> writeProcess,
-                Continuation<Pair<BufferedImage, U>> continuation) throws Throwable {
-            BufferedImageWriter imageWriter=new BufferedImageWriter(dimensions, height, width);
-            writeProcess.run(
-                    context,
-                    imageWriter,
-                    Continuations.map(
-                            (result, continuation2)
-                                    ->continuation2.completed(new Pair<>(imageWriter.createImage(), result)),
-                            continuation));
-        }
-    }
-
     private final byte[] data;
     private final int dimensions;
     private final int height;
@@ -88,7 +41,25 @@ public class BufferedImageWriter implements ImageWriter {
         data=new byte[dimensions*height*width];
     }
 
-    private BufferedImage createImage() {
+    @Override
+    public void close() throws IOException {
+    }
+
+    public static BufferedImageWriter create(int width, int height, int dimensions) {
+        return new BufferedImageWriter(dimensions, height, width);
+    }
+
+    public static BufferedImageWriter createFile(int width, int height, int dimensions, String format, Path path) {
+        return new BufferedImageWriter(dimensions, height, width) {
+            @Override
+            public void close() throws IOException {
+                super.close();
+                writeImage(format, path);
+            }
+        };
+    }
+
+    public BufferedImage createImage() {
         int[] buffer=new int[dimensions*width];
         BufferedImage image=Images.createUnsignedByte(width, height, dimensions);
         for (int ii=0, yy=0; height>yy; ++yy) {
@@ -105,5 +76,15 @@ public class BufferedImageWriter implements ImageWriter {
     @Override
     public Line getLine(int yy) {
         return new LineImpl(yy);
+    }
+
+    public static Factory factory(String format, Path path) {
+        return (width, height, dimension)->createFile(width, height, dimension, format, path);
+    }
+
+    public void writeImage(String format, Path path) throws IOException {
+        if (!ImageIO.write(createImage(), format, path.toFile())) {
+            throw new RuntimeException("no image writer for "+format);
+        }
     }
 }

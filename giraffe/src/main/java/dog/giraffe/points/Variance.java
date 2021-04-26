@@ -50,7 +50,7 @@ public class Variance {
 
     public Vector variance() {
         if (addends==0) {
-            throw new RuntimeException("dividing by zero");
+            throw new RuntimeException("division by zero");
         }
         Vector dev=new Vector(sums.size());
         for (int ii=0;ii<sums.size(); ++ii) {

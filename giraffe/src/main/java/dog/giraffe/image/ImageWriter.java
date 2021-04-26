@@ -1,14 +1,15 @@
 package dog.giraffe.image;
 
-import dog.giraffe.Context;
-import dog.giraffe.Pair;
-import dog.giraffe.threads.Continuation;
+import java.io.IOException;
+import java.nio.file.Path;
 
-public interface ImageWriter {
-    interface Factory<T> {
-        <U> void run(
-                Context context, int width, int height, int dimensions,
-                WriteProcess<U> writeProcess, Continuation<Pair<T, U>> continuation) throws Throwable;
+public interface ImageWriter extends AutoCloseable {
+    interface Factory {
+        ImageWriter create(int width, int height, int dimension) throws Throwable;
+    }
+
+    interface FileFactory {
+        ImageWriter create(int width, int height, int dimension, String format, Path path) throws Throwable;
     }
 
     interface Line {
@@ -19,9 +20,7 @@ public interface ImageWriter {
         void write() throws Throwable;
     }
 
-    interface WriteProcess<T> {
-        void run(Context context, ImageWriter imageWriter, Continuation<T> continuation) throws Throwable;
-    }
+    void close() throws IOException;
 
     Line getLine(int yy) throws Throwable;
 }

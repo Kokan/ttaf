@@ -2,7 +2,7 @@ package dog.giraffe.threads.batch;
 
 import dog.giraffe.threads.Continuation;
 
-class Join implements Continuation<Void> {
+public class SingleThreadedJoin implements Continuation<Void> {
     private boolean hasResult;
     private boolean hasThrowable;
     private Throwable throwable;

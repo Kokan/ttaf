@@ -1,23 +1,13 @@
 package dog.giraffe.points;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Sub-points are only mutable as far as swap goes.
  */
-public class UnsignedByteArrayPoints extends MutablePoints {
-    private byte[] data;
-    private final int offset;
-    private int size;
-
+public class UnsignedByteArrayPoints extends ArrayPoints<byte[]> {
     public UnsignedByteArrayPoints(byte[] data, int dimensions, int offset, int size) {
-        super(dimensions);
-        this.data=data;
-        this.offset=offset;
-        this.size=size;
+        super(data, dimensions, offset, size);
     }
 
     public UnsignedByteArrayPoints(byte[] data, int dimensions) {
@@ -96,11 +86,20 @@ public class UnsignedByteArrayPoints extends MutablePoints {
         Arrays.fill(data, 0, dimensions*size, (byte)0);
     }
 
+    @Override
+    public void copy(int from, int to, int length) {
+        System.arraycopy(
+                data, dimensions*(offset+from),
+                data, dimensions*(offset+to),
+                dimensions*length);
+    }
+
     public static byte denormalize(double value) {
         return (byte)Math.max(0L, Math.min(255L, Math.round(255.0*value)));
     }
 
-    private void ensureSize(int newSize) {
+    @Override
+    protected void ensureSize(int newSize) {
         if (dimensions*newSize>data.length) {
             data=Arrays.copyOf(data, Math.max(dimensions*newSize, 2*data.length));
         }
@@ -149,28 +148,16 @@ public class UnsignedByteArrayPoints extends MutablePoints {
     }
 
     @Override
-    public int size() {
-        return size;
+    public void setNormalizedFrom(UnsignedByteArrayPoints from, int fromOffset, int length, int toOffset) {
+        System.arraycopy(
+                from.data, from.dimensions*(from.offset+fromOffset),
+                data, dimensions*(offset+toOffset),
+                dimensions*length);
     }
 
     @Override
-    public void size(int size) {
-        ensureSize(size);
-        this.size=size;
-    }
-
-    @Override
-    public List<Points> split(int parts) {
-        if ((2>parts)
-                || (2>size())) {
-            return Collections.singletonList(this);
-        }
-        parts=Math.min(parts, size());
-        List<UnsignedByteArrayPoints> result=new ArrayList<>(parts);
-        for (int ii=0; parts>ii; ++ii) {
-            result.add(subPoints(ii*size/parts, (ii+1)*size/parts));
-        }
-        return Collections.unmodifiableList(result);
+    public void setNormalizedTo(int fromOffset, int length, MutablePoints to, int toOffset) {
+        to.setNormalizedFrom(this, fromOffset, length, toOffset);
     }
 
     @Override
@@ -179,13 +166,9 @@ public class UnsignedByteArrayPoints extends MutablePoints {
     }
 
     @Override
-    public void swap(int index0, int index1) {
-        index0=dimensions*(offset+index0);
-        index1=dimensions*(offset+index1);
-        for (int dd=dimensions; 0<dd; --dd, ++index0, ++index1) {
-            byte temp=data[index0];
-            data[index0]=data[index1];
-            data[index1]=temp;
-        }
+    protected void swapImpl(int index0, int index1) {
+        byte temp=data[index0];
+        data[index0]=data[index1];
+        data[index1]=temp;
     }
 }

@@ -5,6 +5,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Continuations {
+    @FunctionalInterface
+    public interface IntForks<T> {
+        AsyncSupplier<T> fork(int from, int to) throws Throwable;
+    }
+
     private Continuations() {
     }
 
@@ -172,6 +177,22 @@ public class Continuations {
         catch (Throwable throwable) {
             continuation.failed(throwable);
         }
+    }
+
+    public static <T> void forkJoin(
+            IntForks<T> forks, int forksFrom, int forksTo, Continuation<List<T>> join, Executor executor)
+            throws Throwable {
+        if (forksFrom>=forksTo) {
+            join.completed(List.of());
+            return;
+        }
+        int length=forksTo-forksFrom;
+        int threads=Math.max(1, Math.min(executor.threads(), length));
+        List<AsyncSupplier<T>> forks2=new ArrayList<>(threads);
+        for (int tt=0; threads>tt; ++tt) {
+            forks2.add(forks.fork(forksFrom+tt*length/threads, forksFrom+(tt+1)*length/threads));
+        }
+        Continuations.forkJoin(forks2, join, executor);
     }
 
     public static <T, U> Continuation<T> map(AsyncFunction<T, U> function, Continuation<U> continuation) {

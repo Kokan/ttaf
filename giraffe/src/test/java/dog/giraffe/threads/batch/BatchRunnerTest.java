@@ -1,12 +1,11 @@
 package dog.giraffe.threads.batch;
 
 import dog.giraffe.Context;
-import dog.giraffe.Sum;
+import dog.giraffe.TestContext;
 import dog.giraffe.threads.Block;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Executor;
 import java.util.Optional;
-import java.util.Random;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,46 +30,6 @@ public class BatchRunnerTest {
         }
     }
 
-    private static class TestContext implements Context {
-        private final Executor executor;
-        private final Random random=new Random(123L);
-
-        public TestContext(Executor executor) {
-            this.executor=executor;
-        }
-
-        @Override
-        public void close() {
-            fail();
-        }
-
-        @Override
-        public Executor executor() {
-            return executor;
-        }
-
-        @Override
-        public Continuation<Throwable> logger() {
-            fail();
-            return null;
-        }
-
-        @Override
-        public Random random() {
-            return random;
-        }
-
-        @Override
-        public boolean stopped() {
-            return false;
-        }
-
-        @Override
-        public Sum.Factory sum() {
-            return Sum.PREFERRED;
-        }
-    }
-
     @FunctionalInterface
     private interface Runner {
         <T> void run(Batch<T> batch, Context context, Continuation<Void> continuation) throws Throwable;
@@ -80,7 +39,7 @@ public class BatchRunnerTest {
                 @Override
                 public <T> void run(
                         Batch<T> batch, Context context, Continuation<Void> continuation) throws Throwable {
-                    Join join=new Join();
+                    SingleThreadedJoin join=new SingleThreadedJoin();
                     BatchRunner.runParallelSingleThreaded(
                             batch,
                             new DelegatorContext(context) {
@@ -111,7 +70,7 @@ public class BatchRunnerTest {
                 @Override
                 public <T> void run(
                         Batch<T> batch, Context context, Continuation<Void> continuation) throws Throwable {
-                    Join join=new Join();
+                    SingleThreadedJoin join=new SingleThreadedJoin();
                     BatchRunner.runMultiThreaded(
                             batch,
                             new DelegatorContext(context) {
@@ -198,7 +157,7 @@ public class BatchRunnerTest {
             }
         }
         TestBatch batch=new TestBatch();
-        Join join=new Join();
+        SingleThreadedJoin join=new SingleThreadedJoin();
         runner.run(batch, context, join);
         assertTrue(join.completed());
         assertEquals(100, batch.next);

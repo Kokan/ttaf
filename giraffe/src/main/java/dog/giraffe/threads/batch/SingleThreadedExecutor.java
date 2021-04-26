@@ -1,11 +1,12 @@
 package dog.giraffe.threads.batch;
 
+import dog.giraffe.Context;
 import dog.giraffe.threads.Block;
 import dog.giraffe.threads.Executor;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-class SingleThreadedExecutor implements Executor {
+public class SingleThreadedExecutor implements Executor {
     private final Deque<Block> deque=new ArrayDeque<>();
 
     public void clear() {
@@ -19,6 +20,16 @@ class SingleThreadedExecutor implements Executor {
 
     public boolean isEmpty() {
         return deque.isEmpty();
+    }
+
+    public void runJoin(Context context, SingleThreadedJoin join) throws Throwable {
+        while (!join.completed()) {
+            context.checkStopped();
+            if (isEmpty()) {
+                throw new RuntimeException("process not completed");
+            }
+            runOne();
+        }
     }
 
     public void runOne() throws Throwable {

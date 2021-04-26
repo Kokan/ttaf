@@ -486,38 +486,48 @@ public class WebcamFrame extends JFrame {
                 projection.project(colorConverter, points, rgb);
             }
 
-            Isodata.cluster(
-                    startClusters,
-                    desiredClusters,
+            KDTree.create(
                     context,
+                    4096,
+                    points,
                     Continuations.map(
-                            (clusters2, continuation2)->{
-                                List<Vector> centersFlat=Lists.flatten(clusters2.centers);
-                                byte[] buf=new byte[projection.dimensions()];
-                                Vector point=new Vector(projection.dimensions());
-                                int[] pixels2=new int[height*width];
-                                Function<Vector, Vector> nearestCenter=(16>centersFlat.size())
-                                        ?Distance.nearestCenter(centersFlat)
-                                        :KDTree.nearestCenter(centersFlat, Sum.PREFERRED);
-                                for (int ii=0; pixels.length>ii; ++ii) {
-                                    projection.project(buf, colorConverter, 0, pixels[ii]);
-                                    for (int dd=0; projection.dimensions()>dd; ++dd) {
-                                        point.coordinate(dd, buf[dd]&0xff);
-                                    }
-                                    Vector center=nearestCenter.apply(point);
-                                    pixels2[ii]=projection.rgb(colorConverter, center);
-                                }
-                                BufferedImage image2=new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
-                                image2.setRGB(0, 0, width, height, pixels2, 0, width);
-                                continuation2.completed(image2);
-                            },
-                            continuation),
-                    0.95,
-                    InitialCenters.meanAndFarthest(false),
-                    maxIterations,
-                    KDTree.create(4096, points, context.sum()),
-                    ReplaceEmptyCluster.farthest(false)
-                    );
+                            (kdTree, continuation2)->
+                                Isodata.cluster(
+                                        startClusters,
+                                        desiredClusters,
+                                        context,
+                                        Continuations.map(
+                                                (clusters2, continuation3)->{
+                                                    List<Vector> centersFlat=Lists.flatten(clusters2.centers);
+                                                    byte[] buf=new byte[projection.dimensions()];
+                                                    Vector point=new Vector(projection.dimensions());
+                                                    int[] pixels2=new int[height*width];
+                                                    Function<Vector, Vector> nearestCenter=(16>centersFlat.size())
+                                                            ?Distance.nearestCenter(centersFlat)
+                                                            :KDTree.nearestCenter(centersFlat, Sum.PREFERRED);
+                                                    for (int ii=0; pixels.length>ii; ++ii) {
+                                                        projection.project(buf, colorConverter, 0, pixels[ii]);
+                                                        for (int dd=0; projection.dimensions()>dd; ++dd) {
+                                                            point.coordinate(dd, buf[dd]&0xff);
+                                                        }
+                                                        Vector center=nearestCenter.apply(point);
+                                                        pixels2[ii]=projection.rgb(colorConverter, center);
+                                                    }
+                                                    BufferedImage image2=new BufferedImage(
+                                                            width, height, BufferedImage.TYPE_4BYTE_ABGR);
+                                                    image2.setRGB(
+                                                            0, 0, width, height, pixels2, 0, width);
+                                                    continuation3.completed(image2);
+                                                },
+                                                continuation2),
+                                        0.95,
+                                        InitialCenters.meanAndFarthest(false),
+                                        maxIterations,
+                                        kdTree,
+                                        ReplaceEmptyCluster.farthest(false)
+                                ),
+                            continuation));
+
         };
     }
 
@@ -533,30 +543,37 @@ public class WebcamFrame extends JFrame {
             for (int rgb: pixels) {
                 projection.project(colorConverter, points, rgb);
             }
-            strategy.cluster(
+            KDTree.create(
                     context,
-                    KDTree.create(4096, points, context.sum()),
+                    4096,
+                    points,
                     Continuations.map(
-                            (clusters2, continuation2)->{
-                                List<Vector> centers=Lists.flatten(clusters2.centers);
-                                byte[] buf=new byte[projection.dimensions()];
-                                Vector point=new Vector(projection.dimensions());
-                                int[] pixels2=new int[height*width];
-                                Function<Vector, Vector> nearestCenter=(16>centers.size())
-                                        ?Distance.nearestCenter(centers)
-                                        :KDTree.nearestCenter(centers, Sum.PREFERRED);
-                                for (int ii=0; pixels.length>ii; ++ii) {
-                                    projection.project(buf, colorConverter, 0, pixels[ii]);
-                                    for (int dd=0; projection.dimensions()>dd; ++dd) {
-                                        point.coordinate(dd, buf[dd]&0xff);
-                                    }
-                                    Vector center=nearestCenter.apply(point);
-                                    pixels2[ii]=projection.rgb(colorConverter, center);
-                                }
-                                BufferedImage image2=new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
-                                image2.setRGB(0, 0, width, height, pixels2, 0, width);
-                                continuation2.completed(image2);
-                            },
+                            (kdTree, continuation2)->
+                                strategy.cluster(
+                                        context,
+                                        kdTree,
+                                        Continuations.map(
+                                                (clusters2, continuation3)->{
+                                                    List<Vector> centers=Lists.flatten(clusters2.centers);
+                                                    byte[] buf=new byte[projection.dimensions()];
+                                                    Vector point=new Vector(projection.dimensions());
+                                                    int[] pixels2=new int[height*width];
+                                                    Function<Vector, Vector> nearestCenter=(16>centers.size())
+                                                            ?Distance.nearestCenter(centers)
+                                                            :KDTree.nearestCenter(centers, Sum.PREFERRED);
+                                                    for (int ii=0; pixels.length>ii; ++ii) {
+                                                        projection.project(buf, colorConverter, 0, pixels[ii]);
+                                                        for (int dd=0; projection.dimensions()>dd; ++dd) {
+                                                            point.coordinate(dd, buf[dd]&0xff);
+                                                        }
+                                                        Vector center=nearestCenter.apply(point);
+                                                        pixels2[ii]=projection.rgb(colorConverter, center);
+                                                    }
+                                                    BufferedImage image2=new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+                                                    image2.setRGB(0, 0, width, height, pixels2, 0, width);
+                                                    continuation3.completed(image2);
+                                                },
+                                                continuation2)),
                             continuation));
         };
     }
@@ -637,8 +654,14 @@ public class WebcamFrame extends JFrame {
                         continuation2.completed(new Clusters(Collections.emptyList(), 0.0));
                     }
                     else {
-                        strategy.cluster(
-                                context, KDTree.create(4096, points, context.sum()), continuation2);
+                        KDTree.create(
+                                context,
+                                4096,
+                                points,
+                                Continuations.map(
+                                        (kdTree, continuation3)->strategy.cluster(context, kdTree, continuation3),
+                                        continuation2
+                                ));
                     }
                 });
             }

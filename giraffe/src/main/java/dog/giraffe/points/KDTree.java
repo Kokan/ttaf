@@ -1,10 +1,13 @@
 package dog.giraffe.points;
 
+import dog.giraffe.Context;
 import dog.giraffe.Doubles;
 import dog.giraffe.InitialCenters;
 import dog.giraffe.QuickSort;
 import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
+import dog.giraffe.threads.Continuation;
+import dog.giraffe.threads.Continuations;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -145,14 +148,14 @@ public abstract class KDTree extends Points {
     private static class Leaf extends KDTree {
         private final MutablePoints points;
 
-        public Leaf(MutablePoints points, List<Sum> sums) {
+        public Leaf(MutablePoints points, Sum.Factory sumFactory) {
             super(
                     points.dimensions(),
                     points.perform(Double.NEGATIVE_INFINITY, 0, MAX, points.size()),
                     points.perform(Double.POSITIVE_INFINITY, 0, MIN, points.size()),
                     points.size(),
-                    points.sum(0, Doubles.IDENTITY, points.size(), sums),
-                    points.sum(0, Doubles.SQUARE, points.size(), sums));
+                    points.sum(0, Doubles.IDENTITY, points.size(), sums(points, sumFactory)),
+                    points.sum(0, Doubles.SQUARE, points.size(), sums(points, sumFactory)));
             this.points=points;
         }
 
@@ -207,6 +210,14 @@ public abstract class KDTree extends Points {
         protected boolean split(Deque<KDTree> deque) {
             return false;
         }
+
+        private static List<Sum> sums(Points points, Sum.Factory sumFactory) {
+            List<Sum> sums=new ArrayList<>(points.dimensions());
+            for (int dd=0; points.dimensions()>dd; ++dd) {
+                sums.add(sumFactory.create(points.size()));
+            }
+            return sums;
+        }
     }
 
     private final Vector max;
@@ -239,20 +250,12 @@ public abstract class KDTree extends Points {
         mean.addAll(size(), sum);
     }
 
-    public static KDTree create(int maxLeafSize, MutablePoints points, Sum.Factory sum) {
-        List<Sum> sums=new ArrayList<>(points.dimensions());
-        for (int dd=0; points.dimensions()>dd; ++dd) {
-            sums.add(sum.create(maxLeafSize));
-        }
-        return create(maxLeafSize, points, sums);
-    }
-
-    private static KDTree create(int maxLeafSize, MutablePoints points, List<Sum> sums) {
+    public static KDTree create(int maxLeafSize, MutablePoints points, Sum.Factory sumFactory) {
         if (1>maxLeafSize) {
             throw new IllegalArgumentException(Integer.toString(maxLeafSize));
         }
         if (maxLeafSize>=points.size()) {
-            return new Leaf(points, sums);
+            return new Leaf(points, sumFactory);
         }
         int widestDimension=points.widestDimension();
         int middle=QuickSort.medianSplit(
@@ -262,8 +265,37 @@ public abstract class KDTree extends Points {
                 points,
                 points.size());
         return new Branch(
-                create(maxLeafSize, points.subPoints(0, middle), sums),
-                create(maxLeafSize, points.subPoints(middle, points.size()), sums));
+                create(maxLeafSize, points.subPoints(0, middle), sumFactory),
+                create(maxLeafSize, points.subPoints(middle, points.size()), sumFactory));
+    }
+
+    public static void create(
+            Context context, int maxLeafSize, MutablePoints points, Continuation<KDTree> continuation)
+            throws Throwable {
+        if (1>maxLeafSize) {
+            throw new IllegalArgumentException(Integer.toString(maxLeafSize));
+        }
+        if (maxLeafSize>=points.size()) {
+            continuation.completed(new Leaf(points, context.sum()));
+            return;
+        }
+        int widestDimension=points.widestDimension();
+        int middle=QuickSort.medianSplit(
+                (index0, index1)->
+                        Double.compare(points.get(widestDimension, index0), points.get(widestDimension, index1)),
+                0,
+                points,
+                points.size());
+        Continuations.<KDTree>forkJoin(
+                List.of(
+                        (continuation2)->create(
+                                context, maxLeafSize, points.subPoints(0, middle), continuation2),
+                        (continuation2)->create(
+                                context, maxLeafSize, points.subPoints(middle, points.size()), continuation2)),
+                Continuations.map(
+                        (result, continuation2)->continuation2.completed(new Branch(result.get(0), result.get(1))),
+                        continuation),
+                context.executor());
     }
 
     protected <C> List<C> filterCenters(Function<C, Vector> centerPoint, List<C> centers) {

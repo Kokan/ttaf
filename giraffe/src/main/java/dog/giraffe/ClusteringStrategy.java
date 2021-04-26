@@ -160,4 +160,8 @@ public interface ClusteringStrategy<P extends Points> {
                 clusters, context, continuation, errorLimit,
                 initialCenters, maxIterations, points, replaceEmptyCluster);
     }
+
+    static <P extends Points> ClusteringStrategy<P> otsu(int bins, int clusters) {
+        return (context, points, continuation)->Otsu.otsu(context, bins, clusters, points, continuation);
+    }
 }

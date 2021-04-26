@@ -1,14 +1,11 @@
 package dog.giraffe.image;
 
-import dog.giraffe.Context;
-import dog.giraffe.Pair;
 import dog.giraffe.points.UnsignedByteArrayPoints;
-import dog.giraffe.threads.Continuation;
-import dog.giraffe.threads.Continuations;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
@@ -19,83 +16,6 @@ import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageOutputStream;
 
 public class FileImageWriter implements ImageWriter {
-    public static class Factory implements ImageWriter.Factory<Void> {
-        private final String format;
-        private final Path path;
-
-        public Factory(String format, Path path) {
-            this.format=format;
-            this.path=path;
-        }
-
-        @Override
-        public <U> void run(
-                Context context, int width, int height, int dimensions, WriteProcess<U> writeProcess,
-                Continuation<Pair<Void, U>> continuation) throws Throwable {
-            Continuation<U> continuation2;
-            ImageWriter imageWriter;
-            boolean error=true;
-            ImageOutputStream ios=new FileImageOutputStream(path.toFile());
-            try {
-                javax.imageio.ImageWriter iw=Objects.requireNonNull(
-                        ImageIO.getImageWritersByFormatName(format).next(), "imageWriter");
-                try {
-                    iw.setOutput(ios);
-                    iw.prepareWriteEmpty(
-                            null,
-                            ImageTypeSpecifier.createInterleaved(
-                                    Images.createColorSpace(dimensions),
-                                    Images.createBandOffsets(dimensions),
-                                    DataBuffer.TYPE_BYTE,
-                                    false,
-                                    false),
-                            width,
-                            height,
-                            null,
-                            null,
-                            null);
-                    iw.endWriteEmpty();
-                    iw.prepareReplacePixels(0, new Rectangle(0, 0, width, height));
-                    imageWriter=new FileImageWriter(dimensions, iw, width);
-                    continuation2=Continuations.finallyBlock(
-                            ()->{
-                                try {
-                                    try {
-                                        iw.endReplacePixels();
-                                    }
-                                    finally {
-                                        iw.dispose();
-                                    }
-                                }
-                                finally {
-                                    ios.close();
-                                }
-                            },
-                            Continuations.map(
-                                    (result, continuation3)->continuation3.completed(new Pair<>(null, result)),
-                                    continuation));
-                    error=false;
-                }
-                finally {
-                    if (error) {
-                        iw.dispose();
-                    }
-                }
-            }
-            finally {
-                if (error) {
-                    ios.close();
-                }
-            }
-            try {
-                writeProcess.run(context, imageWriter, continuation2);
-            }
-            catch (Throwable throwable) {
-                continuation2.failed(throwable);
-            }
-        }
-    }
-
     private class LineImpl implements Line {
         private final int[] data;
         private final BufferedImage image;
@@ -129,14 +49,77 @@ public class FileImageWriter implements ImageWriter {
     }
 
     private final int dimensions;
+    private final ImageOutputStream imageOutputStream;
     private final javax.imageio.ImageWriter imageWriter;
     protected final Object lock=new Object();
     private final int width;
 
-    public FileImageWriter(int dimensions, javax.imageio.ImageWriter imageWriter, int width) {
+    public FileImageWriter(
+            int dimensions, ImageOutputStream imageOutputStream, javax.imageio.ImageWriter imageWriter, int width) {
         this.dimensions=dimensions;
+        this.imageOutputStream=imageOutputStream;
         this.imageWriter=imageWriter;
         this.width=width;
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            try {
+                imageWriter.endReplacePixels();
+            }
+            finally {
+                imageWriter.dispose();
+            }
+        }
+        finally {
+            imageOutputStream.close();
+        }
+    }
+
+    public static FileImageWriter create(
+            int width, int height, int dimensions, String format, Path path) throws Throwable {
+        boolean error=true;
+        ImageOutputStream ios=new FileImageOutputStream(path.toFile());
+        try {
+            javax.imageio.ImageWriter iw=Objects.requireNonNull(
+                    ImageIO.getImageWritersByFormatName(format).next(), "imageWriter");
+            try {
+                iw.setOutput(ios);
+                iw.prepareWriteEmpty(
+                        null,
+                        ImageTypeSpecifier.createInterleaved(
+                                Images.createColorSpace(dimensions),
+                                Images.createBandOffsets(dimensions),
+                                DataBuffer.TYPE_BYTE,
+                                false,
+                                false),
+                        width,
+                        height,
+                        null,
+                        null,
+                        null);
+                iw.endWriteEmpty();
+                iw.prepareReplacePixels(0, new Rectangle(0, 0, width, height));
+                FileImageWriter result=new FileImageWriter(dimensions, ios, iw, width);
+                error=false;
+                return result;
+            }
+            finally {
+                if (error) {
+                    iw.dispose();
+                }
+            }
+        }
+        finally {
+            if (error) {
+                ios.close();
+            }
+        }
+    }
+
+    public static Factory factory(String format, Path path) {
+        return (width, height, dimension)->create(width, height, dimension, format, path);
     }
 
     @Override

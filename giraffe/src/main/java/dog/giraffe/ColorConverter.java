@@ -1,14 +1,14 @@
 package dog.giraffe;
 
 public class ColorConverter {
-    double blue;
-    double green;
-    double hue;
-    double lightness;
-    double red;
-    double saturationLightness;
-    double saturationValue;
-    double value;
+    public double blue;
+    public double green;
+    public double hue;
+    public double lightness;
+    public double red;
+    public double saturationLightness;
+    public double saturationValue;
+    public double value;
 
     private void check(double max, double value) {
         if ((!Double.isFinite(value))
