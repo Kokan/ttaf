@@ -10,6 +10,9 @@ import dog.giraffe.image.ImageWriter;
 import dog.giraffe.image.PrepareImages;
 import dog.giraffe.image.transform.Cluster1;
 import dog.giraffe.image.transform.Intensity;
+import dog.giraffe.image.transform.Select;
+import dog.giraffe.image.transform.NormalizedDifferenceVegetationIndex;
+import dog.giraffe.points.Points;
 import dog.giraffe.image.transform.Mask;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
@@ -20,6 +23,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.MissingParameterException;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 public class CmdLine {
     private static class AsyncJoin<T> implements Continuation<T> {
@@ -68,22 +77,59 @@ public class CmdLine {
         }
     }
 
-    public static void main(String[] args) throws Throwable {
-        boolean bufferedInput=true;
-        boolean bufferedOutput=true;
-        //Mask mask=Mask.all();
-        Mask mask=Mask.and(
-                Mask.halfPlane(1851, 4, 14, 6256),
-                Mask.halfPlane(14, 6256, 6119, 8066),
-                Mask.halfPlane(6119, 8066, 7964,1786),
-                Mask.halfPlane(7964,1786, 1851, 4));
-        Path inputPath=Paths.get("../../ttaf2/LC08_L1TP_188027_20200420_20200508_01_T1.tif");
-        //Path inputPath=Paths.get("../P.t.altaica_Tomak_Male.jpg");
-        //Path inputPath=Paths.get("../../ttaf2/a/misc/4.2.06.tiff");
-        String outputFormat="tiff";
-        Path outputPath=Paths.get("../../ttaf2/plap.tif");
-        Files.deleteIfExists(outputPath);
-        Function<Image, Image> imageMap=(image)->
+
+    private static class Config {
+        @Option(names = { "-i", "--input" }, required = true, paramLabel = "IMGPATH", description = "Input image path")
+        Path inputPath;
+
+        @Option(names = { "-o", "--output" }, required = true, paramLabel = "IMGPATH", description = "Output image path")
+        Path outputPath;
+
+        @Option(names = { "-a", "--algorithm" }, paramLabel = "CLUSTER", description = "Specify the clustering algorithm (default: kMeans with elbow)")
+        String clusteringAlgorithm = "elbow";
+
+        @Option(names = { "--min" }, paramLabel = "CLUSTERNUMBER", description = "Minimum number of clusters")
+        int minCluster = 2;
+
+        @Option(names = { "--max" }, paramLabel = "CLUSTERNUMBER", description = "Maximum number of clusters")
+        int maxCluster = 20;
+
+        @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
+        boolean helpRequested = false;
+    }
+
+    private static <P extends Points> ClusteringStrategy<P>  createClustering(Config config) {
+       if (config.clusteringAlgorithm.equals("otsu")) {
+          return ClusteringStrategy.otsu(32, config.maxCluster);
+       }
+       if (config.clusteringAlgorithm.equals("isodata")) {
+          return ClusteringStrategy.isodata(config.minCluster, config.maxCluster);
+       }
+
+       if (config.clusteringAlgorithm.equals("kMeans")) {
+          return ClusteringStrategy.kMeans(
+                        config.maxCluster,
+                        0.95,
+                        InitialCenters.meanAndFarthest(false),
+                        10000,
+                        ReplaceEmptyCluster.farthest(false));
+       }
+
+       return ClusteringStrategy.elbow(
+                      0.95,
+                      config.maxCluster,
+                      config.minCluster,
+                      (clusters)->ClusteringStrategy.kMeans(
+                              clusters,
+                              0.95,
+                              InitialCenters.meanAndFarthest(false),
+                              10000,
+                              ReplaceEmptyCluster.farthest(false)),
+                      1);
+    }
+
+    private static Function<Image, Image> createImageMap(Config config, Mask mask) {
+        return (image)->
                 Cluster1.create(
                         //Select.create(image, 1, 2, 3),
                         /*Normalize.createDeviation(
@@ -106,29 +152,52 @@ public class CmdLine {
                         //ClusterColors.Gray.falseColor(1),
                         ClusterColors.RGB.falseColor(0, 1, 2),
                         mask,
-                        ClusteringStrategy.elbow(
-                                0.95,
-                                20,
-                                2,
-                                (clusters)->ClusteringStrategy.kMeans(
-                                        clusters,
-                                        0.95,
-                                        InitialCenters.meanAndFarthest(false),
-                                        10000,
-                                        ReplaceEmptyCluster.farthest(false)),
-                                //(clusters)->ClusteringStrategy.otsu(32, clusters),
-                                1));
+                        createClustering(config)
+                );
+    }
+
+
+    public static void main(String[] args) throws Throwable {
+       
+        Config config = new Config();
+        CommandLine cmd = new CommandLine(config);
+        try {
+        cmd.parseArgs(args);
+        }
+        catch (MissingParameterException e) {
+           config.helpRequested = true;
+        }
+
+        if (config.helpRequested) {
+           cmd.usage(System.out);
+           return;
+        }
+
+
+        boolean bufferedInput=true;
+        boolean bufferedOutput=true;
+        //Mask mask=Mask.all();
+        Mask mask=Mask.and(
+                Mask.halfPlane(1851, 4, 14, 6256),
+                Mask.halfPlane(14, 6256, 6119, 8066),
+                Mask.halfPlane(6119, 8066, 7964,1786),
+                Mask.halfPlane(7964,1786, 1851, 4));
+
+        String outputFormat="tiff";
+
+        Files.deleteIfExists(config.outputPath);
+
         try (Context context=new StandardContext()) {
             AsyncJoin<Void> join=new AsyncJoin<>();
             write(
                     context,
-                    imageMap,
+                    createImageMap(config, mask),
                     bufferedInput
-                            ?BufferedImageReader.factory(inputPath)
-                            :FileImageReader.factory(inputPath),
+                            ?BufferedImageReader.factory(config.inputPath)
+                            :FileImageReader.factory(config.inputPath),
                     bufferedOutput
-                            ?BufferedImageWriter.factory(outputFormat, outputPath)
-                            :FileImageWriter.factory(outputFormat, outputPath),
+                            ?BufferedImageWriter.factory(outputFormat, config.outputPath)
+                            :FileImageWriter.factory(outputFormat, config.outputPath),
                     join);
             join.join();
         }

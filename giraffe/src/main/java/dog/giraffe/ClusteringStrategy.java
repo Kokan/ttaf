@@ -1,6 +1,7 @@
 package dog.giraffe;
 
 import dog.giraffe.kmeans.KMeans;
+import dog.giraffe.isodata.Isodata;
 import dog.giraffe.points.Points;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Block;
@@ -163,5 +164,19 @@ public interface ClusteringStrategy<P extends Points> {
 
     static <P extends Points> ClusteringStrategy<P> otsu(int bins, int clusters) {
         return (context, points, continuation)->Otsu.otsu(context, bins, clusters, points, continuation);
+    }
+
+    static <P extends Points> ClusteringStrategy<P> isodata(int startClusters, int desiredClusters) {
+        double errorLimit=0.95;
+        int maxIteration=10;
+        return (context, points, continuation)->Isodata.cluster(startClusters,
+                                                                desiredClusters,
+                                                                context,
+                                                                continuation,
+                                                                errorLimit, 
+                                                                InitialCenters.meanAndFarthest(false),
+                                                                maxIteration,
+                                                                points,
+                                                                ReplaceEmptyCluster.farthest(false));
     }
 }

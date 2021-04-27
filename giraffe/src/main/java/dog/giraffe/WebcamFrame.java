@@ -370,7 +370,7 @@ public class WebcamFrame extends JFrame {
         functions.add(isodata( 2, 30, Projection.RGB));
         //functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.HUE)));
         functions.add(isodata( 2, 30, Projection.HUE));
-        functions.add(saturationBased(isodataStrategy(2,30)));
+        functions.add(saturationBased(ClusteringStrategy.isodata(2,30)));
 
         addWindowListener(new WindowListenerImpl());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -400,25 +400,6 @@ public class WebcamFrame extends JFrame {
         setVisible(true);
     }
 
-    private ClusteringStrategy<KDTree> isodataStrategy(int startClusters, int desiredClusters) {
-        double errorLimit=0.95;
-        int maxIterations=100;
-        List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>();
-        strategies.add((context, points, cont)->
-                Isodata.cluster(
-                        startClusters,
-                        desiredClusters,
-                        this.context,
-                        cont,
-                        errorLimit,
-                        InitialCenters.meanAndFarthest(false),
-                        maxIterations,
-                        points,
-                        ReplaceEmptyCluster.farthest(false)
-                        ));
-        return ClusteringStrategy.best(strategies);
-    }
-
     private ClusteringStrategy<KDTree> kMeansStrategy(int clusters) {
         Function<Integer, ClusteringStrategy<KDTree>> strategyGenerator=(clusters2)->{
             double errorLimit=0.95;
@@ -430,40 +411,6 @@ public class WebcamFrame extends JFrame {
                     InitialCenters.meanAndFarthest(false),
                     maxIterations,
                     ReplaceEmptyCluster.farthest(false)));
-            /*strategies.add(ClusteringStrategy.<KDTree<ByteArrayL2Points>>kMeans(
-                            clusters2,
-                            errorLimit,
-                            InitialCenters.meanAndFarthest(true),
-                            maxIterations,
-                            ReplaceEmptyCluster.farthest(true)));*/
-            /*strategies.add(ClusteringStrategy.kMeans(
-                    clusters2,
-                    errorLimit,
-                    KDTree.initialCenters(false),
-                    maxIterations,
-                    ReplaceEmptyCluster.farthest(false)));*/
-            /*strategies.add(ClusteringStrategy.kMeans(
-                    clusters2,
-                    errorLimit,
-                    KDTree.initialCenters(true),
-                    maxIterations,
-                    ReplaceEmptyCluster.farthest(true)));*/
-            /*strategies.add(ClusteringStrategy.best(
-                    5,
-                    ClusteringStrategy.<KDTree<ByteArrayL2Points>>kMeans(
-                                    clusters2,
-                                    errorLimit,
-                                    InitialCenters.random(),
-                                    maxIterations,
-                                    ReplaceEmptyCluster.farthest(false))));*/
-            /*strategies.add(ClusteringStrategy.best(
-                    5,
-                    ClusteringStrategy.<KDTree<ByteArrayL2Points>>kMeans(
-                                    clusters2,
-                                    errorLimit,
-                                    InitialCenters.random(),
-                                    maxIterations,
-                                    ReplaceEmptyCluster.farthest(true))));*/
             return ClusteringStrategy.best(strategies);
         };
         return (0<clusters)
