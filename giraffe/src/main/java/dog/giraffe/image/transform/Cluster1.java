@@ -14,9 +14,9 @@ import dog.giraffe.points.UnsignedByteArrayPoints;
 import dog.giraffe.points.Vector;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import dog.giraffe.threads.Function;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 public class Cluster1 extends Image.Transform {
     private List<Vector> centers;
@@ -109,7 +109,7 @@ public class Cluster1 extends Image.Transform {
             private final Vector point=new Vector(line.dimensions());
 
             @Override
-            protected void setNormalizedLineToTransform(int yy, MutablePoints points, int offset) {
+            protected void setNormalizedLineToTransform(int yy, MutablePoints points, int offset) throws Throwable {
                 for (int xx=0; line.size()>xx; ++xx, ++offset) {
                     for (int dd=0; line.dimensions()>dd; ++dd) {
                         point.coordinate(dd, line.get(dd, xx));

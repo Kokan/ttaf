@@ -3,7 +3,7 @@ package dog.giraffe.points;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class Vector {
+public class Vector implements Comparable<Vector> {
     private final double[] coordinates;
 
     public Vector(double[] coordinates) {
@@ -26,6 +26,18 @@ public class Vector {
         double[] d = new double[dim];
         for (int i=0;i<dim;++i) d[i] = this.coordinates[i] + other.coordinates[i];
         return new Vector(d);
+    }
+
+    @Override
+    public int compareTo(Vector vector) {
+        int ds=Math.min(coordinates.length, vector.coordinates.length);
+        for (int dd=0; ds>dd; ++dd) {
+            int cc=Double.compare(coordinates[dd], vector.coordinates[dd]);
+            if (0!=cc) {
+                return cc;
+            }
+        }
+        return Integer.compare(coordinates.length, vector.coordinates.length);
     }
 
     public double coordinate(int dimension) {

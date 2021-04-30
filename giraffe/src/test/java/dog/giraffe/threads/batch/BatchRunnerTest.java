@@ -39,7 +39,7 @@ public class BatchRunnerTest {
                 @Override
                 public <T> void run(
                         Batch<T> batch, Context context, Continuation<Void> continuation) throws Throwable {
-                    SingleThreadedJoin join=new SingleThreadedJoin();
+                    SingleThreadedJoin<Void> join=new SingleThreadedJoin<>();
                     BatchRunner.runParallelSingleThreaded(
                             batch,
                             new DelegatorContext(context) {
@@ -70,7 +70,7 @@ public class BatchRunnerTest {
                 @Override
                 public <T> void run(
                         Batch<T> batch, Context context, Continuation<Void> continuation) throws Throwable {
-                    SingleThreadedJoin join=new SingleThreadedJoin();
+                    SingleThreadedJoin<Void> join=new SingleThreadedJoin<>();
                     BatchRunner.runMultiThreaded(
                             batch,
                             new DelegatorContext(context) {
@@ -157,7 +157,7 @@ public class BatchRunnerTest {
             }
         }
         TestBatch batch=new TestBatch();
-        SingleThreadedJoin join=new SingleThreadedJoin();
+        SingleThreadedJoin<Void> join=new SingleThreadedJoin<>();
         runner.run(batch, context, join);
         assertTrue(join.completed());
         assertEquals(100, batch.next);

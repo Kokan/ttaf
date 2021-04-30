@@ -1,11 +1,11 @@
 package dog.giraffe.points;
 
 import dog.giraffe.Sum;
+import dog.giraffe.threads.Function;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -23,7 +23,7 @@ public class KDTreeTest {
     }
 
     @Test
-    public void test() {
+    public void test() throws Throwable {
         for (long seed=1L; 1000L>seed; ++seed) {
             Random random=new Random(seed);
             final int dimensions=random.nextInt(4)+1;

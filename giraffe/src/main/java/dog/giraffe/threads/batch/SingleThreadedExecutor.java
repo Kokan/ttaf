@@ -22,7 +22,7 @@ public class SingleThreadedExecutor implements Executor {
         return deque.isEmpty();
     }
 
-    public void runJoin(Context context, SingleThreadedJoin join) throws Throwable {
+    public <T> T runJoin(Context context, SingleThreadedJoin<T> join) throws Throwable {
         while (!join.completed()) {
             context.checkStopped();
             if (isEmpty()) {
@@ -30,6 +30,7 @@ public class SingleThreadedExecutor implements Executor {
             }
             runOne();
         }
+        return join.result();
     }
 
     public void runOne() throws Throwable {

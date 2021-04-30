@@ -1,10 +1,10 @@
 package dog.giraffe.points;
 
 import dog.giraffe.Sum;
+import dog.giraffe.threads.Function;
 import java.util.List;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
-import java.util.function.Function;
 
 public abstract class Points {
     public interface Classification<C> {
@@ -56,7 +56,8 @@ public abstract class Points {
         }
     }
 
-    public <C> void classify(Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) {
+    public <C> void classify(
+            Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) throws Throwable {
         if (centers.isEmpty()) {
             throw new IllegalArgumentException();
         }

@@ -1,7 +1,7 @@
 package dog.giraffe.points;
 
 import dog.giraffe.Sum;
-import java.util.function.Function;
+import dog.giraffe.threads.Function;
 
 public class Distance {
     public static final Distance DISTANCE=new Distance();

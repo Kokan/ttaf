@@ -57,7 +57,7 @@ public class PrepareImagesTest {
         }
 
         @Override
-        public Reader reader() throws Throwable {
+        public Reader reader() {
             throw new UnsupportedOperationException();
         }
     }
@@ -72,7 +72,7 @@ public class PrepareImagesTest {
         TestImage image3=new TestImage("image3", 3, false, image0);
         TestImage image4=new TestImage("image4", 0, false, image1, image2);
         TestImage image5=new TestImage("image5", 0, false, image1, image3);
-        SingleThreadedJoin join=new SingleThreadedJoin();
+        SingleThreadedJoin<Void> join=new SingleThreadedJoin<>();
         PrepareImages.prepareImages(context, List.of(image4, image5), join);
         executor.runJoin(context, join);
         assertTrue(executor.isEmpty());
@@ -91,7 +91,7 @@ public class PrepareImagesTest {
         TestImage image3=new TestImage("image3", 30, false, image0);
         TestImage image4=new TestImage("image4", 0, false, image1, image2);
         TestImage image5=new TestImage("image5", 0, false, image1, image3);
-        SingleThreadedJoin join=new SingleThreadedJoin();
+        SingleThreadedJoin<Void> join=new SingleThreadedJoin<>();
         PrepareImages.prepareImages(context, List.of(image4, image5), join);
         try {
             executor.runJoin(context, join);

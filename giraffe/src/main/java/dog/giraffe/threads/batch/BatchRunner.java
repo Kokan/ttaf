@@ -174,7 +174,7 @@ public class BatchRunner {
 
     private static <T> void runSingleThreaded(
             Batch<T> batch, Context context, SingleThreadedExecutor executor, T value) throws Throwable {
-        SingleThreadedJoin join=new SingleThreadedJoin();
+        SingleThreadedJoin<Void> join=new SingleThreadedJoin<>();
         batch.process(context, value, join);
         executor.runJoin(context, join);
     }

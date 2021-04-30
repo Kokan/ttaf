@@ -8,6 +8,7 @@ import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import dog.giraffe.threads.Function;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
-import java.util.function.Function;
 
 public abstract class KDTree extends Points {
     private static class NearestCenter {
@@ -51,7 +51,8 @@ public abstract class KDTree extends Points {
         }
 
         @Override
-        public <C> void classify(Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) {
+        public <C> void classify(
+                Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) throws Throwable {
             centers=filterCenters(centerPoint, centers);
             left.classify(centerPoint, centers, classification);
             right.classify(centerPoint, centers, classification);
@@ -160,7 +161,8 @@ public abstract class KDTree extends Points {
         }
 
         @Override
-        public <C> void classify(Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) {
+        public <C> void classify(
+                Function<C, Vector> centerPoint, List<C> centers, Classification<C> classification) throws Throwable {
             centers=filterCenters(centerPoint, centers);
             if (1==centers.size()) {
                 classification.nearestCenter(centers.get(0), this);
@@ -298,7 +300,7 @@ public abstract class KDTree extends Points {
                 context.executor());
     }
 
-    protected <C> List<C> filterCenters(Function<C, Vector> centerPoint, List<C> centers) {
+    protected <C> List<C> filterCenters(Function<C, Vector> centerPoint, List<C> centers) throws Throwable {
         if (1>=centers.size()) {
             return centers;
         }

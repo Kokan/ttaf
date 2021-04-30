@@ -7,6 +7,7 @@ import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Block;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import dog.giraffe.threads.Function;
 import dog.giraffe.threads.ParallelSearch;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.function.Function;
 
 @FunctionalInterface
 public interface ClusteringStrategy<P extends Points> {
@@ -162,8 +162,12 @@ public interface ClusteringStrategy<P extends Points> {
                 initialCenters, maxIterations, points, replaceEmptyCluster);
     }
 
-    static <P extends Points> ClusteringStrategy<P> otsu(int bins, int clusters) {
-        return (context, points, continuation)->Otsu.otsu(context, bins, clusters, points, continuation);
+    static <P extends Points> ClusteringStrategy<P> otsuCircular(int bins, int clusters) {
+        return (context, points, continuation)->Otsu.circular(context, bins, clusters, points, continuation);
+    }
+
+    static <P extends Points> ClusteringStrategy<P> otsuLinear(int bins, int clusters) {
+        return (context, points, continuation)->Otsu.linear(context, bins, clusters, points, continuation);
     }
 
     static <P extends Points> ClusteringStrategy<P> isodata(int startClusters, int desiredClusters) {

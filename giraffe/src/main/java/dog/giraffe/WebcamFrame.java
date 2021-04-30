@@ -12,6 +12,7 @@ import dog.giraffe.threads.Block;
 import dog.giraffe.threads.Consumer;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import dog.giraffe.threads.Function;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
@@ -24,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.IntToDoubleFunction;
 import java.util.function.Predicate;
 import javax.imageio.ImageIO;
@@ -400,12 +400,12 @@ public class WebcamFrame extends JFrame {
         setVisible(true);
     }
 
-    private ClusteringStrategy<KDTree> kMeansStrategy(int clusters) {
+    private ClusteringStrategy<KDTree> kMeansStrategy(int clusters) throws Throwable {
         Function<Integer, ClusteringStrategy<KDTree>> strategyGenerator=(clusters2)->{
             double errorLimit=0.95;
             int maxIterations=1000;
             List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>();
-            strategies.add(ClusteringStrategy.<KDTree>kMeans(
+            strategies.add(ClusteringStrategy.kMeans(
                     clusters2,
                     errorLimit,
                     InitialCenters.meanAndFarthest(false),

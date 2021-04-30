@@ -4,6 +4,7 @@ import dog.giraffe.Context;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import java.util.List;
 
 public interface Mask {
     class ImageMask extends Image.Transform {
@@ -56,7 +57,7 @@ public interface Mask {
         return (xx, yy)->true;
     }
 
-    static Mask and(Mask... masks) {
+    static Mask and(List<Mask> masks) {
         return (xx, yy)->{
             for (Mask mask: masks) {
                 if (!mask.visible(xx, yy)) {

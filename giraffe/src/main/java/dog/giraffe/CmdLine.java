@@ -9,195 +9,222 @@ import dog.giraffe.image.ImageReader;
 import dog.giraffe.image.ImageWriter;
 import dog.giraffe.image.PrepareImages;
 import dog.giraffe.image.transform.Cluster1;
+import dog.giraffe.image.transform.Hue;
+import dog.giraffe.image.transform.HyperHue;
 import dog.giraffe.image.transform.Intensity;
-import dog.giraffe.image.transform.Select;
-import dog.giraffe.image.transform.NormalizedDifferenceVegetationIndex;
-import dog.giraffe.points.Points;
 import dog.giraffe.image.transform.Mask;
-import dog.giraffe.points.MutablePoints;
+import dog.giraffe.image.transform.Normalize;
+import dog.giraffe.image.transform.NormalizedDifferenceVegetationIndex;
+import dog.giraffe.image.transform.NormalizedHyperHue;
+import dog.giraffe.image.transform.Select;
+import dog.giraffe.points.KDTree;
+import dog.giraffe.threads.AsyncJoin;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import dog.giraffe.threads.Function;
 import dog.giraffe.threads.Supplier;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
-
+import java.util.regex.Matcher;
 import picocli.CommandLine;
-import picocli.CommandLine.Command;
 import picocli.CommandLine.MissingParameterException;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 public class CmdLine {
-    private static class AsyncJoin<T> implements Continuation<T> {
-        private Throwable error;
-        private boolean hasError;
-        private boolean hasResult;
-        private final Object lock=new Object();
-        private T result;
-
-        @Override
-        public void completed(T result) throws Throwable {
-            synchronized (lock) {
-                if (hasError || hasResult) {
-                    throw new RuntimeException("already completed");
-                }
-                hasResult=true;
-                this.result=result;
-                lock.notifyAll();
-            }
-        }
-
-        @Override
-        public void failed(Throwable throwable) throws Throwable {
-            synchronized (lock) {
-                if (hasError || hasResult) {
-                    throw new RuntimeException("already completed");
-                }
-                error=throwable;
-                hasError=true;
-                lock.notifyAll();
-            }
-        }
-
-        public T join() throws Throwable {
-            synchronized (lock) {
-                while (true) {
-                    if (hasError) {
-                        throw new RuntimeException(error);
-                    }
-                    if (hasResult) {
-                        return result;
-                    }
-                    lock.wait();
-                }
-            }
-        }
-    }
-
-
-    private static class Config {
-        @Option(names = { "-i", "--input" }, required = true, paramLabel = "IMGPATH", description = "Input image path")
-        Path inputPath;
-
-        @Option(names = { "-o", "--output" }, required = true, paramLabel = "IMGPATH", description = "Output image path")
-        Path outputPath;
-
-        @Option(names = { "-a", "--algorithm" }, paramLabel = "CLUSTER", description = "Specify the clustering algorithm (default: kMeans with elbow)")
-        String clusteringAlgorithm = "elbow";
-
-        @Option(names = { "--min" }, paramLabel = "CLUSTERNUMBER", description = "Minimum number of clusters")
-        int minCluster = 2;
-
-        @Option(names = { "--max" }, paramLabel = "CLUSTERNUMBER", description = "Maximum number of clusters")
-        int maxCluster = 20;
-
-        @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
-        boolean helpRequested = false;
-    }
-
-    private static <P extends Points> ClusteringStrategy<P>  createClustering(Config config) {
-       if (config.clusteringAlgorithm.equals("otsu")) {
-          return ClusteringStrategy.otsu(32, config.maxCluster);
-       }
-       if (config.clusteringAlgorithm.equals("isodata")) {
-          return ClusteringStrategy.isodata(config.minCluster, config.maxCluster);
-       }
-
-       if (config.clusteringAlgorithm.equals("kMeans")) {
-          return ClusteringStrategy.kMeans(
-                        config.maxCluster,
-                        0.95,
-                        InitialCenters.meanAndFarthest(false),
-                        10000,
-                        ReplaceEmptyCluster.farthest(false));
-       }
-
-       return ClusteringStrategy.elbow(
-                      0.95,
-                      config.maxCluster,
-                      config.minCluster,
-                      (clusters)->ClusteringStrategy.kMeans(
-                              clusters,
-                              0.95,
-                              InitialCenters.meanAndFarthest(false),
-                              10000,
-                              ReplaceEmptyCluster.farthest(false)),
-                      1);
-    }
-
-    private static Function<Image, Image> createImageMap(Config config, Mask mask) {
-        return (image)->
-                Cluster1.create(
-                        //Select.create(image, 1, 2, 3),
-                        /*Normalize.createDeviation(
-                                Select.create(image, 1, 2, 3),
-                                mask,
-                                3.0),*/
-                        /*HyperHue.create(
-                                Normalize.createDeviation(
-                                        Select.create(image, 1, 2, 3),
-                                        mask,
-                                        3.0)),*/
-                        /*NormalizedDifferenceVegetationIndex.create(
-                                Select.create(image, 4, 3)),*/
-                        //Hue.create(image),
-                        //HyperHue.create(image),
-                        //HyperHue.create(Select.create(image, 1, 2, 3)),
-                        //NormalizedHyperHue.create(image, 0.01),
-                        //NormalizedHyperHue.create(Select.create(image, 3, 4), 0.01),
-                        Intensity.create(image),
-                        //ClusterColors.Gray.falseColor(1),
-                        ClusterColors.RGB.falseColor(0, 1, 2),
-                        mask,
-                        createClustering(config)
-                );
-    }
-
-
     public static void main(String[] args) throws Throwable {
-       
-        Config config = new Config();
-        CommandLine cmd = new CommandLine(config);
+        CmdLineConfig cmdLineConfig=new CmdLineConfig();
+        CommandLine commandLine=new CommandLine(cmdLineConfig);
+        commandLine.setCaseInsensitiveEnumValuesAllowed(true);
         try {
-        cmd.parseArgs(args);
+            commandLine.parseArgs(args);
         }
-        catch (MissingParameterException e) {
-           config.helpRequested = true;
+        catch (MissingParameterException ignore) {
+           cmdLineConfig.helpRequested=true;
         }
-
-        if (config.helpRequested) {
-           cmd.usage(System.out);
+        if (cmdLineConfig.helpRequested) {
+           commandLine.usage(System.out);
            return;
         }
 
+        Function<Integer, ClusteringStrategy<KDTree>> strategyGenerator;
+        switch (cmdLineConfig.clusteringAlgorithm) {
+            case CmdLineConfig.CLUSTERING_ALGORITHM_ISODATA:
+                cmdLineConfig.elbow=false;
+                strategyGenerator=(clusters)->
+                        ClusteringStrategy.isodata(cmdLineConfig.minClusters, cmdLineConfig.maxClusters);
+                break;
+            case CmdLineConfig.CLUSTERING_ALGORITHM_K_MEANS:
+                List<InitialCenters<KDTree>> initialCenters=new ArrayList<>();
+                if (cmdLineConfig.initialCentersKDTree) {
+                    initialCenters.add(KDTree.initialCenters(false));
+                }
+                if (cmdLineConfig.initialCentersMean) {
+                    initialCenters.add(InitialCenters.meanAndFarthest(false));
+                }
+                for (int ii=cmdLineConfig.initialCentersRandom; 0<ii; --ii) {
+                    initialCenters.add(InitialCenters.random());
+                }
+                List<ReplaceEmptyCluster<KDTree>> replaceEmptyClusters=new ArrayList<>();
+                if (cmdLineConfig.replaceEmptyClustersFarthest) {
+                    replaceEmptyClusters.add(ReplaceEmptyCluster.farthest(false));
+                }
+                for (int ii=cmdLineConfig.replaceEmptyClustersRandom; 0<ii; --ii) {
+                    replaceEmptyClusters.add(ReplaceEmptyCluster.random());
+                }
+                List<Function<Integer, ClusteringStrategy<KDTree>>> strategyGenerators=new ArrayList<>();
+                initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
+                        strategyGenerators.add((clusters)->ClusteringStrategy.kMeans(
+                                clusters,
+                                cmdLineConfig.errorLimit,
+                                init,
+                                cmdLineConfig.maxIterations,
+                                replace))));
+                strategyGenerator=(clusters)->{
+                    List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>(strategyGenerators.size());
+                    for (Function<Integer, ClusteringStrategy<KDTree>> generator: strategyGenerators) {
+                        strategies.add(generator.apply(clusters));
+                    }
+                    return ClusteringStrategy.best(strategies);
+                };
+                break;
+            case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU:
+                strategyGenerator=(clusters)->ClusteringStrategy.otsuLinear(cmdLineConfig.bins, clusters);
+                break;
+            case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU_CIRCULAR:
+                strategyGenerator=(clusters)->ClusteringStrategy.otsuCircular(cmdLineConfig.bins, clusters);
+                break;
+            default:
+                throw new RuntimeException("unexpected clustering algorithm "+cmdLineConfig.clusteringAlgorithm);
+        }
+        ClusteringStrategy<KDTree> strategy=cmdLineConfig.elbow
+                ?ClusteringStrategy.elbow(
+                        cmdLineConfig.errorLimit,
+                        cmdLineConfig.maxClusters,
+                        cmdLineConfig.minClusters,
+                        strategyGenerator,
+                        1)
+                :strategyGenerator.apply(cmdLineConfig.maxClusters);
 
-        boolean bufferedInput=true;
-        boolean bufferedOutput=true;
-        //Mask mask=Mask.all();
-        Mask mask=Mask.and(
-                Mask.halfPlane(1851, 4, 14, 6256),
-                Mask.halfPlane(14, 6256, 6119, 8066),
-                Mask.halfPlane(6119, 8066, 7964,1786),
-                Mask.halfPlane(7964,1786, 1851, 4));
+        Mask mask2=Mask.all();
+        if ((null!=cmdLineConfig.mask)
+                && (!cmdLineConfig.mask.trim().isEmpty())) {
+            String[] strings=cmdLineConfig.mask.split(",");
+            if (0!=(strings.length%4)) {
+                throw new RuntimeException("Mask has to have 4 coordinates for every half-plane.");
+            }
+            List<Mask> masks=new ArrayList<>(strings.length/4);
+            for (int ii=0; strings.length>ii; ii+=4) {
+                double x1=Double.parseDouble(strings[ii].trim());
+                double y1=Double.parseDouble(strings[ii+1].trim());
+                double x2=Double.parseDouble(strings[ii+2].trim());
+                double y2=Double.parseDouble(strings[ii+3].trim());
+                masks.add(Mask.halfPlane(x1, y1, x2, y2));
+            }
+            mask2=Mask.and(masks);
+        }
+        Mask mask=mask2;
 
-        String outputFormat="tiff";
+        Function<Image, Image> imageMap=(image)->Cluster1.create(
+                image,
+                cmdLineConfig.rgbClusterColors
+                        ?ClusterColors.RGB.falseColor(0, 1, 2)
+                        :ClusterColors.Gray.falseColor(1),
+                mask,
+                strategy);
+        for (int ii=cmdLineConfig.imageTransforms.size()-1; 0<=ii; --ii) {
+            Function<Image, Image> imageMap2;
+            String it=cmdLineConfig.imageTransforms.get(ii);
+            switch (it) {
+                case CmdLineConfig.IMAGE_TRANSFORM_HUE:
+                    imageMap2=Hue::create;
+                    break;
+                case CmdLineConfig.IMAGE_TRANSFORM_HYPER_HUE:
+                    imageMap2=HyperHue::create;
+                    break;
+                case CmdLineConfig.IMAGE_TRANSFORM_INTENSITY:
+                    imageMap2=Intensity::create;
+                    break;
+                case CmdLineConfig.IMAGE_TRANSFORM_NORMALIZE_MIN_MAX:
+                    imageMap2=(image)->Normalize.createMinMax(image, mask);
+                    break;
+                case CmdLineConfig.IMAGE_TRANSFORM_NORMALIZED_DIFFERENCE_VEGETATION_INDEX:
+                    imageMap2=NormalizedDifferenceVegetationIndex::create;
+                    break;
+                default:
+                    Matcher matcher=CmdLineConfig.IMAGE_TRANSFORM_NORMALIZE_VARIANCE.matcher(it);
+                    if (matcher.matches()) {
+                        double sigma=Double.parseDouble(matcher.group(1));
+                        imageMap2=(image)->Normalize.createDeviation(image, mask, sigma);
+                    }
+                    else {
+                        matcher=CmdLineConfig.IMAGE_TRANSFORM_NORMALIZED_HYPER_HUE.matcher(it);
+                        if (matcher.matches()) {
+                            double maxZero=Double.parseDouble(matcher.group(1));
+                            imageMap2=(image)->NormalizedHyperHue.create(image, maxZero);
+                        }
+                        else {
+                            matcher=CmdLineConfig.IMAGE_TRANSFORM_SELECT.matcher(it);
+                            if (matcher.matches()) {
+                                String[] dimensionStrings=matcher.group(1).split(",");
+                                int[] dimensions=new int[dimensionStrings.length];
+                                for (int dd=0; dimensions.length>dd; ++dd) {
+                                    dimensions[dd]=Integer.parseInt(dimensionStrings[dd]);
+                                }
+                                imageMap2=(image)->Select.create(image, dimensions);
+                            }
+                            else {
+                                throw new RuntimeException("unexpected image transform "+it);
+                            }
+                        }
+                    }
+                    break;
+            }
+            imageMap=imageMap.compose(imageMap2);
+        }
 
-        Files.deleteIfExists(config.outputPath);
+        String outputFormat=cmdLineConfig.outputFormat;
+        if (null==outputFormat) {
+            String filename=cmdLineConfig.outputPath.getFileName().toString();
+            int ii=filename.lastIndexOf('.');
+            if (0<=ii) {
+                switch (filename.substring(ii+1).toLowerCase()) {
+                    case "bmp":
+                        outputFormat="bmp";
+                        break;
+                    case "gif":
+                        outputFormat="gif";
+                        break;
+                    case "jpeg":
+                    case "jpg":
+                        outputFormat="jpeg";
+                        break;
+                    case "png":
+                        outputFormat="png";
+                        break;
+                    case "tif":
+                    case "tiff":
+                        outputFormat="tiff";
+                        break;
+                }
+            }
+            if (null==outputFormat) {
+                outputFormat="tiff";
+            }
+        }
+
+        Files.deleteIfExists(cmdLineConfig.outputPath);
 
         try (Context context=new StandardContext()) {
             AsyncJoin<Void> join=new AsyncJoin<>();
             write(
                     context,
-                    createImageMap(config, mask),
-                    bufferedInput
-                            ?BufferedImageReader.factory(config.inputPath)
-                            :FileImageReader.factory(config.inputPath),
-                    bufferedOutput
-                            ?BufferedImageWriter.factory(outputFormat, config.outputPath)
-                            :FileImageWriter.factory(outputFormat, config.outputPath),
+                    imageMap,
+                    cmdLineConfig.bufferedInput
+                            ?BufferedImageReader.factory(cmdLineConfig.inputPath)
+                            :FileImageReader.factory(cmdLineConfig.inputPath),
+                    cmdLineConfig.bufferedOutput
+                            ?BufferedImageWriter.factory(outputFormat, cmdLineConfig.outputPath)
+                            :FileImageWriter.factory(outputFormat, cmdLineConfig.outputPath),
                     join);
             join.join();
         }
@@ -234,36 +261,10 @@ public class CmdLine {
         ImageWriter imageWriter2=imageWriter.create(image.width(), image.height(), image.dimensions());
         Continuation<Void> continuation2=Continuations.finallyBlock(imageWriter2::close, continuation);
         try {
-            write(context, image, imageWriter2, continuation2);
+            ImageWriter.write(context, image, imageWriter2, continuation2);
         }
         catch (Throwable throwable) {
             continuation2.failed(throwable);
         }
-    }
-
-    private static void write(
-            Context context, Image image, ImageWriter imageWriter, Continuation<Void> continuation) throws Throwable {
-        Continuations.forkJoin(
-                (from, to)->(continuation2)->{
-                    Image.Reader reader=image.reader();
-                    MutablePoints points=image.createPoints(image.dimensions(), image.width());
-                    for (int yy=from; to>yy; ++yy) {
-                        reader.setNormalizedLineTo(yy, points, 0);
-                        ImageWriter.Line line=imageWriter.getLine(yy);
-                        for (int xx=0; image.width()>xx; ++xx) {
-                            for (int dd=0; image.dimensions()>dd; ++dd) {
-                                line.setNormalized(dd, xx, points.getNormalized(dd, xx));
-                            }
-                        }
-                        line.write();
-                    }
-                    continuation2.completed(null);
-                },
-                0,
-                image.height(),
-                Continuations.map(
-                        (input, continuation2)->continuation2.completed(null),
-                        continuation),
-                context.executor());
     }
 }

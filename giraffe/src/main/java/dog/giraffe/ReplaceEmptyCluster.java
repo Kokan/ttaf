@@ -5,9 +5,9 @@ import dog.giraffe.points.Vector;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import dog.giraffe.threads.Function;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 @FunctionalInterface
 public interface ReplaceEmptyCluster<P extends Points> {
