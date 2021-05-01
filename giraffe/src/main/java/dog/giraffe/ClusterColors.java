@@ -2,13 +2,15 @@ package dog.giraffe;
 
 import dog.giraffe.points.Points;
 import dog.giraffe.points.Vector;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 public interface ClusterColors {
     abstract class Abstract implements ClusterColors {
@@ -57,10 +59,12 @@ public interface ClusterColors {
                 protected Map<Vector, Vector> colors(
                         List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized,
                         Points points) {
-                    Set<Double> remainingGrays=new HashSet<>(clusters.size());
-                    Map<List<Vector>, Void> remainingClusters=new IdentityHashMap<>(clusters.size());
+                    Set<Double> remainingGrays=new TreeSet<>();
+                    Map<List<Vector>, Void> remainingClusters=new TreeMap<>(Lists.lexicographicComparator());
                     for (int cc=0; clusters.size()>cc; ++cc) {
-                        remainingClusters.put(clusters.get(cc), null);
+                        List<Vector> centers=new ArrayList<>(clusters.get(cc));
+                        centers.sort(null);
+                        remainingClusters.put(centers, null);
                         remainingGrays.add(1.0*cc/(clusters.size()-1));
                     }
                     Map<Vector, Vector> result=new IdentityHashMap<>(intensity.size());
@@ -95,9 +99,6 @@ public interface ClusterColors {
                 }
             };
         }
-
-        /*public static Gray trueColor(int dimensions) {
-        }*/
     }
 
     abstract class RGB extends Abstract {
@@ -121,13 +122,15 @@ public interface ClusterColors {
                                 (vector2.dimensions()>red)?(vector2.coordinate(red)):0.0);
                         hues.put(vector, colorConverter.hue);
                     });
-                    Set<Double> remainingHues=new HashSet<>(clusters.size());
-                    Map<List<Vector>, Void> remainingClusters=new IdentityHashMap<>(clusters.size());
+                    Set<Double> remainingHues=new TreeSet<>();
+                    Map<List<Vector>, Void> remainingClusters=new TreeMap<>(Lists.lexicographicComparator());
                     for (int cc=0; clusters.size()>cc; ++cc) {
-                        remainingClusters.put(clusters.get(cc), null);
+                        List<Vector> centers=new ArrayList<>(clusters.get(cc));
+                        centers.sort(null);
+                        remainingClusters.put(centers, null);
                         remainingHues.add(2.0*Math.PI*cc/clusters.size());
                     }
-                    Map<Vector, Vector> result=new IdentityHashMap<>(intensity.size());
+                    Map<Vector, Vector> result=new TreeMap<>();
                     while (!remainingClusters.isEmpty()) {
                         double minDistance=Double.POSITIVE_INFINITY;
                         Double minHue=null;
@@ -165,14 +168,6 @@ public interface ClusterColors {
                 }
             };
         }
-
-        /*public static RGB trueColor() {
-            return new RGB() {
-                @Override
-                public Map<Vector, Vector> colors(List<List<Vector>> clusters, L2Points<?> points) {
-                }
-            };
-        }*/
     }
 
     Map<Vector, Vector> colors(List<List<Vector>> clusters, Points points);

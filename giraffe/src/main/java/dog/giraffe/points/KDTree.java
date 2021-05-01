@@ -378,6 +378,12 @@ public abstract class KDTree extends Points {
         };
     }
 
+    public static Function<Vector, Vector> nearestCenter2(List<Vector> centers, Sum.Factory sum) {
+        return (16>centers.size())
+                ?Distance.nearestCenter(centers)
+                :KDTree.nearestCenter(centers, sum);
+    }
+
     protected abstract void nearestCenter(NearestCenter nearestCenter, Vector point);
 
     @Override

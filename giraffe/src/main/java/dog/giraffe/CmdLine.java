@@ -9,6 +9,7 @@ import dog.giraffe.image.ImageReader;
 import dog.giraffe.image.ImageWriter;
 import dog.giraffe.image.PrepareImages;
 import dog.giraffe.image.transform.Cluster1;
+import dog.giraffe.image.transform.Cluster2;
 import dog.giraffe.image.transform.Hue;
 import dog.giraffe.image.transform.HyperHue;
 import dog.giraffe.image.transform.Intensity;
@@ -124,13 +125,29 @@ public class CmdLine {
         }
         Mask mask=mask2;
 
-        Function<Image, Image> imageMap=(image)->Cluster1.create(
-                image,
-                cmdLineConfig.rgbClusterColors
-                        ?ClusterColors.RGB.falseColor(0, 1, 2)
-                        :ClusterColors.Gray.falseColor(1),
-                mask,
-                strategy);
+        Function<Image, Image> imageMap;
+        if (null==cmdLineConfig.saturationBased) {
+            imageMap=(image)->Cluster1.create(
+                    image,
+                    cmdLineConfig.rgbClusterColors
+                            ?ClusterColors.RGB.falseColor(0, 1, 2)
+                            :ClusterColors.Gray.falseColor(1),
+                    mask,
+                    strategy);
+        }
+        else {
+            switch (cmdLineConfig.saturationBased) {
+                case CmdLineConfig.SATURATION_BASED_HUE:
+                    imageMap=(image)->Cluster2.createHue(image, mask, strategy);
+                    break;
+                case CmdLineConfig.SATURATION_BASED_HYPER_HUE:
+                    imageMap=(image)->Cluster2.createHyperHue(image, mask, strategy);
+                    break;
+                default:
+                    throw new RuntimeException(
+                            "unexpected saturation based clustering: "+cmdLineConfig.saturationBased);
+            }
+        }
         for (int ii=cmdLineConfig.imageTransforms.size()-1; 0<=ii; --ii) {
             Function<Image, Image> imageMap2;
             String it=cmdLineConfig.imageTransforms.get(ii);

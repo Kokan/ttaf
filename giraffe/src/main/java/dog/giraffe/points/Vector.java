@@ -1,9 +1,23 @@
 package dog.giraffe.points;
 
+import dog.giraffe.LexicographicComparator;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Objects;
 
 public class Vector implements Comparable<Vector> {
+    public static final Comparator<Vector> COMPARATOR=new LexicographicComparator<>() {
+        @Override
+        protected int compare(Vector object1, int index1, Vector object2, int index2) {
+            return Double.compare(object1.coordinate(index1), object2.coordinate(index2));
+        }
+
+        @Override
+        protected int length(Vector object) {
+            return object.dimensions();
+        }
+    };
+
     private final double[] coordinates;
 
     public Vector(double[] coordinates) {
@@ -30,14 +44,7 @@ public class Vector implements Comparable<Vector> {
 
     @Override
     public int compareTo(Vector vector) {
-        int ds=Math.min(coordinates.length, vector.coordinates.length);
-        for (int dd=0; ds>dd; ++dd) {
-            int cc=Double.compare(coordinates[dd], vector.coordinates[dd]);
-            if (0!=cc) {
-                return cc;
-            }
-        }
-        return Integer.compare(coordinates.length, vector.coordinates.length);
+        return COMPARATOR.compare(this, vector);
     }
 
     public double coordinate(int dimension) {

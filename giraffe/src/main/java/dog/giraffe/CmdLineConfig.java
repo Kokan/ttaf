@@ -22,6 +22,8 @@ public class CmdLineConfig {
     public static final Pattern IMAGE_TRANSFORM_NORMALIZED_HYPER_HUE
             =Pattern.compile("normalized-hyper-hue\\(([0-9.]+)\\)");
     public static final Pattern IMAGE_TRANSFORM_SELECT=Pattern.compile("select\\(([0-9]+(?:,[0-9])+)\\)");
+    public static final String SATURATION_BASED_HUE="hue";
+    public static final String SATURATION_BASED_HYPER_HUE="hyper-hue";
 
     @CommandLine.Option(names={"--bins"}, paramLabel="BINS",
             description="Number of bins used by Otsu's method.")
@@ -107,4 +109,8 @@ public class CmdLineConfig {
     @CommandLine.Option(names={"--replace-empty-clusters-random"}, paramLabel="REPLACERANDOM",
             description="Use this many random points as replacement clusters.")
     public int replaceEmptyClustersRandom=0;
+
+    @CommandLine.Option(names={"--saturation-based"}, paramLabel="SATURATION ",
+            description="Use saturation based clustering. Valid values: hue, hyper-hue")
+    public String saturationBased=null;
 }
