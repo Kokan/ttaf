@@ -10,18 +10,17 @@ public class ColorConverter {
     public double saturationValue;
     public double value;
 
-    private void check(double max, double value) {
-        if ((!Double.isFinite(value))
-                || (max<value)
-                || (0.0>value)) {
+    private static double clamp(double max, double value) {
+        if (!Double.isFinite(value)) {
             throw new IllegalStateException(Double.toString(value));
         }
+        return Math.max(0.0, Math.min(max, value));
     }
 
     public void hslToRgb(double hue, double lightness, double saturationLightness) {
-        check(2.0*Math.PI, hue);
-        check(1.0, lightness);
-        check(1.0, saturationLightness);
+        clamp(2.0*Math.PI, hue);
+        clamp(1.0, lightness);
+        clamp(1.0, saturationLightness);
         double cc=(1.0-Math.abs(2.0*lightness-1.0))*saturationLightness;
         double hue2=3.0*hue/Math.PI;
         double xx=cc*(1.0-Math.abs((hue2%2.0)-1.0));
@@ -58,15 +57,15 @@ public class ColorConverter {
         blue+=mm;
         green+=mm;
         red+=mm;
-        check(1.0, blue);
-        check(1.0, green);
-        check(1.0, red);
+        clamp(1.0, blue);
+        clamp(1.0, green);
+        clamp(1.0, red);
     }
 
     public void hsvToRgb(double hue, double saturationValue, double value) {
-        check(2.0*Math.PI, hue);
-        check(1.0, saturationValue);
-        check(1.0, value);
+        clamp(2.0*Math.PI, hue);
+        clamp(1.0, saturationValue);
+        clamp(1.0, value);
         double cc=saturationValue*value;
         double hue2=3.0*hue/Math.PI;
         double xx=cc*(1.0-Math.abs((hue2%2.0)-1.0));
@@ -103,9 +102,9 @@ public class ColorConverter {
         blue+=mm;
         green+=mm;
         red+=mm;
-        check(1.0, blue);
-        check(1.0, green);
-        check(1.0, red);
+        clamp(1.0, blue);
+        clamp(1.0, green);
+        clamp(1.0, red);
     }
 
     public void rgbToHslv(int rgb) {
@@ -116,9 +115,9 @@ public class ColorConverter {
     }
 
     public void rgbToHslv(double blue, double green, double red) {
-        check(1.0, blue);
-        check(1.0, green);
-        check(1.0, red);
+        clamp(1.0, blue);
+        clamp(1.0, green);
+        clamp(1.0, red);
         value=Math.max(blue, Math.max(green, red));
         double min=Math.min(blue, Math.min(green, red));
         lightness=0.5*(value+min);
@@ -138,21 +137,21 @@ public class ColorConverter {
         else {
             hue=(4.0*cc+red-green)*Math.PI/(3.0*cc);
         }
-        check(2.0*Math.PI, hue);
+        clamp(2.0*Math.PI, hue);
         if ((0.0>=lightness)
                 || (1.0<=lightness)) {
             saturationLightness=0.0;
         }
         else {
             saturationLightness=(value-lightness)/Math.min(lightness, 1.0-lightness);
-            check(1.0, saturationLightness);
+            clamp(1.0, saturationLightness);
         }
         if (0.0>=value) {
             saturationValue=0.0;
         }
         else {
             saturationValue=cc/value;
-            check(1.0, saturationValue);
+            clamp(1.0, saturationValue);
         }
     }
 

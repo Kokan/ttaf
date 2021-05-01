@@ -24,119 +24,159 @@ import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import dog.giraffe.threads.Function;
 import dog.giraffe.threads.Supplier;
+import dog.giraffe.threads.batch.Batch;
+import dog.giraffe.threads.batch.BatchRunner;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import picocli.CommandLine;
 import picocli.CommandLine.MissingParameterException;
 
 public class CmdLine {
+    private static void batchMode(
+            CmdLineConfig config, Context context, Function<Image, Image> imageMap, Continuation<Void> continuation)
+            throws Throwable {
+        boolean error=true;
+        InputStream fis=Files.newInputStream(Paths.get(config.inputPath));
+        try {
+            InputStream bis=new BufferedInputStream(fis);
+            try {
+                Reader rr=new InputStreamReader(bis, StandardCharsets.UTF_8);
+                try {
+                    BufferedReader br=new BufferedReader(rr);
+                    try {
+                        Continuation<Void> continuation2=Continuations.finallyBlock(
+                                ()->{
+                                    try {
+                                        try {
+                                            br.close();
+                                        }
+                                        finally {
+                                            rr.close();
+                                        }
+                                    }
+                                    finally {
+                                        try {
+                                            bis.close();
+                                        }
+                                        finally {
+                                            fis.close();
+                                        }
+                                    }
+                                },
+                                continuation);
+                        error=false;
+                        try {
+                            batchMode(config, context, imageMap, br, continuation2);
+                        }
+                        catch (Throwable throwable) {
+                            continuation2.failed(throwable);
+                        }
+                    }
+                    finally {
+                        if (error) {
+                            br.close();
+                        }
+                    }
+                }
+                finally {
+                    if (error) {
+                        rr.close();
+                    }
+                }
+            }
+            finally {
+                if (error) {
+                    bis.close();
+                }
+            }
+        }
+        finally {
+            if (error) {
+                fis.close();
+            }
+        }
+    }
+
+    private static void batchMode(
+            CmdLineConfig config, Context context, Function<Image, Image> imageMap, BufferedReader inputFiles,
+            Continuation<Void> continuation) throws Throwable {
+        BatchRunner.<String>runMultiThreaded(
+                new Batch<>() {
+                    @Override
+                    public Optional<String> next() throws Throwable {
+                        return Optional.ofNullable(inputFiles.readLine());
+                    }
+
+                    @Override
+                    public void process(
+                            Context context, String inputPath, Continuation<Void> continuation) throws Throwable {
+                        Path inputPath2=Paths.get(inputPath);
+                        String dir=(null==inputPath2.getParent())
+                                ?""
+                                :(inputPath2.getParent().toString());
+                        String file=inputPath2.getFileName().toString();
+                        String ext="";
+                        int ii=file.indexOf('.');
+                        if (0<=ii) {
+                            ext=file.substring(ii);
+                            file=file.substring(0, ii);
+                        }
+                        String outputPath=config.outputPath
+                                .replaceAll(Pattern.quote("$DIR"), dir)
+                                .replaceAll(Pattern.quote("$FILE"), file)
+                                .replaceAll(Pattern.quote("$EXT"), ext);
+                        singleFileMode(config, context, imageMap, inputPath, outputPath, continuation);
+                    }
+                },
+                context,
+                config.batchParallelism,
+                continuation);
+    }
+
     public static void main(String[] args) throws Throwable {
-        CmdLineConfig cmdLineConfig=new CmdLineConfig();
-        CommandLine commandLine=new CommandLine(cmdLineConfig);
+        CmdLineConfig config=new CmdLineConfig();
+        CommandLine commandLine=new CommandLine(config);
         commandLine.setCaseInsensitiveEnumValuesAllowed(true);
         try {
             commandLine.parseArgs(args);
         }
         catch (MissingParameterException ignore) {
-           cmdLineConfig.helpRequested=true;
+           config.helpRequested=true;
         }
-        if (cmdLineConfig.helpRequested) {
+        if (config.helpRequested) {
            commandLine.usage(System.out);
            return;
         }
+        config.setDefaultValues();
 
-        Function<Integer, ClusteringStrategy<KDTree>> strategyGenerator;
-        switch (cmdLineConfig.clusteringAlgorithm) {
-            case CmdLineConfig.CLUSTERING_ALGORITHM_ISODATA:
-                cmdLineConfig.elbow=false;
-                strategyGenerator=(clusters)->
-                        ClusteringStrategy.isodata(cmdLineConfig.minClusters, cmdLineConfig.maxClusters);
-                break;
-            case CmdLineConfig.CLUSTERING_ALGORITHM_K_MEANS:
-                List<InitialCenters<KDTree>> initialCenters=new ArrayList<>();
-                if (cmdLineConfig.initialCentersKDTree) {
-                    initialCenters.add(KDTree.initialCenters(false));
-                }
-                if (cmdLineConfig.initialCentersMean) {
-                    initialCenters.add(InitialCenters.meanAndFarthest(false));
-                }
-                for (int ii=cmdLineConfig.initialCentersRandom; 0<ii; --ii) {
-                    initialCenters.add(InitialCenters.random());
-                }
-                List<ReplaceEmptyCluster<KDTree>> replaceEmptyClusters=new ArrayList<>();
-                if (cmdLineConfig.replaceEmptyClustersFarthest) {
-                    replaceEmptyClusters.add(ReplaceEmptyCluster.farthest(false));
-                }
-                for (int ii=cmdLineConfig.replaceEmptyClustersRandom; 0<ii; --ii) {
-                    replaceEmptyClusters.add(ReplaceEmptyCluster.random());
-                }
-                List<Function<Integer, ClusteringStrategy<KDTree>>> strategyGenerators=new ArrayList<>();
-                initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
-                        strategyGenerators.add((clusters)->ClusteringStrategy.kMeans(
-                                clusters,
-                                cmdLineConfig.errorLimit,
-                                init,
-                                cmdLineConfig.maxIterations,
-                                replace))));
-                strategyGenerator=(clusters)->{
-                    List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>(strategyGenerators.size());
-                    for (Function<Integer, ClusteringStrategy<KDTree>> generator: strategyGenerators) {
-                        strategies.add(generator.apply(clusters));
-                    }
-                    return ClusteringStrategy.best(strategies);
-                };
-                break;
-            case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU:
-                strategyGenerator=(clusters)->ClusteringStrategy.otsuLinear(cmdLineConfig.bins, clusters);
-                break;
-            case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU_CIRCULAR:
-                strategyGenerator=(clusters)->ClusteringStrategy.otsuCircular(cmdLineConfig.bins, clusters);
-                break;
-            default:
-                throw new RuntimeException("unexpected clustering algorithm "+cmdLineConfig.clusteringAlgorithm);
-        }
-        ClusteringStrategy<KDTree> strategy=cmdLineConfig.elbow
-                ?ClusteringStrategy.elbow(
-                        cmdLineConfig.errorLimit,
-                        cmdLineConfig.maxClusters,
-                        cmdLineConfig.minClusters,
-                        strategyGenerator,
-                        1)
-                :strategyGenerator.apply(cmdLineConfig.maxClusters);
+        ClusteringStrategy<KDTree> strategy=strategy(config);
 
-        Mask mask2=Mask.all();
-        if ((null!=cmdLineConfig.mask)
-                && (!cmdLineConfig.mask.trim().isEmpty())) {
-            String[] strings=cmdLineConfig.mask.split(",");
-            if (0!=(strings.length%4)) {
-                throw new RuntimeException("Mask has to have 4 coordinates for every half-plane.");
-            }
-            List<Mask> masks=new ArrayList<>(strings.length/4);
-            for (int ii=0; strings.length>ii; ii+=4) {
-                double x1=Double.parseDouble(strings[ii].trim());
-                double y1=Double.parseDouble(strings[ii+1].trim());
-                double x2=Double.parseDouble(strings[ii+2].trim());
-                double y2=Double.parseDouble(strings[ii+3].trim());
-                masks.add(Mask.halfPlane(x1, y1, x2, y2));
-            }
-            mask2=Mask.and(masks);
-        }
-        Mask mask=mask2;
+        Mask mask=mask(config);
 
         Function<Image, Image> imageMap;
-        if (null==cmdLineConfig.saturationBased) {
+        if (null==config.saturationBased) {
             imageMap=(image)->Cluster1.create(
                     image,
-                    cmdLineConfig.rgbClusterColors
+                    config.rgbClusterColors
                             ?ClusterColors.RGB.falseColor(0, 1, 2)
                             :ClusterColors.Gray.falseColor(1),
                     mask,
                     strategy);
         }
         else {
-            switch (cmdLineConfig.saturationBased) {
+            switch (config.saturationBased) {
                 case CmdLineConfig.SATURATION_BASED_HUE:
                     imageMap=(image)->Cluster2.createHue(image, mask, strategy);
                     break;
@@ -145,12 +185,12 @@ public class CmdLine {
                     break;
                 default:
                     throw new RuntimeException(
-                            "unexpected saturation based clustering: "+cmdLineConfig.saturationBased);
+                            "unexpected saturation based clustering: "+config.saturationBased);
             }
         }
-        for (int ii=cmdLineConfig.imageTransforms.size()-1; 0<=ii; --ii) {
+        for (int ii=config.imageTransforms.size()-1; 0<=ii; --ii) {
             Function<Image, Image> imageMap2;
-            String it=cmdLineConfig.imageTransforms.get(ii);
+            String it=config.imageTransforms.get(ii);
             switch (it) {
                 case CmdLineConfig.IMAGE_TRANSFORM_HUE:
                     imageMap2=Hue::create;
@@ -199,52 +239,141 @@ public class CmdLine {
             imageMap=imageMap.compose(imageMap2);
         }
 
-        String outputFormat=cmdLineConfig.outputFormat;
-        if (null==outputFormat) {
-            String filename=cmdLineConfig.outputPath.getFileName().toString();
-            int ii=filename.lastIndexOf('.');
-            if (0<=ii) {
-                switch (filename.substring(ii+1).toLowerCase()) {
-                    case "bmp":
-                        outputFormat="bmp";
-                        break;
-                    case "gif":
-                        outputFormat="gif";
-                        break;
-                    case "jpeg":
-                    case "jpg":
-                        outputFormat="jpeg";
-                        break;
-                    case "png":
-                        outputFormat="png";
-                        break;
-                    case "tif":
-                    case "tiff":
-                        outputFormat="tiff";
-                        break;
-                }
-            }
-            if (null==outputFormat) {
-                outputFormat="tiff";
-            }
-        }
-
-        Files.deleteIfExists(cmdLineConfig.outputPath);
-
-        try (Context context=new StandardContext()) {
+        try (Context context=new StandardContext(config.threads)) {
             AsyncJoin<Void> join=new AsyncJoin<>();
-            write(
-                    context,
-                    imageMap,
-                    cmdLineConfig.bufferedInput
-                            ?BufferedImageReader.factory(cmdLineConfig.inputPath)
-                            :FileImageReader.factory(cmdLineConfig.inputPath),
-                    cmdLineConfig.bufferedOutput
-                            ?BufferedImageWriter.factory(outputFormat, cmdLineConfig.outputPath)
-                            :FileImageWriter.factory(outputFormat, cmdLineConfig.outputPath),
-                    join);
+            if (config.batchMode) {
+                batchMode(config, context, imageMap, join);
+            }
+            else {
+                singleFileMode(config, context, imageMap, config.inputPath, config.outputPath, join);
+            }
             join.join();
         }
+    }
+
+    private static Mask mask(CmdLineConfig config) {
+        Mask mask=Mask.all();
+        if ((null!=config.mask)
+                && (!config.mask.trim().isEmpty())) {
+            String[] strings=config.mask.split(",");
+            if (0!=(strings.length%4)) {
+                throw new RuntimeException("Mask has to have 4 coordinates for every half-plane.");
+            }
+            List<Mask> masks=new ArrayList<>(strings.length/4);
+            for (int ii=0; strings.length>ii; ii+=4) {
+                double x1=Double.parseDouble(strings[ii].trim());
+                double y1=Double.parseDouble(strings[ii+1].trim());
+                double x2=Double.parseDouble(strings[ii+2].trim());
+                double y2=Double.parseDouble(strings[ii+3].trim());
+                masks.add(Mask.halfPlane(x1, y1, x2, y2));
+            }
+            mask=Mask.and(masks);
+        }
+        return mask;
+    }
+
+    private static String outputFormat(CmdLineConfig config, Path outputPath) {
+        if (null!=config.outputFormat) {
+            return config.outputFormat;
+        }
+        String filename=outputPath.getFileName().toString();
+        int ii=filename.lastIndexOf('.');
+        if (0<=ii) {
+            switch (filename.substring(ii+1).toLowerCase()) {
+                case "bmp":
+                    return "bmp";
+                case "gif":
+                    return "gif";
+                case "jpeg":
+                case "jpg":
+                    return "jpeg";
+                case "png":
+                    return "png";
+                case "tif":
+                case "tiff":
+                    return "tiff";
+            }
+        }
+        return "tiff";
+    }
+
+    private static void singleFileMode(
+            CmdLineConfig config, Context context, Function<Image, Image> imageMap, String inputPath,
+            String outputPath, Continuation<Void> continuation) throws Throwable {
+        Path inputPath2=Paths.get(inputPath);
+        Path outputPath2=Paths.get(outputPath);
+        Files.deleteIfExists(outputPath2);
+        String outputFormat=outputFormat(config, outputPath2);
+        write(
+                context,
+                imageMap,
+                config.bufferedInput
+                        ?BufferedImageReader.factory(inputPath2)
+                        :FileImageReader.factory(inputPath2),
+                config.bufferedOutput
+                        ?BufferedImageWriter.factory(outputFormat, outputPath2)
+                        :FileImageWriter.factory(outputFormat, outputPath2),
+                continuation);
+    }
+
+    private static ClusteringStrategy<KDTree> strategy(CmdLineConfig config) throws Throwable {
+        Function<Integer, ClusteringStrategy<KDTree>> strategyGenerator;
+        switch (config.clusteringAlgorithm) {
+            case CmdLineConfig.CLUSTERING_ALGORITHM_ISODATA:
+                config.elbow=false;
+                strategyGenerator=(clusters)->ClusteringStrategy.isodata(config.minClusters, config.maxClusters);
+                break;
+            case CmdLineConfig.CLUSTERING_ALGORITHM_K_MEANS:
+                List<InitialCenters<KDTree>> initialCenters=new ArrayList<>();
+                if (config.initialCentersKDTree) {
+                    initialCenters.add(KDTree.initialCenters(false));
+                }
+                if (config.initialCentersMean) {
+                    initialCenters.add(InitialCenters.meanAndFarthest(false));
+                }
+                for (int ii=config.initialCentersRandom; 0<ii; --ii) {
+                    initialCenters.add(InitialCenters.random());
+                }
+                List<ReplaceEmptyCluster<KDTree>> replaceEmptyClusters=new ArrayList<>();
+                if (config.replaceEmptyClustersFarthest) {
+                    replaceEmptyClusters.add(ReplaceEmptyCluster.farthest(false));
+                }
+                for (int ii=config.replaceEmptyClustersRandom; 0<ii; --ii) {
+                    replaceEmptyClusters.add(ReplaceEmptyCluster.random());
+                }
+                List<Function<Integer, ClusteringStrategy<KDTree>>> strategyGenerators=new ArrayList<>();
+                initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
+                        strategyGenerators.add((clusters)->ClusteringStrategy.kMeans(
+                                clusters,
+                                config.errorLimit,
+                                init,
+                                config.maxIterations,
+                                replace))));
+                strategyGenerator=(clusters)->{
+                    List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>(strategyGenerators.size());
+                    for (Function<Integer, ClusteringStrategy<KDTree>> generator: strategyGenerators) {
+                        strategies.add(generator.apply(clusters));
+                    }
+                    return ClusteringStrategy.best(strategies);
+                };
+                break;
+            case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU:
+                strategyGenerator=(clusters)->ClusteringStrategy.otsuLinear(config.bins, clusters);
+                break;
+            case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU_CIRCULAR:
+                strategyGenerator=(clusters)->ClusteringStrategy.otsuCircular(config.bins, clusters);
+                break;
+            default:
+                throw new RuntimeException("unexpected clustering algorithm "+config.clusteringAlgorithm);
+        }
+        return config.elbow
+                ?ClusteringStrategy.elbow(
+                        config.errorLimit,
+                        config.maxClusters,
+                        config.minClusters,
+                        strategyGenerator,
+                        1)
+                :strategyGenerator.apply(config.maxClusters);
     }
 
     private static void write(

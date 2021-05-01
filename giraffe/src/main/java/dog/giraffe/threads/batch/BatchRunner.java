@@ -16,6 +16,9 @@ public class BatchRunner {
 
     public static <T> void runMultiThreaded(
             Batch<T> batch, Context context, int parallelism, Continuation<Void> continuation) throws Throwable {
+        if (1>parallelism) {
+            throw new IllegalStateException("non-positive parallelism "+parallelism);
+        }
         AtomicBoolean failed=new AtomicBoolean(false);
         Object lock=new Object();
         List<AsyncSupplier<Void>> forks=new ArrayList<>(parallelism);

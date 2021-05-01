@@ -1,7 +1,7 @@
 package dog.giraffe;
 
-import dog.giraffe.kmeans.KMeans;
 import dog.giraffe.isodata.Isodata;
+import dog.giraffe.kmeans.KMeans;
 import dog.giraffe.points.Points;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Block;
@@ -75,25 +75,30 @@ public interface ClusteringStrategy<P extends Points> {
                 }
             }
             ParallelSearch.search(
-                    (clusters, continuation2)->strategy.apply(clusters).cluster(
-                            context,
-                            points,
-                            new Continuation<>() {
-                                @Override
-                                public void completed(Clusters result) throws Throwable {
-                                    continuation2.completed(new ClustersOrEmpty(result));
-                                }
+                    (clusters, continuation2)->{
+                        Continuation<Clusters> continuation3=new Continuation<>() {
+                            @Override
+                            public void completed(Clusters result) throws Throwable {
+                                continuation2.completed(new ClustersOrEmpty(result));
+                            }
 
-                                @Override
-                                public void failed(Throwable throwable) throws Throwable {
-                                    if (throwable instanceof EmptyClusterException) {
-                                        continuation2.completed(new ClustersOrEmpty((EmptyClusterException)throwable));
-                                    }
-                                    else {
-                                        continuation2.failed(throwable);
-                                    }
+                            @Override
+                            public void failed(Throwable throwable) throws Throwable {
+                                if (throwable instanceof EmptyClusterException) {
+                                    continuation2.completed(new ClustersOrEmpty((EmptyClusterException)throwable));
                                 }
-                            }),
+                                else {
+                                    continuation2.failed(throwable);
+                                }
+                            }
+                        };
+                        try {
+                            strategy.apply(clusters).cluster(context, points, continuation3);
+                        }
+                        catch (Throwable throwable) {
+                            continuation3.failed(throwable);
+                        }
+                    },
                     minClusters,
                     maxClusters+1,
                     new ParallelSearch<ClustersOrEmpty, Clusters>() {

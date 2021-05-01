@@ -161,10 +161,7 @@ public abstract class Otsu {
             if (!Double.isFinite(variance)) {
                 throw new IllegalStateException();
             }
-            if (0.0>variance) {
-                throw new IllegalStateException();
-            }
-            return variance;
+            return Math.max(0.0, variance);
         }
     }
 

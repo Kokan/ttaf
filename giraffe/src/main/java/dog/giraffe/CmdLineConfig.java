@@ -1,6 +1,5 @@
 package dog.giraffe;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -25,17 +24,25 @@ public class CmdLineConfig {
     public static final String SATURATION_BASED_HUE="hue";
     public static final String SATURATION_BASED_HYPER_HUE="hyper-hue";
 
+    @CommandLine.Option(names={"--batch-parallel-images"}, paramLabel="BATCHPARALLELImAGES",
+            description="Number of images processed in parallel in batch mode.")
+    public int batchParallelism;
+
+    @CommandLine.Option(names={"--batch-mode"}, paramLabel="BATCHMODE",
+            description="Enable batch mode.")
+    public boolean batchMode;
+
     @CommandLine.Option(names={"--bins"}, paramLabel="BINS",
             description="Number of bins used by Otsu's method.")
     public int bins=32;
 
     @CommandLine.Option(names={"--buffered-input"}, paramLabel="BUFFEREDINPUT",
             description="Buffer input image in memory")
-    public boolean bufferedInput=true;
+    public Boolean bufferedInput;
 
     @CommandLine.Option(names={"--buffered-output"}, paramLabel="BUFFEREDOUTPUT",
             description="Buffer output image in memory")
-    public boolean bufferedOutput=true;
+    public Boolean bufferedOutput;
 
     @CommandLine.Option(names={"-a", "--algorithm"}, paramLabel="CLUSTER",
             description="Specify the clustering algorithm."
@@ -44,7 +51,7 @@ public class CmdLineConfig {
 
     @CommandLine.Option(names={"-e", "--elbow"}, paramLabel="ELBOW",
             description="Use the elbow method")
-    public boolean elbow=true;
+    public Boolean elbow;
 
     @CommandLine.Option(names={"--error-limit"}, paramLabel="ERRORLIMIT",
             description="Elbow of the curve, as used by the elbow method and k-means. Default value is 0.95.")
@@ -52,7 +59,7 @@ public class CmdLineConfig {
 
     @CommandLine.Option(names={"-h", "--help"}, usageHelp=true,
             description="display a help message")
-    public boolean helpRequested=false;
+    public boolean helpRequested;
 
     @CommandLine.Option(names={"--image-transform"}, paramLabel="IMAGETRANSFORM",
             description="Transform input image before clustering.")
@@ -60,19 +67,19 @@ public class CmdLineConfig {
 
     @CommandLine.Option(names={"--initial-centers-kd-tree"}, paramLabel="INITKDTREE",
             description="Use KD-tree nodes as initial cluster centers.")
-    public boolean initialCentersKDTree=false;
+    public Boolean initialCentersKDTree;
 
     @CommandLine.Option(names={"--initial-centers-mean"}, paramLabel="INITMEAN",
             description="Use mean as initial cluster centers.")
-    public boolean initialCentersMean=true;
+    public Boolean initialCentersMean;
 
     @CommandLine.Option(names={"--initial-centers-random"}, paramLabel="INITRANDOM",
             description="Use this many random points as initial cluster centers.")
-    public int initialCentersRandom=0;
+    public int initialCentersRandom;
 
-    @CommandLine.Option(names={"-i", "--input"}, required=true, paramLabel="IMGPATH",
+    @CommandLine.Option(names={"-i", "--input"}, required=true, paramLabel="INPUTPATH",
             description="Input image path.")
-    public Path inputPath;
+    public String inputPath;
 
     @CommandLine.Option(names={"--mask"}, paramLabel="MASK",
             description="4 coordinates per half-planes.")
@@ -94,17 +101,17 @@ public class CmdLineConfig {
             description="Format name for the output image.")
     public String outputFormat;
 
-    @CommandLine.Option(names={"-o", "--output"}, required=true, paramLabel="IMGPATH",
+    @CommandLine.Option(names={"-o", "--output"}, required=true, paramLabel="OUTPUTPATH",
             description="Output image path.")
-    public Path outputPath;
+    public String outputPath;
 
     @CommandLine.Option(names={"--rgb-cluster-colors"}, paramLabel="RGBCLUSTERCOLORS",
             description="Color clusters.")
-    public boolean rgbClusterColors=true;
+    public Boolean rgbClusterColors;
 
     @CommandLine.Option(names={"--replace-empty-clusters-farthest"}, paramLabel="REPLACEFARTHEST",
             description="Replacement empty clusters by a farthest point.")
-    public boolean replaceEmptyClustersFarthest=true;
+    public Boolean replaceEmptyClustersFarthest;
 
     @CommandLine.Option(names={"--replace-empty-clusters-random"}, paramLabel="REPLACERANDOM",
             description="Use this many random points as replacement clusters.")
@@ -112,5 +119,40 @@ public class CmdLineConfig {
 
     @CommandLine.Option(names={"--saturation-based"}, paramLabel="SATURATION ",
             description="Use saturation based clustering. Valid values: hue, hyper-hue")
-    public String saturationBased=null;
+    public String saturationBased;
+
+    @CommandLine.Option(names={"--threads"}, paramLabel="THREADS",
+            description="Number of threads used.")
+    public Integer threads;
+
+    public void setDefaultValues() {
+        if (0>=batchParallelism) {
+            batchParallelism=1;
+        }
+        if (null==bufferedInput) {
+            bufferedInput=true;
+        }
+        if (null==bufferedOutput) {
+            bufferedOutput=true;
+        }
+        if (null==elbow) {
+            elbow=true;
+        }
+        if (null==initialCentersKDTree) {
+            initialCentersKDTree=false;
+        }
+        if (null==initialCentersMean) {
+            initialCentersMean=true;
+        }
+        if (null==rgbClusterColors) {
+            rgbClusterColors=true;
+        }
+        if (null==replaceEmptyClustersFarthest) {
+            replaceEmptyClustersFarthest=true;
+        }
+        if ((null==threads)
+                || (0>=threads)) {
+            threads=Runtime.getRuntime().availableProcessors();
+        }
+    }
 }
