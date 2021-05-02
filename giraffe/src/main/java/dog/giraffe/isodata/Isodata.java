@@ -85,6 +85,8 @@ public class Isodata<P extends Points> {
     private final List<Points> points2;
     private final ReplaceEmptyCluster<P> replaceEmptyCluster;
     private final List<Sum> sums;
+    private final Sum sum;
+    private double prevError;
 
     private final Map<String, Double> stats;
 
@@ -157,7 +159,8 @@ public class Isodata<P extends Points> {
             P points,
             List<Points> points2,
             ReplaceEmptyCluster<P> replaceEmptyCluster,
-            List<Sum> sums){
+            List<Sum> sums,
+            Sum sum){
         this.N_c=N_c;
         this.K=K;
         this.L=L;
@@ -172,6 +175,8 @@ public class Isodata<P extends Points> {
         this.points2=points2;
         this.replaceEmptyCluster=replaceEmptyCluster;
         this.sums=sums;
+        this.sum=sum;
+        this.prevError=0.0;
         this.stats=new HashMap<>();
     }
 
@@ -204,8 +209,12 @@ public class Isodata<P extends Points> {
                 means2.add(points.mean().create((means.isEmpty()?points:points3).size(), context.sum()));
             }
             means.add(Collections.unmodifiableList(means2));
-            sums.add(context.sum().create((sums.isEmpty()?points:points3).size()));
         }
+
+        for (int i=0;i<2*K+1;++i) {
+            sums.add(context.sum().create(10));
+        }
+
         List<Vector> pointlist = new ArrayList<>();
         for (int i = 0;i<points.size(); ++i) {
             pointlist.add(points.get(i));
@@ -242,7 +251,8 @@ public class Isodata<P extends Points> {
                                     points,
                                     points2,
                                     replaceEmptyCluster,
-                                    Collections.unmodifiableList(sums)
+                                    Collections.unmodifiableList(sums),
+                                    context.sum().create(points.size())
                             );
                             isodata.start(p, Continuations.map((res,cont)->{
                                                List<Vector> cl = new ArrayList<>();
@@ -250,8 +260,7 @@ public class Isodata<P extends Points> {
                                                   cl.add(c);
                                                }
                                                cont.completed(Clusters.create(cl, error));
-                                             },continuation), error, 0);
-                        },
+                                             },continuation), error, 0); },
                         continuation));
     }
 
@@ -262,11 +271,14 @@ public class Isodata<P extends Points> {
     // Step 2, distribute points between cluster centers
     public void distribute(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
         context.checkStopped();
-        if (maxIterations<=iteration) {
+        double err = sum.sum();
+        double err_bot = prevError*errorLimit;
+        if ((maxIterations<=iteration) || (err > 0 && prevError > 0 && (err > err_bot))) {
             Map<Vector,List<Vector>> a=new HashMap<>();
             for (Vector center : p.getCenters()) {
                 a.put(center,new ArrayList<>());
             }
+            stats_set("error", err);
             stats_set("iteration", (double)iteration);
             stats_set("number_of_cluster", (double)a.size());
             printStats();
@@ -488,12 +500,21 @@ public class Isodata<P extends Points> {
     public void avg_distance(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
         List<Cluster> clusters = Collections.unmodifiableList(p.clusters);
 
+        for (Sum sum : sums) {
+           sum.clear();
+        }
+
         List<AsyncSupplier<Void>> forks=new ArrayList<>(clusters.size());
-        for (Cluster cluster : clusters) {
+        Integer ind=0;
+        for (int i=0;i<clusters.size();++i) {//Cluster cluster : clusters) {
+            Cluster cluster = clusters.get(i);
+            Sum s = sums.get(i);
             forks.add((continuation2)->{
                 MeanDouble mean = new MeanDouble(cluster.points.size(), context.sum());
                 for (Vector point: cluster.points) {
-                    mean=mean.add(points.distance().distance(cluster.center, point));
+                    double distance = points.distance().distance(cluster.center, point);
+                    mean=mean.add(distance);
+                    s.add(distance);
                 }
                 cluster.avg_dist = mean.mean();
                 continuation2.completed(null);
@@ -503,6 +524,12 @@ public class Isodata<P extends Points> {
                 forks,
                 Continuations.map(
                         (results, continuation2)->{
+                            prevError = sum.sum();
+
+                            sum.clear();
+                            for (Sum s : sums) {
+                                sum.add(s.sum());
+                            }       
                             all_avg_distance(p, continuation2, error, iteration);
                         },
                         continuation),
