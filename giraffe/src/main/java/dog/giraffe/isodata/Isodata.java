@@ -342,7 +342,7 @@ public class Isodata<P extends Points> {
          int discarded=0;
          for (Vector v : p.getCenters()) {
              Cluster cluster=p.get(v);
-             if (cluster.points.size() >= theta_N) {
+             if (cluster.points.size() >= theta_N || (N_c-discarded) <= 2) {
                 clusters2.add(cluster);
              } else {
                 ++discarded;
@@ -403,17 +403,19 @@ public class Isodata<P extends Points> {
              }
          }
 
-         nthSmallest(map, dist, L);
-
          List<Cluster> new_clusters = new ArrayList<>();
-         for (Map.Entry<Integer, Integer> pair : map) {
+         int lumpped=0;
+         for (Map.Entry<Integer, Integer> pair : nthSmallest(map, dist, L)) {
              int i = pair.getKey();
              int j = pair.getValue();
 
              if (dist[i][i] == 1 || dist[j][j] == 1) continue;//either of them lumped we skip
+             if (N_c-lumpped <= 2) continue;//we should keep at least two clusters
 
              new_clusters.add(merge_cluster(p.clusters.get(i), p.clusters.get(j)));
              dist[i][i] = dist[j][j] = 1;
+             increment("lumpped_cluster");
+             ++lumpped;
          }
 
          for (int i=0;i<p.clusters.size();++i) {
