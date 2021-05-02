@@ -86,30 +86,30 @@ public class Isodata<P extends Points> {
     private final ReplaceEmptyCluster<P> replaceEmptyCluster;
     private final List<Sum> sums;
 
-    private final Map<String, Integer> stats;
+    private final Map<String, Double> stats;
 
     private void increment(String name) {
-        int new_value = stats.containsKey(name) ? stats.get(name) + 1 : 1;
+        double new_value = stats.containsKey(name) ? stats.get(name) + 1 : 1;
 
         stats.put(name, new_value);
     }
 
-    private void stats_set(String name, Integer value) {
+    private void stats_set(String name, Double value) {
         stats.put(name, value);
     }
 
     private void reset(String name) {
-        stats.put(name, 0);
+        stats.put(name, 0.0);
     }
 
-    public Map<String, Integer> getStats() {
+    public Map<String, Double> getStats() {
         return stats;
     }
 
     public void printStats() {
         System.out.println("Isodata stats:");
         System.out.println("=========================");
-        for (Map.Entry<String, Integer> stat : stats.entrySet()) {
+        for (Map.Entry<String, Double> stat : stats.entrySet()) {
             System.out.println(stat.getKey() + ": " + stat.getValue());
         }
     }
@@ -267,8 +267,8 @@ public class Isodata<P extends Points> {
             for (Vector center : p.getCenters()) {
                 a.put(center,new ArrayList<>());
             }
-            stats_set("iteration", iteration);
-            stats_set("number_of_cluster", a.size());
+            stats_set("iteration", (double)iteration);
+            stats_set("number_of_cluster", (double)a.size());
             printStats();
             continuation.completed(a);
             return;
@@ -327,17 +327,17 @@ public class Isodata<P extends Points> {
          increment("discard_sample");
 
          List<Cluster> clusters2=new ArrayList<>();
-         boolean discarded=false;
+         int discarded=0;
          for (Vector v : p.getCenters()) {
              Cluster cluster=p.get(v);
              if (cluster.points.size() >= theta_N) {
                 clusters2.add(cluster);
-                discarded=true;
-
+             } else {
+                ++discarded;
                 increment("discarded_cluster");
              }
          }
-         if (discarded) {
+         if (discarded > 0) {
             N_c=clusters2.size();
             p.clusters.clear();
             p.clusters.addAll(clusters2);
@@ -354,7 +354,7 @@ public class Isodata<P extends Points> {
                                   if (dist[m1.getKey()][m1.getValue()] > dist[m2.getKey()][m2.getValue()]) return +1;
                                   return 0;
                            }});
-      return filter;
+      return filter.subList(0,Math.min(n,filter.size()));
     }
 
     private Cluster merge_cluster(Cluster z1, Cluster z2) {
