@@ -204,6 +204,7 @@ public interface ClusteringStrategy<P extends Points> extends Log {
             @Override
             public void log(Map<String, Object> log) {
                 log.put("type", "isodata");
+                log.put("error-liit", errorLimit);
                 log.put("start-clusters", startClusters);
                 log.put("desired-clusters", desiredClusters);
                 log.put("error-limit", errorLimit);

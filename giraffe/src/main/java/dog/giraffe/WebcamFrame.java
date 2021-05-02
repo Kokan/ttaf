@@ -373,7 +373,7 @@ public class WebcamFrame extends JFrame {
         //functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.HUE)));
         functions.add(isodata( 2, 30, Projection.HUE));
         functions.add(saturationBased(ClusteringStrategy.isodata(
-                2,30, 0.95, 10)));
+                2,30, 0.95, 1000)));
 
         addWindowListener(new WindowListenerImpl());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
