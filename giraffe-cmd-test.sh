@@ -1,10 +1,10 @@
 #!/bin/bash
 
 rm -rf ../ttaf2/testout/*
-./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-rgb-kmeans-elbow.tiff -a k-means -e --min 2 --max 10 --max-iterations 1000
-./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-hue-kmeans-elbow.tiff -a k-means -e --min 2 --max 10 --max-iterations 1000 --image-transform hue
-./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-hyper-hue-kmeans-elbow.tiff -a k-means -e --min 2 --max 10 --max-iterations 1000 --image-transform hyper-hue
-./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-normalized-hyper-hue-kmeans-elbow.tiff -a k-means -e --min 2 --max 10 --max-iterations 1000 --image-transform "normalized-hyper-hue(0.05)"
+./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-rgb-kmeans-elbow.tiff --log ../ttaf2/testout/macska-rgb-kmeans-elbow.tiff.log -a k-means -e --min 2 --max 10 --max-iterations 1000
+./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-hue-kmeans-elbow.tiff --log ../ttaf2/testout/macska-hue-kmeans-elbow.tiff.log -a k-means -e --min 2 --max 10 --max-iterations 1000 --image-transform hue
+./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-hyper-hue-kmeans-elbow.tiff --log ../ttaf2/testout/macska-hyper-hue-kmeans-elbow.tiff.log -a k-means -e --min 2 --max 10 --max-iterations 1000 --image-transform hyper-hue
+./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-normalized-hyper-hue-kmeans-elbow.tiff --log ../ttaf2/testout/macska-normalized-hyper-hue-kmeans-elbow.tiff.log -a k-means -e --min 2 --max 10 --max-iterations 1000 --image-transform "normalized-hyper-hue(0.05)"
 ./giraffe-cmd.sh -i ../ttaf2/huetest1.tiff -o ../ttaf2/testout/huetest1-otsu-circular.tiff -a otsu-circular -e=false --min 2 --max 2 --bins 10 --image-transform hue
 ./giraffe-cmd.sh -i ../ttaf2/huetest1.tiff -o ../ttaf2/testout/huetest1-otsu-linear.tiff -a otsu -e=false --min 2 --max 2 --bins 1000 --image-transform hue
 ./giraffe-cmd.sh -i ../ttaf2/huetest2.tiff -o ../ttaf2/testout/huetest2-otsu-circular.tiff -a otsu-circular -e=false --min 2 --max 2 --bins 10 --image-transform hue
@@ -20,4 +20,4 @@ rm -rf ../ttaf2/testout/*
 
 mkdir ../ttaf2/testout/misc
 ls -1 ../ttaf2/a/misc/* > ../ttaf2/testout/misc/list
-./giraffe-cmd.sh --batch-mode -i ../ttaf2/testout/misc/list -o '../ttaf2/testout/misc/$FILE$EXT' -a k-means -e --min 2 --max 10 --max-iterations 1000
+./giraffe-cmd.sh --batch-mode -i ../ttaf2/testout/misc/list -o '../ttaf2/testout/misc/$FILE$EXT' --log '../ttaf2/testout/misc/$FILE$EXT.log' -a k-means -e --min 2 --max 10 --max-iterations 1000 --batch-parallel-images 2

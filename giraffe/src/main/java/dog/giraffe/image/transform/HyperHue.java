@@ -5,6 +5,7 @@ import dog.giraffe.image.Image;
 import dog.giraffe.points.FloatArrayPoints;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import java.util.Map;
 
 public class HyperHue extends Image.Transform {
     private HyperHue(Image image) {
@@ -18,6 +19,11 @@ public class HyperHue extends Image.Transform {
     @Override
     public MutablePoints createPoints(int dimensions, int expectedSize) throws Throwable {
         return new FloatArrayPoints(dimensions, expectedSize);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("type", "hyper-hue");
     }
 
     @Override

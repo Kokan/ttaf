@@ -9,6 +9,7 @@ import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import java.util.Arrays;
+import java.util.Map;
 
 public abstract class Normalize extends Image.Transform {
     private static class Deviation extends Normalize {
@@ -29,6 +30,12 @@ public abstract class Normalize extends Image.Transform {
         public Deviation(Image image, Mask mask, double sigma) {
             super(image, mask);
             this.sigma=sigma;
+        }
+
+        @Override
+        public void log(Map<String, Object> log) {
+            log.put("type", "normalized-deviation");
+            log.put("sigma", sigma);
         }
 
         @Override
@@ -103,6 +110,11 @@ public abstract class Normalize extends Image.Transform {
     private static class MinMax extends Normalize {
         public MinMax(Image image, Mask mask) {
             super(image, mask);
+        }
+
+        @Override
+        public void log(Map<String, Object> log) {
+            log.put("type", "normalized-min-max");
         }
 
         @Override

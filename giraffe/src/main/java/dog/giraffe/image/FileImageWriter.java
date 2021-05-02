@@ -8,6 +8,7 @@ import java.awt.image.DataBuffer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageTypeSpecifier;
@@ -52,13 +53,16 @@ public class FileImageWriter implements ImageWriter {
     private final ImageOutputStream imageOutputStream;
     private final javax.imageio.ImageWriter imageWriter;
     protected final Object lock=new Object();
+    private final Path path;
     private final int width;
 
     public FileImageWriter(
-            int dimensions, ImageOutputStream imageOutputStream, javax.imageio.ImageWriter imageWriter, int width) {
+            int dimensions, ImageOutputStream imageOutputStream, javax.imageio.ImageWriter imageWriter,
+            Path path, int width) {
         this.dimensions=dimensions;
         this.imageOutputStream=imageOutputStream;
         this.imageWriter=imageWriter;
+        this.path=path;
         this.width=width;
     }
 
@@ -101,7 +105,7 @@ public class FileImageWriter implements ImageWriter {
                         null);
                 iw.endWriteEmpty();
                 iw.prepareReplacePixels(0, new Rectangle(0, 0, width, height));
-                FileImageWriter result=new FileImageWriter(dimensions, ios, iw, width);
+                FileImageWriter result=new FileImageWriter(dimensions, ios, iw, path, width);
                 error=false;
                 return result;
             }
@@ -125,5 +129,11 @@ public class FileImageWriter implements ImageWriter {
     @Override
     public Line getLine(int yy) {
         return new LineImpl(yy);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("buffered", false);
+        log.put("file", path);
     }
 }

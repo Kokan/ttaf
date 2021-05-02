@@ -5,6 +5,7 @@ import dog.giraffe.image.Image;
 import dog.giraffe.points.FloatArrayPoints;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import java.util.Map;
 
 public class NormalizedHyperHue extends Image.Transform {
     private final double maxZero2;
@@ -21,6 +22,12 @@ public class NormalizedHyperHue extends Image.Transform {
     @Override
     public MutablePoints createPoints(int dimensions, int expectedSize) throws Throwable {
         return new FloatArrayPoints(dimensions, expectedSize);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("type", "normalized-hyper-hue");
+        log.put("max-zero^2", maxZero2);
     }
 
     @Override

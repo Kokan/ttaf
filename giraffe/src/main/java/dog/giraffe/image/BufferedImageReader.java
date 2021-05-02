@@ -12,15 +12,18 @@ import java.awt.image.Raster;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import javax.imageio.ImageIO;
 
 public abstract class BufferedImageReader implements ImageReader {
     private final int height;
+    private final Path path;
     private final MutablePoints points;
     private final int width;
 
-    private BufferedImageReader(int height, MutablePoints points, int width) {
+    private BufferedImageReader(int height, Path path, MutablePoints points, int width) {
         this.height=height;
+        this.path=path;
         this.points=points;
         this.width=width;
     }
@@ -29,18 +32,18 @@ public abstract class BufferedImageReader implements ImageReader {
     public void close() throws IOException {
     }
 
-    public static BufferedImageReader create(BufferedImage image) {
+    public static BufferedImageReader create(BufferedImage image, Path path) {
         switch (image.getSampleModel().getDataType()) {
             case DataBuffer.TYPE_BYTE:
-                return createUnsignedByte(image);
+                return createUnsignedByte(image, path);
             case DataBuffer.TYPE_USHORT:
-                return createUnsignedShort(image);
+                return createUnsignedShort(image, path);
             default:
                 throw new RuntimeException("unsupported sample model "+image.getSampleModel());
         }
     }
 
-    private static BufferedImageReader createUnsignedByte(BufferedImage image) {
+    private static BufferedImageReader createUnsignedByte(BufferedImage image, Path path) {
         int dimensions=image.getSampleModel().getNumBands();
         int height=image.getHeight();
         int width=image.getWidth();
@@ -53,15 +56,20 @@ public abstract class BufferedImageReader implements ImageReader {
                 data[ii]=(byte)buffer[jj];
             }
         }
-        return new BufferedImageReader(height, new UnsignedByteArrayPoints(data, dimensions), width) {
+        return new BufferedImageReader(height, path, new UnsignedByteArrayPoints(data, dimensions), width) {
                     @Override
                     public UnsignedByteArrayPoints createPoints(int dimensions, int expectedSize) {
                         return new UnsignedByteArrayPoints(dimensions, expectedSize);
                     }
-                };
+
+            @Override
+            protected String logType() {
+                return "unsigned-byte";
+            }
+        };
     }
 
-    private static BufferedImageReader createUnsignedShort(BufferedImage image) {
+    private static BufferedImageReader createUnsignedShort(BufferedImage image, Path path) {
         int dimensions=image.getSampleModel().getNumBands();
         int height=image.getHeight();
         int width=image.getWidth();
@@ -74,16 +82,21 @@ public abstract class BufferedImageReader implements ImageReader {
                 data[ii]=(short)buffer[jj];
             }
         }
-        return new BufferedImageReader(height, new UnsignedShortArrayPoints(data, dimensions), width) {
+        return new BufferedImageReader(height, path, new UnsignedShortArrayPoints(data, dimensions), width) {
                     @Override
                     public UnsignedShortArrayPoints createPoints(int dimensions, int expectedSize) {
                         return new UnsignedShortArrayPoints(dimensions, expectedSize);
                     }
-                };
+
+            @Override
+            protected String logType() {
+                return "unsigned-short";
+            }
+        };
     }
 
     public static BufferedImageReader create(Path path) throws Throwable {
-        return create(ImageIO.read(path.toFile()));
+        return create(ImageIO.read(path.toFile()), path);
     }
 
     @Override
@@ -104,6 +117,15 @@ public abstract class BufferedImageReader implements ImageReader {
     public int height() {
         return height;
     }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("buffered", true);
+        log.put("file", path);
+        log.put("type", logType());
+    }
+
+    protected abstract String logType();
 
     @Override
     public void prepare(Context context, Continuation<Void> continuation) throws Throwable {

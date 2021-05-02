@@ -2,6 +2,8 @@ package dog.giraffe;
 
 import com.github.sarxos.webcam.Webcam;
 import dog.giraffe.isodata.Isodata;
+import dog.giraffe.kmeans.InitialCenters;
+import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.points.Distance;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.points.UnsignedByteArrayPoints;
@@ -370,7 +372,8 @@ public class WebcamFrame extends JFrame {
         functions.add(isodata( 2, 30, Projection.RGB));
         //functions.add(Isodata( 2, 30, new ReplaceCenters(Projection.HUE)));
         functions.add(isodata( 2, 30, Projection.HUE));
-        functions.add(saturationBased(ClusteringStrategy.isodata(2,30)));
+        functions.add(saturationBased(ClusteringStrategy.isodata(
+                2,30, 0.95, 10)));
 
         addWindowListener(new WindowListenerImpl());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);

@@ -13,6 +13,7 @@ import java.awt.image.Raster;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -22,13 +23,18 @@ import javax.imageio.stream.ImageInputStream;
 public abstract class FileImageReader implements ImageReader {
     private static class UnsignedByte extends FileImageReader {
         public UnsignedByte(
-                ImageInputStream imageInputStream, javax.imageio.ImageReader imageReader) throws Throwable {
-            super(imageInputStream, imageReader);
+                ImageInputStream imageInputStream, javax.imageio.ImageReader imageReader, Path path) throws Throwable {
+            super(imageInputStream, imageReader, path);
         }
 
         @Override
         public UnsignedByteArrayPoints createPoints(int dimensions, int expectedSize) {
             return new UnsignedByteArrayPoints(dimensions, expectedSize);
+        }
+
+        @Override
+        protected String logType() {
+            return "unsigned-byte";
         }
 
         @Override
@@ -39,13 +45,18 @@ public abstract class FileImageReader implements ImageReader {
 
     private static class UnsignedShort extends FileImageReader {
         public UnsignedShort(
-                ImageInputStream imageInputStream, javax.imageio.ImageReader imageReader) throws Throwable {
-            super(imageInputStream, imageReader);
+                ImageInputStream imageInputStream, javax.imageio.ImageReader imageReader, Path path) throws Throwable {
+            super(imageInputStream, imageReader, path);
         }
 
         @Override
         public UnsignedShortArrayPoints createPoints(int dimensions, int expectedSize) {
             return new UnsignedShortArrayPoints(dimensions, expectedSize);
+        }
+
+        @Override
+        protected String logType() {
+            return "unsigned-short";
         }
 
         @Override
@@ -59,11 +70,14 @@ public abstract class FileImageReader implements ImageReader {
     protected final ImageInputStream imageInputStream;
     protected final javax.imageio.ImageReader imageReader;
     protected final Object lock=new Object();
+    private final Path path;
     protected final int width;
 
-    public FileImageReader(ImageInputStream imageInputStream, javax.imageio.ImageReader imageReader) throws Throwable {
+    public FileImageReader(
+            ImageInputStream imageInputStream, javax.imageio.ImageReader imageReader, Path path) throws Throwable {
         this.imageInputStream=imageInputStream;
         this.imageReader=imageReader;
+        this.path=path;
         dimensions=imageReader.getRawImageType(0).getNumBands();
         height=imageReader.getHeight(0);
         width=imageReader.getWidth(0);
@@ -90,10 +104,10 @@ public abstract class FileImageReader implements ImageReader {
                 FileImageReader result;
                 switch (ir.getRawImageType(0).getSampleModel().getDataType()) {
                     case DataBuffer.TYPE_BYTE:
-                        result=new UnsignedByte(iis, ir);
+                        result=new UnsignedByte(iis, ir, path);
                         break;
                     case DataBuffer.TYPE_USHORT:
-                        result=new UnsignedShort(iis, ir);
+                        result=new UnsignedShort(iis, ir, path);
                         break;
                     default:
                         throw new RuntimeException(
@@ -133,6 +147,15 @@ public abstract class FileImageReader implements ImageReader {
     public int height() {
         return height;
     }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("buffered", true);
+        log.put("file", path);
+        log.put("type", logType());
+    }
+
+    protected abstract String logType();
 
     @Override
     public void prepare(Context context, Continuation<Void> continuation) throws Throwable {

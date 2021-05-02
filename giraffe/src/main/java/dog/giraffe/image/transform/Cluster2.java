@@ -7,6 +7,7 @@ import dog.giraffe.ColorConverter;
 import dog.giraffe.Context;
 import dog.giraffe.Doubles;
 import dog.giraffe.Lists;
+import dog.giraffe.Log;
 import dog.giraffe.Pair;
 import dog.giraffe.Sum;
 import dog.giraffe.image.Image;
@@ -20,6 +21,7 @@ import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import dog.giraffe.threads.Function;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -67,6 +69,11 @@ public abstract class Cluster2 extends Image.Transform {
         @Override
         protected int dimensions2() {
             return 1;
+        }
+
+        @Override
+        protected String logType() {
+            return "hue";
         }
 
         @Override
@@ -130,6 +137,11 @@ public abstract class Cluster2 extends Image.Transform {
         }
 
         @Override
+        protected String logType() {
+            return "hyper-hue";
+        }
+
+        @Override
         protected Projection projection() throws Throwable {
             return new Projection() {
                 private final double[] hue=new double[image.dimensions()];
@@ -143,8 +155,8 @@ public abstract class Cluster2 extends Image.Transform {
                         point[dd]=input.getNormalized(dd, inputOffset);
                     }
                     double dotProduct=0.0;
-                    for (int dd=0; point.length>dd; ++dd) {
-                        dotProduct+=point[dd];
+                    for (double cc: point) {
+                        dotProduct+=cc;
                     }
                     dotProduct/=point.length;
                     double grayLength=dotProduct;
@@ -206,6 +218,22 @@ public abstract class Cluster2 extends Image.Transform {
     protected abstract int dimensions1();
 
     protected abstract int dimensions2() throws Throwable;
+
+    @Override
+    public void log(Map<String, Object> log) throws Throwable {
+        log.put("type", "cluster2-"+logType());
+        Log.logField("strategy", strategy, log);
+        log.put("mask", mask);
+        log.put("error", data1.clusters.error+data2.clusters.error);
+        Map<String, Object> temp=new HashMap<>();
+        Log.logClusters(data1.clusters, data1.colorMap, temp);
+        temp.forEach((key, value)->log.put("gray-"+key, value));
+        temp.clear();
+        Log.logClusters(data2.clusters, data2.colorMap, temp);
+        temp.forEach((key, value)->log.put("color-"+key, value));
+    }
+
+    protected abstract String logType();
 
     private AsyncFunction<KDTree, Void> prepareCluster(Context context, Data data, MutablePoints points) {
         return (kdTree, continuation)->

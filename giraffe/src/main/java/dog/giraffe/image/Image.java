@@ -1,12 +1,13 @@
 package dog.giraffe.image;
 
 import dog.giraffe.Context;
+import dog.giraffe.Log;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import java.util.List;
 
-public interface Image {
+public interface Image extends Log {
     abstract class Abstract implements Image {
         protected static class Dimensions {
             public final int dimensions;

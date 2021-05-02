@@ -77,9 +77,13 @@ public class CmdLineConfig {
             description="Use this many random points as initial cluster centers.")
     public int initialCentersRandom;
 
-    @CommandLine.Option(names={"-i", "--input"}, required=true, paramLabel="INPUTPATH",
-            description="Input image path.")
-    public String inputPath;
+    @CommandLine.Option(names={"-i", "--input"}, required=true, paramLabel="INPUTFILE",
+            description="Input image file.")
+    public String inputFile;
+
+    @CommandLine.Option(names={"--log"}, paramLabel="LOGFILE",
+            description="Log file.")
+    public String logFile;
 
     @CommandLine.Option(names={"--mask"}, paramLabel="MASK",
             description="4 coordinates per half-planes.")
@@ -101,9 +105,9 @@ public class CmdLineConfig {
             description="Format name for the output image.")
     public String outputFormat;
 
-    @CommandLine.Option(names={"-o", "--output"}, required=true, paramLabel="OUTPUTPATH",
-            description="Output image path.")
-    public String outputPath;
+    @CommandLine.Option(names={"-o", "--output"}, required=true, paramLabel="OUTPUTFILE",
+            description="Output image file.")
+    public String outputFile;
 
     @CommandLine.Option(names={"--rgb-cluster-colors"}, paramLabel="RGBCLUSTERCOLORS",
             description="Color clusters.")

@@ -1,11 +1,11 @@
 package dog.giraffe.isodata;
 
-import dog.giraffe.CannotSelectInitialCentersException;
+import dog.giraffe.kmeans.CannotSelectInitialCentersException;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
-import dog.giraffe.InitialCenters;
+import dog.giraffe.kmeans.InitialCenters;
 import dog.giraffe.MeanDouble;
-import dog.giraffe.ReplaceEmptyCluster;
+import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
 import dog.giraffe.points.Distance;
 import dog.giraffe.points.Mean;

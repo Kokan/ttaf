@@ -4,6 +4,7 @@ import dog.giraffe.points.UnsignedByteArrayPoints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import javax.imageio.ImageIO;
 
 public class BufferedImageWriter implements ImageWriter {
@@ -32,11 +33,13 @@ public class BufferedImageWriter implements ImageWriter {
     private final byte[] data;
     private final int dimensions;
     private final int height;
+    private final Path path;
     private final int width;
 
-    private BufferedImageWriter(int dimensions, int height, int width) {
+    private BufferedImageWriter(int dimensions, int height, Path path, int width) {
         this.dimensions=dimensions;
         this.height=height;
+        this.path=path;
         this.width=width;
         data=new byte[dimensions*height*width];
     }
@@ -46,11 +49,11 @@ public class BufferedImageWriter implements ImageWriter {
     }
 
     public static BufferedImageWriter create(int width, int height, int dimensions) {
-        return new BufferedImageWriter(dimensions, height, width);
+        return new BufferedImageWriter(dimensions, height, null, width);
     }
 
     public static BufferedImageWriter createFile(int width, int height, int dimensions, String format, Path path) {
-        return new BufferedImageWriter(dimensions, height, width) {
+        return new BufferedImageWriter(dimensions, height, path, width) {
             @Override
             public void close() throws IOException {
                 super.close();
@@ -80,6 +83,12 @@ public class BufferedImageWriter implements ImageWriter {
 
     public static Factory factory(String format, Path path) {
         return (width, height, dimension)->createFile(width, height, dimension, format, path);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("buffered", true);
+        log.put("file", path);
     }
 
     public void writeImage(String format, Path path) throws IOException {

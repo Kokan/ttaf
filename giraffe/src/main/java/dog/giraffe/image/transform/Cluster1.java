@@ -5,6 +5,7 @@ import dog.giraffe.ClusteringStrategy;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
 import dog.giraffe.Lists;
+import dog.giraffe.Log;
 import dog.giraffe.Sum;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.KDTree;
@@ -42,6 +43,14 @@ public class Cluster1 extends Image.Transform {
     @Override
     public MutablePoints createPoints(int dimensions, int expectedSize) throws Throwable {
         return new UnsignedByteArrayPoints(dimensions, expectedSize);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) throws Throwable {
+        log.put("type", "cluster1");
+        Log.logField("strategy", strategy, log);
+        log.put("mask", mask);
+        Log.logClusters(clusters, colorMap, log);
     }
 
     private AsyncFunction<KDTree, Dimensions> prepareCluster(Context context, MutablePoints points) {

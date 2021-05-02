@@ -1,9 +1,11 @@
 package dog.giraffe.image.transform;
 
 import dog.giraffe.Context;
+import dog.giraffe.Lists;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import java.util.Map;
 
 public class Select extends Image.Transform {
     private final int[] selectedDimensions;
@@ -15,6 +17,12 @@ public class Select extends Image.Transform {
 
     public static Image create(Image image, int... selectedDimensions) {
         return new Select(image, selectedDimensions);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("type", "select");
+        log.put("selected-dimensions", Lists.toList(selectedDimensions));
     }
 
     @Override

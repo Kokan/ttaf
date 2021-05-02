@@ -18,6 +18,8 @@ import dog.giraffe.image.transform.Normalize;
 import dog.giraffe.image.transform.NormalizedDifferenceVegetationIndex;
 import dog.giraffe.image.transform.NormalizedHyperHue;
 import dog.giraffe.image.transform.Select;
+import dog.giraffe.kmeans.InitialCenters;
+import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.threads.AsyncJoin;
 import dog.giraffe.threads.Continuation;
@@ -35,9 +37,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import picocli.CommandLine;
@@ -48,7 +53,7 @@ public class CmdLine {
             CmdLineConfig config, Context context, Function<Image, Image> imageMap, Continuation<Void> continuation)
             throws Throwable {
         boolean error=true;
-        InputStream fis=Files.newInputStream(Paths.get(config.inputPath));
+        InputStream fis=Files.newInputStream(Paths.get(config.inputFile));
         try {
             InputStream bis=new BufferedInputStream(fis);
             try {
@@ -114,6 +119,14 @@ public class CmdLine {
             Continuation<Void> continuation) throws Throwable {
         BatchRunner.<String>runMultiThreaded(
                 new Batch<>() {
+                    private String filename(String filename, String dir, String file, String ext) {
+                        return (null==filename)
+                                ?null
+                                :filename.replaceAll(Pattern.quote("$DIR"), dir)
+                                        .replaceAll(Pattern.quote("$FILE"), file)
+                                        .replaceAll(Pattern.quote("$EXT"), ext);
+                    }
+
                     @Override
                     public Optional<String> next() throws Throwable {
                         return Optional.ofNullable(inputFiles.readLine());
@@ -121,23 +134,21 @@ public class CmdLine {
 
                     @Override
                     public void process(
-                            Context context, String inputPath, Continuation<Void> continuation) throws Throwable {
-                        Path inputPath2=Paths.get(inputPath);
-                        String dir=(null==inputPath2.getParent())
+                            Context context, String inputFile, Continuation<Void> continuation) throws Throwable {
+                        Path inputPath=Paths.get(inputFile);
+                        String dir=(null==inputPath.getParent())
                                 ?""
-                                :(inputPath2.getParent().toString());
-                        String file=inputPath2.getFileName().toString();
+                                :(inputPath.getParent().toString());
+                        String file=inputPath.getFileName().toString();
                         String ext="";
                         int ii=file.indexOf('.');
                         if (0<=ii) {
                             ext=file.substring(ii);
                             file=file.substring(0, ii);
                         }
-                        String outputPath=config.outputPath
-                                .replaceAll(Pattern.quote("$DIR"), dir)
-                                .replaceAll(Pattern.quote("$FILE"), file)
-                                .replaceAll(Pattern.quote("$EXT"), ext);
-                        singleFileMode(config, context, imageMap, inputPath, outputPath, continuation);
+                        String outputFile=filename(config.outputFile, dir, file, ext);
+                        String logFile=filename(config.logFile, dir, file, ext);
+                        singleFileMode(config, context, imageMap, inputFile, outputFile, logFile, continuation);
                     }
                 },
                 context,
@@ -245,7 +256,7 @@ public class CmdLine {
                 batchMode(config, context, imageMap, join);
             }
             else {
-                singleFileMode(config, context, imageMap, config.inputPath, config.outputPath, join);
+                singleFileMode(config, context, imageMap, config.inputFile, config.outputFile, config.logFile, join);
             }
             join.join();
         }
@@ -298,21 +309,22 @@ public class CmdLine {
     }
 
     private static void singleFileMode(
-            CmdLineConfig config, Context context, Function<Image, Image> imageMap, String inputPath,
-            String outputPath, Continuation<Void> continuation) throws Throwable {
-        Path inputPath2=Paths.get(inputPath);
-        Path outputPath2=Paths.get(outputPath);
-        Files.deleteIfExists(outputPath2);
-        String outputFormat=outputFormat(config, outputPath2);
+            CmdLineConfig config, Context context, Function<Image, Image> imageMap, String inputFile,
+            String outputFile, String logFile, Continuation<Void> continuation) throws Throwable {
+        Path inputPath=Paths.get(inputFile);
+        Path outputPath=Paths.get(outputFile);
+        Files.deleteIfExists(outputPath);
+        String outputFormat=outputFormat(config, outputPath);
         write(
                 context,
                 imageMap,
                 config.bufferedInput
-                        ?BufferedImageReader.factory(inputPath2)
-                        :FileImageReader.factory(inputPath2),
+                        ?BufferedImageReader.factory(inputPath)
+                        :FileImageReader.factory(inputPath),
                 config.bufferedOutput
-                        ?BufferedImageWriter.factory(outputFormat, outputPath2)
-                        :FileImageWriter.factory(outputFormat, outputPath2),
+                        ?BufferedImageWriter.factory(outputFormat, outputPath)
+                        :FileImageWriter.factory(outputFormat, outputPath),
+                logFile,
                 continuation);
     }
 
@@ -321,7 +333,11 @@ public class CmdLine {
         switch (config.clusteringAlgorithm) {
             case CmdLineConfig.CLUSTERING_ALGORITHM_ISODATA:
                 config.elbow=false;
-                strategyGenerator=(clusters)->ClusteringStrategy.isodata(config.minClusters, config.maxClusters);
+                strategyGenerator=(clusters)->ClusteringStrategy.isodata(
+                        config.minClusters,
+                        config.maxClusters,
+                        config.errorLimit,
+                        config.maxIterations);
                 break;
             case CmdLineConfig.CLUSTERING_ALGORITHM_K_MEANS:
                 List<InitialCenters<KDTree>> initialCenters=new ArrayList<>();
@@ -378,11 +394,12 @@ public class CmdLine {
 
     private static void write(
             Context context, Function<Image, Image> imageMap, Supplier<ImageReader> imageReader,
-            ImageWriter.Factory imageWriter, Continuation<Void> continuation) throws Throwable {
+            ImageWriter.Factory imageWriter, String logFile, Continuation<Void> continuation) throws Throwable {
+        Instant start=Instant.now();
         ImageReader imageReader2=imageReader.get();
         Continuation<Void> continuation2=Continuations.finallyBlock(imageReader2::close, continuation);
         try {
-            write(context, imageMap, imageReader2, imageWriter, continuation2);
+            write(context, imageMap, imageReader2, imageWriter, logFile, start, continuation2);
         }
         catch (Throwable throwable) {
             continuation2.failed(throwable);
@@ -391,23 +408,40 @@ public class CmdLine {
 
     private static void write(
             Context context, Function<Image, Image> imageMap, ImageReader imageReader,
-            ImageWriter.Factory imageWriter, Continuation<Void> continuation) throws Throwable {
+            ImageWriter.Factory imageWriter, String logFile, Instant start, Continuation<Void> continuation)
+            throws Throwable {
         Image image=imageMap.apply(imageReader);
         PrepareImages.prepareImages(
                 context,
                 List.of(image),
                 Continuations.map(
-                        (input, continuation2)->write(context, image, imageWriter, continuation2),
+                        (input, continuation2)->write(context, image, imageWriter, logFile, start, continuation2),
                         continuation));
     }
 
     private static void write(
-            Context context, Image image, ImageWriter.Factory imageWriter, Continuation<Void> continuation)
-            throws Throwable {
+            Context context, Image image, ImageWriter.Factory imageWriter, String logFile, Instant start,
+            Continuation<Void> continuation) throws Throwable {
         ImageWriter imageWriter2=imageWriter.create(image.width(), image.height(), image.dimensions());
         Continuation<Void> continuation2=Continuations.finallyBlock(imageWriter2::close, continuation);
         try {
-            ImageWriter.write(context, image, imageWriter2, continuation2);
+            ImageWriter.write(
+                    context,
+                    image,
+                    imageWriter2,
+                    Continuations.map(
+                            (result, continuation3)->{
+                                if (null!=logFile) {
+                                    Instant end=Instant.now();
+                                    Map<String, Object> log=new TreeMap<>();
+                                    Log.logElapsedTime(start, end, log);
+                                    Log.logImages(image, log);
+                                    Log.logWriter(imageWriter2, log);
+                                    Log.write(logFile, log);
+                                }
+                                continuation3.completed(result);
+                            },
+                            continuation2));
         }
         catch (Throwable throwable) {
             continuation2.failed(throwable);

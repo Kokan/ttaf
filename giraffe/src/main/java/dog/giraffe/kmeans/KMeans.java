@@ -1,11 +1,7 @@
 package dog.giraffe.kmeans;
 
-import dog.giraffe.CannotSelectInitialCentersException;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
-import dog.giraffe.EmptySetException;
-import dog.giraffe.InitialCenters;
-import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
 import dog.giraffe.points.Mean;
 import dog.giraffe.points.Points;

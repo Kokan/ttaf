@@ -5,6 +5,7 @@ import dog.giraffe.Doubles;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import java.util.Map;
 
 public class Intensity extends Image.Transform {
     private Intensity(Image image) {
@@ -13,6 +14,11 @@ public class Intensity extends Image.Transform {
 
     public static Image create(Image image) {
         return new Intensity(image);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("type", "intensity");
     }
 
     @Override

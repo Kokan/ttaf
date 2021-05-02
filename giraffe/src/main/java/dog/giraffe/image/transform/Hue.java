@@ -5,6 +5,7 @@ import dog.giraffe.Context;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import java.util.Map;
 
 public class Hue extends Image.Transform {
     private Hue(Image image) {
@@ -13,6 +14,11 @@ public class Hue extends Image.Transform {
 
     public static Image create(Image image) {
         return new Hue(image);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("type", "hue");
     }
 
     @Override

@@ -6,6 +6,7 @@ import dog.giraffe.points.FloatArrayPoints;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import java.util.List;
+import java.util.Map;
 
 public class Join extends Image.Abstract {
     private final Image[] images;
@@ -22,6 +23,11 @@ public class Join extends Image.Abstract {
     @Override
     public MutablePoints createPoints(int dimensions, int expectedSize) {
         return new FloatArrayPoints(dimensions, expectedSize);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("type", "join");
     }
 
     @Override

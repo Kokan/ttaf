@@ -2,10 +2,10 @@ package dog.giraffe.points;
 
 import dog.giraffe.Context;
 import dog.giraffe.Doubles;
-import dog.giraffe.InitialCenters;
 import dog.giraffe.QuickSort;
-import dog.giraffe.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
+import dog.giraffe.kmeans.InitialCenters;
+import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import dog.giraffe.threads.Function;
@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
@@ -335,37 +336,48 @@ public abstract class KDTree extends Points {
 
     public static InitialCenters<KDTree> initialCenters(boolean notNear) {
         ReplaceEmptyCluster<KDTree> fallback=ReplaceEmptyCluster.farthest(notNear);
-        return (clusters, context, maxIterations, points, points2, continuation)->{
-            Deque<KDTree> deque=new ArrayDeque<>(2);
-            PriorityQueue<KDTree> queue=new PriorityQueue<>(
-                    clusters, Comparator.<KDTree>comparingDouble((tree)->tree.variance).reversed());
-            queue.add(points);
-            while (queue.size()<clusters) {
-                KDTree tree=queue.remove();
-                if (tree.split(deque)) {
-                    while (!deque.isEmpty()) {
-                        queue.add(deque.removeFirst());
+        return new InitialCenters<>() {
+            @Override
+            public void initialCenters(
+                    int clusters, Context context, int maxIterations, KDTree points, List<Points> points2,
+                    Continuation<List<Vector>> continuation) throws Throwable {
+                Deque<KDTree> deque=new ArrayDeque<>(2);
+                PriorityQueue<KDTree> queue=new PriorityQueue<>(
+                        clusters, Comparator.<KDTree>comparingDouble((tree)->tree.variance).reversed());
+                queue.add(points);
+                while (queue.size()<clusters) {
+                    KDTree tree=queue.remove();
+                    if (tree.split(deque)) {
+                        while (!deque.isEmpty()) {
+                            queue.add(deque.removeFirst());
+                        }
+                    }
+                    else {
+                        queue.add(tree);
+                        break;
                     }
                 }
-                else {
-                    queue.add(tree);
-                    break;
+                Set<Vector> centers=new HashSet<>(queue.size());
+                for (KDTree tree: queue) {
+                    centers.add(tree.mean);
                 }
+                InitialCenters.newCenters(
+                        centers,
+                        clusters,
+                        context,
+                        continuation,
+                        maxIterations,
+                        points,
+                        points2,
+                        fallback,
+                        fallback);
             }
-            Set<Vector> centers=new HashSet<>(queue.size());
-            for (KDTree tree: queue) {
-                centers.add(tree.mean);
+
+            @Override
+            public void log(Map<String, Object> log) {
+                log.put("type", "kd-tree");
+                log.put("not-near", notNear);
             }
-            InitialCenters.newCenters(
-                    centers,
-                    clusters,
-                    context,
-                    continuation,
-                    maxIterations,
-                    points,
-                    points2,
-                    fallback,
-                    fallback);
         };
     }
 

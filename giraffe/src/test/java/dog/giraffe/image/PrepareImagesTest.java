@@ -7,6 +7,7 @@ import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.batch.SingleThreadedExecutor;
 import dog.giraffe.threads.batch.SingleThreadedJoin;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,6 +35,11 @@ public class PrepareImagesTest {
         @Override
         public MutablePoints createPoints(int dimensions, int expectedSize) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void log(Map<String, Object> log) {
+            log.put("type", "test-image");
         }
 
         @Override

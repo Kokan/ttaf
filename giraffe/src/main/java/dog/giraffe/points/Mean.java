@@ -1,6 +1,6 @@
 package dog.giraffe.points;
 
-import dog.giraffe.EmptySetException;
+import dog.giraffe.kmeans.EmptySetException;
 import dog.giraffe.Sum;
 import java.util.ArrayList;
 import java.util.Collections;

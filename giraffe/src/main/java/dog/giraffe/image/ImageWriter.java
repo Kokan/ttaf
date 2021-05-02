@@ -1,13 +1,14 @@
 package dog.giraffe.image;
 
 import dog.giraffe.Context;
+import dog.giraffe.Log;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public interface ImageWriter extends AutoCloseable {
+public interface ImageWriter extends AutoCloseable, Log {
     interface Factory {
         ImageWriter create(int width, int height, int dimension) throws Throwable;
     }

@@ -4,6 +4,7 @@ import dog.giraffe.Context;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import java.util.Map;
 
 public class NormalizedDifferenceVegetationIndex extends Image.Transform {
     private NormalizedDifferenceVegetationIndex(Image image) {
@@ -12,6 +13,11 @@ public class NormalizedDifferenceVegetationIndex extends Image.Transform {
 
     public static Image create(Image image) {
         return new NormalizedDifferenceVegetationIndex(image);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("type", "normalized-difference-vegetation-index");
     }
 
     @Override

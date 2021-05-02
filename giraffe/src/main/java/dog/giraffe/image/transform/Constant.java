@@ -1,9 +1,11 @@
 package dog.giraffe.image.transform;
 
 import dog.giraffe.Context;
+import dog.giraffe.Lists;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import java.util.Map;
 
 public class Constant extends Image.Transform {
     private MutablePoints line;
@@ -16,6 +18,12 @@ public class Constant extends Image.Transform {
 
     public static Image create(Image image, double... values) {
         return new Constant(image, values);
+    }
+
+    @Override
+    public void log(Map<String, Object> log) {
+        log.put("type", "constant");
+        log.put("values", Lists.toList(values));
     }
 
     @Override
