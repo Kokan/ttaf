@@ -10,7 +10,7 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -74,12 +74,14 @@ public interface Log {
         logField("writer", writer, log);
     }
 
-    static void write(String logFile, Map<String, Object> log) throws Throwable {
-        if (null==logFile) {
-            return;
+    static void write(Path path, Map<String, Object> log) throws Throwable {
+        try (OutputStream stream=Files.newOutputStream(path)) {
+            write(stream, log);
         }
-        try (OutputStream fos=Files.newOutputStream(Paths.get(logFile));
-                OutputStream bos=new BufferedOutputStream(fos);
+    }
+
+    static void write(OutputStream stream, Map<String, Object> log) throws Throwable {
+        try (OutputStream bos=new BufferedOutputStream(stream);
                 Writer wr=new OutputStreamWriter(bos, StandardCharsets.UTF_8);
                 PrintWriter pw=new PrintWriter(wr)) {
             String newLine=System.getProperty("line.separator");

@@ -79,6 +79,12 @@ public interface Mask {
     }
 
     static Mask and(List<Mask> masks) {
+        if (masks.isEmpty()) {
+            return Mask.all();
+        }
+        if (1==masks.size()) {
+            return masks.get(0);
+        }
         return new Mask() {
             @Override
             public String toString() {

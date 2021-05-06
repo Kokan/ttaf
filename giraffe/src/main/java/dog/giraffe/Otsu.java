@@ -22,7 +22,10 @@ public abstract class Otsu {
             List<AsyncSupplier<Thresholds>> forks=new ArrayList<>(bins);
             for (int tt=0; bins>tt; ++tt) {
                 int uu=tt;
-                forks.add((continuation2)->threshold(histogram.shift(uu), continuation2));
+                forks.add((continuation2)->{
+                    context.checkStopped();
+                    threshold(histogram.shift(uu), continuation2);
+                });
             }
             Continuations.forkJoin(
                     forks,
@@ -388,6 +391,7 @@ public abstract class Otsu {
         for (int tt=firstBin; lastBin>=tt; ++tt) {
             int uu=tt;
             forks.add((continuation2)->{
+                context.checkStopped();
                 int[] thresholds2=Arrays.copyOf(thresholds, thresholds.length);
                 thresholds2[1]=uu;
                 Thresholds best2=threshold(
@@ -408,7 +412,9 @@ public abstract class Otsu {
     }
 
     protected Thresholds threshold(
-            Histogram histogram, Thresholds best, double error, int[] thresholds, int selectedThresholds) {
+            Histogram histogram, Thresholds best, double error, int[] thresholds, int selectedThresholds)
+            throws Throwable {
+        context.checkStopped();
         int remainingThreshold=clusters-1-selectedThresholds;
         if (0>=remainingThreshold) {
             return Thresholds.better(

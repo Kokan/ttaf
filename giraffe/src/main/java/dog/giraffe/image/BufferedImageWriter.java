@@ -1,6 +1,7 @@
 package dog.giraffe.image;
 
 import dog.giraffe.points.UnsignedByteArrayPoints;
+import dog.giraffe.threads.Consumer;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -52,6 +53,24 @@ public class BufferedImageWriter implements ImageWriter {
         return new BufferedImageWriter(dimensions, height, null, width);
     }
 
+    public static BufferedImageWriter create(int width, int height, int dimensions, Consumer<BufferedImage> consumer) {
+        return new BufferedImageWriter(dimensions, height, null, width) {
+            @Override
+            public void close() throws IOException {
+                super.close();
+                try {
+                    consumer.accept(createImage());
+                }
+                catch (Error|IOException|RuntimeException ex) {
+                    throw ex;
+                }
+                catch (Throwable throwable) {
+                    throw new RuntimeException(throwable);
+                }
+            }
+        };
+    }
+
     public static BufferedImageWriter createFile(int width, int height, int dimensions, String format, Path path) {
         return new BufferedImageWriter(dimensions, height, path, width) {
             @Override
@@ -79,6 +98,10 @@ public class BufferedImageWriter implements ImageWriter {
     @Override
     public Line getLine(int yy) {
         return new LineImpl(yy);
+    }
+
+    public static Factory factory(Consumer<BufferedImage> consumer) {
+        return (width, height, dimension)->create(width, height, dimension, consumer);
     }
 
     public static Factory factory(String format, Path path) {

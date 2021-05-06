@@ -32,7 +32,10 @@ public interface ClusteringStrategy<P extends Points> extends Log {
             public void cluster(Context context, P points, Continuation<Clusters> continuation) throws Throwable {
                 List<AsyncSupplier<Clusters>> forks=new ArrayList<>(strategies.size());
                 for (ClusteringStrategy<P> strategy: strategies) {
-                    forks.add((continuation2)->strategy.cluster(context, points, continuation2));
+                    forks.add((continuation2)->{
+                        context.checkStopped();
+                        strategy.cluster(context, points, continuation2);
+                    });
                 }
                 Continuation<List<Clusters>> join=Continuations.map(
                         (clustersList, continuation2)->{
@@ -125,6 +128,7 @@ public interface ClusteringStrategy<P extends Points> extends Log {
                             public void search(
                                     Map<Integer, ClustersOrEmpty> newElements, Block continueSearch,
                                     Continuation<Clusters> continuation) throws Throwable {
+                                context.checkStopped();
                                 clusters.putAll(newElements);
                                 while (true) {
                                     if (null==selected) {
@@ -185,7 +189,8 @@ public interface ClusteringStrategy<P extends Points> extends Log {
     }
 
     static <P extends Points> ClusteringStrategy<P> isodata(
-            int startClusters, int desiredClusters, double errorLimit, int maxIteration) {
+            int startClusters, int desiredClusters, double errorLimit, int maxIteration,
+            InitialCenters<P> initialCenters, ReplaceEmptyCluster<P> replaceEmptyCluster) {
         return new ClusteringStrategy<>() {
             @Override
             public void cluster(Context context, P points, Continuation<Clusters> continuation) throws Throwable {
@@ -195,10 +200,10 @@ public interface ClusteringStrategy<P extends Points> extends Log {
                         context,
                         continuation,
                         errorLimit,
-                        InitialCenters.meanAndFarthest(false),
+                        initialCenters,
                         maxIteration,
                         points,
-                        ReplaceEmptyCluster.farthest(false));
+                        replaceEmptyCluster);
             }
 
             @Override

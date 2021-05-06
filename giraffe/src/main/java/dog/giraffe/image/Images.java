@@ -7,6 +7,7 @@ import java.awt.image.ColorModel;
 import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.Raster;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Map;
 
@@ -46,23 +47,22 @@ public class Images {
         }
         return new ColorSpace(type, dimensions) {
             @Override
-            public float[] toRGB(float[] colorValue) {
-                throw new RuntimeException();
+            public float[] fromCIEXYZ(float[] colorValue) {
+                return Arrays.copyOf(colorValue, dimensions);
             }
 
             @Override
             public float[] fromRGB(float[] rgbValue) {
-                throw new RuntimeException();
+                return Arrays.copyOf(rgbValue, dimensions);
             }
 
             @Override
             public float[] toCIEXYZ(float[] colorValue) {
-                throw new RuntimeException();
+                return Arrays.copyOf(colorValue, 3);
             }
-
             @Override
-            public float[] fromCIEXYZ(float[] colorValue) {
-                throw new RuntimeException();
+            public float[] toRGB(float[] colorValue) {
+                return Arrays.copyOf(colorValue, 3);
             }
         };
     }

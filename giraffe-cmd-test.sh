@@ -1,5 +1,6 @@
 #!/bin/bash
 
+mkdir -p ../ttaf2/testout
 rm -rf ../ttaf2/testout/*
 ./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-rgb-kmeans-elbow.tiff --log ../ttaf2/testout/macska-rgb-kmeans-elbow.tiff.log -a k-means -e --min 2 --max 10 --max-iterations 1000
 ./giraffe-cmd.sh -i P.t.altaica_Tomak_Male.jpg -o ../ttaf2/testout/macska-hue-kmeans-elbow.tiff --log ../ttaf2/testout/macska-hue-kmeans-elbow.tiff.log -a k-means -e --min 2 --max 10 --max-iterations 1000 --image-transform hue

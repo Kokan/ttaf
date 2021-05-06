@@ -99,6 +99,7 @@ public class PrepareImages {
     }
 
     private void process(Block wakeup, Block sleep, Continuation<Void> continuation) throws Throwable {
+        context.checkStopped();
         synchronized (lock) {
             prepared2.addAll(prepared);
             prepared.clear();

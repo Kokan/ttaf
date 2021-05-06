@@ -5,9 +5,7 @@ import dog.giraffe.image.BufferedImageWriter;
 import dog.giraffe.image.FileImageReader;
 import dog.giraffe.image.FileImageWriter;
 import dog.giraffe.image.Image;
-import dog.giraffe.image.ImageReader;
 import dog.giraffe.image.ImageWriter;
-import dog.giraffe.image.PrepareImages;
 import dog.giraffe.image.transform.Cluster1;
 import dog.giraffe.image.transform.Cluster2;
 import dog.giraffe.image.transform.Hue;
@@ -25,7 +23,6 @@ import dog.giraffe.threads.AsyncJoin;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import dog.giraffe.threads.Function;
-import dog.giraffe.threads.Supplier;
 import dog.giraffe.threads.batch.Batch;
 import dog.giraffe.threads.batch.BatchRunner;
 import java.io.BufferedInputStream;
@@ -37,12 +34,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import picocli.CommandLine;
@@ -283,39 +277,14 @@ public class CmdLine {
         return mask;
     }
 
-    private static String outputFormat(CmdLineConfig config, Path outputPath) {
-        if (null!=config.outputFormat) {
-            return config.outputFormat;
-        }
-        String filename=outputPath.getFileName().toString();
-        int ii=filename.lastIndexOf('.');
-        if (0<=ii) {
-            switch (filename.substring(ii+1).toLowerCase()) {
-                case "bmp":
-                    return "bmp";
-                case "gif":
-                    return "gif";
-                case "jpeg":
-                case "jpg":
-                    return "jpeg";
-                case "png":
-                    return "png";
-                case "tif":
-                case "tiff":
-                    return "tiff";
-            }
-        }
-        return "tiff";
-    }
-
     private static void singleFileMode(
             CmdLineConfig config, Context context, Function<Image, Image> imageMap, String inputFile,
             String outputFile, String logFile, Continuation<Void> continuation) throws Throwable {
         Path inputPath=Paths.get(inputFile);
         Path outputPath=Paths.get(outputFile);
         Files.deleteIfExists(outputPath);
-        String outputFormat=outputFormat(config, outputPath);
-        write(
+        String outputFormat=ImageWriter.outputFormat(config.outputFormat, outputPath);
+        ImageWriter.write(
                 context,
                 imageMap,
                 config.bufferedInput
@@ -324,53 +293,56 @@ public class CmdLine {
                 config.bufferedOutput
                         ?BufferedImageWriter.factory(outputFormat, outputPath)
                         :FileImageWriter.factory(outputFormat, outputPath),
-                logFile,
+                (null==logFile)
+                        ?null
+                        :(log)->Log.write(Paths.get(logFile), log),
                 continuation);
     }
 
     private static ClusteringStrategy<KDTree> strategy(CmdLineConfig config) throws Throwable {
+        List<InitialCenters<KDTree>> initialCenters=new ArrayList<>();
+        if (config.initialCentersKDTree) {
+            initialCenters.add(KDTree.initialCenters(false));
+        }
+        if (config.initialCentersMean) {
+            initialCenters.add(InitialCenters.meanAndFarthest(false));
+        }
+        for (int ii=config.initialCentersRandom; 0<ii; --ii) {
+            initialCenters.add(InitialCenters.random());
+        }
+        List<ReplaceEmptyCluster<KDTree>> replaceEmptyClusters=new ArrayList<>();
+        if (config.replaceEmptyClustersFarthest) {
+            replaceEmptyClusters.add(ReplaceEmptyCluster.farthest(false));
+        }
+        for (int ii=config.replaceEmptyClustersRandom; 0<ii; --ii) {
+            replaceEmptyClusters.add(ReplaceEmptyCluster.random());
+        }
         Function<Integer, ClusteringStrategy<KDTree>> strategyGenerator;
         switch (config.clusteringAlgorithm) {
             case CmdLineConfig.CLUSTERING_ALGORITHM_ISODATA:
                 config.elbow=false;
-                strategyGenerator=(clusters)->ClusteringStrategy.isodata(
-                        config.minClusters,
-                        config.maxClusters,
-                        config.errorLimit,
-                        config.maxIterations);
+                List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>();
+                initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
+                        strategies.add(ClusteringStrategy.isodata(
+                                config.minClusters,
+                                config.maxClusters,
+                                config.errorLimit,
+                                config.maxIterations,
+                                init,
+                                replace))));
+                strategyGenerator=(clusters)->ClusteringStrategy.best(strategies);
                 break;
             case CmdLineConfig.CLUSTERING_ALGORITHM_K_MEANS:
-                List<InitialCenters<KDTree>> initialCenters=new ArrayList<>();
-                if (config.initialCentersKDTree) {
-                    initialCenters.add(KDTree.initialCenters(false));
-                }
-                if (config.initialCentersMean) {
-                    initialCenters.add(InitialCenters.meanAndFarthest(false));
-                }
-                for (int ii=config.initialCentersRandom; 0<ii; --ii) {
-                    initialCenters.add(InitialCenters.random());
-                }
-                List<ReplaceEmptyCluster<KDTree>> replaceEmptyClusters=new ArrayList<>();
-                if (config.replaceEmptyClustersFarthest) {
-                    replaceEmptyClusters.add(ReplaceEmptyCluster.farthest(false));
-                }
-                for (int ii=config.replaceEmptyClustersRandom; 0<ii; --ii) {
-                    replaceEmptyClusters.add(ReplaceEmptyCluster.random());
-                }
-                List<Function<Integer, ClusteringStrategy<KDTree>>> strategyGenerators=new ArrayList<>();
-                initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
-                        strategyGenerators.add((clusters)->ClusteringStrategy.kMeans(
-                                clusters,
-                                config.errorLimit,
-                                init,
-                                config.maxIterations,
-                                replace))));
                 strategyGenerator=(clusters)->{
-                    List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>(strategyGenerators.size());
-                    for (Function<Integer, ClusteringStrategy<KDTree>> generator: strategyGenerators) {
-                        strategies.add(generator.apply(clusters));
-                    }
-                    return ClusteringStrategy.best(strategies);
+                    List<ClusteringStrategy<KDTree>> strategies2=new ArrayList<>();
+                    initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
+                            strategies2.add(ClusteringStrategy.kMeans(
+                                    clusters,
+                                    config.errorLimit,
+                                    init,
+                                    config.maxIterations,
+                                    replace))));
+                    return ClusteringStrategy.best(strategies2);
                 };
                 break;
             case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU:
@@ -390,61 +362,5 @@ public class CmdLine {
                         strategyGenerator,
                         1)
                 :strategyGenerator.apply(config.maxClusters);
-    }
-
-    private static void write(
-            Context context, Function<Image, Image> imageMap, Supplier<ImageReader> imageReader,
-            ImageWriter.Factory imageWriter, String logFile, Continuation<Void> continuation) throws Throwable {
-        Instant start=Instant.now();
-        ImageReader imageReader2=imageReader.get();
-        Continuation<Void> continuation2=Continuations.finallyBlock(imageReader2::close, continuation);
-        try {
-            write(context, imageMap, imageReader2, imageWriter, logFile, start, continuation2);
-        }
-        catch (Throwable throwable) {
-            continuation2.failed(throwable);
-        }
-    }
-
-    private static void write(
-            Context context, Function<Image, Image> imageMap, ImageReader imageReader,
-            ImageWriter.Factory imageWriter, String logFile, Instant start, Continuation<Void> continuation)
-            throws Throwable {
-        Image image=imageMap.apply(imageReader);
-        PrepareImages.prepareImages(
-                context,
-                List.of(image),
-                Continuations.map(
-                        (input, continuation2)->write(context, image, imageWriter, logFile, start, continuation2),
-                        continuation));
-    }
-
-    private static void write(
-            Context context, Image image, ImageWriter.Factory imageWriter, String logFile, Instant start,
-            Continuation<Void> continuation) throws Throwable {
-        ImageWriter imageWriter2=imageWriter.create(image.width(), image.height(), image.dimensions());
-        Continuation<Void> continuation2=Continuations.finallyBlock(imageWriter2::close, continuation);
-        try {
-            ImageWriter.write(
-                    context,
-                    image,
-                    imageWriter2,
-                    Continuations.map(
-                            (result, continuation3)->{
-                                if (null!=logFile) {
-                                    Instant end=Instant.now();
-                                    Map<String, Object> log=new TreeMap<>();
-                                    Log.logElapsedTime(start, end, log);
-                                    Log.logImages(image, log);
-                                    Log.logWriter(imageWriter2, log);
-                                    Log.write(logFile, log);
-                                }
-                                continuation3.completed(result);
-                            },
-                            continuation2));
-        }
-        catch (Throwable throwable) {
-            continuation2.failed(throwable);
-        }
     }
 }
