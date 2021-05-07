@@ -104,18 +104,6 @@ public class Isodata<P extends Points> {
         stats.put(name, 0.0);
     }
 
-    public Map<String, Double> getStats() {
-        return stats;
-    }
-
-    public void printStats() {
-        System.out.println("Isodata stats:");
-        System.out.println("=========================");
-        for (Map.Entry<String, Double> stat : stats.entrySet()) {
-            System.out.println(stat.getKey() + ": " + stat.getValue());
-        }
-    }
-
     public static class Comp {
        private int maxInd(Vector self) {
           double max = self.coordinate(0);
@@ -263,7 +251,7 @@ public class Isodata<P extends Points> {
                                                for (Vector c : res.keySet()) {
                                                   cl.add(c);
                                                }
-                                               cont.completed(Clusters.create(cl, error));
+                                               cont.completed(Clusters.createWithStats(cl, error, new HashMap<>(isodata.stats)));
                                              },continuation), error, 0); },
                         continuation));
     }
@@ -285,7 +273,6 @@ public class Isodata<P extends Points> {
             stats_set("error", err);
             stats_set("iteration", (double)iteration);
             stats_set("number_of_cluster", (double)a.size());
-            printStats();
             continuation.completed(a);
             return;
         }

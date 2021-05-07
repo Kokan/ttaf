@@ -35,6 +35,8 @@ public interface Log {
             log.put(String.format("clusters-center%1$02d", ii), Collections.unmodifiableList(center2));
             log.put(String.format("clusters-color%1$02d", ii), Lists.toList(colorMap.get(center.get(0))));
         }
+        clusters.stats.forEach((key, value) -> log.put("stats-"+key, value));
+        log.put("clusters-stats-size", clusters.stats.size());
         log.put("clusters-error", clusters.error);
     }
 
