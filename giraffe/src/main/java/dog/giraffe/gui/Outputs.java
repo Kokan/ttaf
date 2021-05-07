@@ -203,6 +203,10 @@ public class Outputs {
                                         cluster.maxClusters,
                                         cluster.errorLimit,
                                         cluster.maxIterations,
+                                        cluster.theta_N,
+                                        cluster.lumping,
+                                        cluster.L,
+                                        cluster.std_deviation,
                                         init,
                                         replace))));
                         strategy=ClusteringStrategy.best(strategies);

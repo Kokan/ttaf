@@ -328,6 +328,10 @@ public class CmdLine {
                                 config.maxClusters,
                                 config.errorLimit,
                                 config.maxIterations,
+                                config.theta_N,
+                                config.lumping,
+                                config.L,
+                                config.std_deviation,
                                 init,
                                 replace))));
                 strategyGenerator=(clusters)->ClusteringStrategy.best(strategies);

@@ -129,6 +129,22 @@ public class CmdLineConfig {
             description="Number of threads used.")
     public Integer threads;
 
+    @CommandLine.Option(names={"--isodata-theta-L"}, paramLabel="CLUSTERPOINT",
+            description="A cluster is dropped if its size is lower then the theta_L percentage of all points. (Default value is 0.05)")
+    public double theta_N=0.05;
+
+    @CommandLine.Option(names={"--isodata-L"}, paramLabel="CLUSTERNUM",
+            description="The maximum number of cluster merged in lumping phase. (Default value is 3)")
+    public int L=3;
+
+    @CommandLine.Option(names={"--isodata-lumping"}, paramLabel="THRESHOLD",
+            description="Cluster centers are merged if their distance is lower then lumping parameter. (Default value is 3)")
+    public double lumping=3.0;
+
+    @CommandLine.Option(names={"--isodata-std-deviation"}, paramLabel="CLUSTERNUM",
+            description="Clusters are divided if its std deviation is larger then this value. (Default value is 5)")
+    public double std_deviation;
+
     public void setDefaultValues() {
         if (0>=batchParallelism) {
             batchParallelism=1;

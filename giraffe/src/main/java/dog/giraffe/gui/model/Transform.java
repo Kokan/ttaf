@@ -47,6 +47,10 @@ public interface Transform {
         public boolean initialCentersMeanAndFarthest;
         public int initialCentersRandom;
         public int maxClusters;
+        public int L;
+        public double theta_N;
+        public double lumping;
+        public double std_deviation;
         public int maxIterations;
         public int minClusters;
         public boolean replaceEmptyClustersFarthest;
@@ -57,6 +61,10 @@ public interface Transform {
             Cluster cluster=new Cluster();
             cluster.algorithm=Algorithm.K_MEANS;
             cluster.bins=32;
+            cluster.L=3;
+            cluster.theta_N=0.05;
+            cluster.lumping=3.0;
+            cluster.std_deviation=20;
             cluster.errorLimit=0.95;
             cluster.initialCentersMeanAndFarthest=true;
             cluster.maxClusters=10;

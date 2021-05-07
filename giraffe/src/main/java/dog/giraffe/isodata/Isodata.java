@@ -148,7 +148,7 @@ public class Isodata<P extends Points> {
     private Isodata(
             int N_c,
             int K,
-            int theta_N,
+            double theta_N,
             double lumping,
             int L,
             double std_deviation,
@@ -164,7 +164,7 @@ public class Isodata<P extends Points> {
         this.N_c=N_c;
         this.K=K;
         this.L=L;
-        this.theta_N=theta_N;
+        this.theta_N=(int)(theta_N * points.size());
         this.lumping=lumping;
         this.std_deviation=std_deviation;
         this.context=context;
@@ -183,6 +183,10 @@ public class Isodata<P extends Points> {
     public static <P extends Points> void cluster(
             int N_c,
             int K,
+            double theta_N,
+            double lumping,
+            int L,
+            double std_deviation,
             Context context,
             Continuation<Clusters> continuation,
             double errorLimit,
@@ -240,10 +244,10 @@ public class Isodata<P extends Points> {
                             Isodata<P> isodata=new Isodata<>(
                                     N_c, //number of cluster
                                     K,   //desrired cluster
-                                    (int)(0.05*points.size()), //min cluster size
-                                    3, //lumping
-                                    3, //L
-                                    5, //std_deviation
+                                    theta_N,
+                                    lumping,
+                                    L,
+                                    std_deviation,
                                     context,
                                     errorLimit,
                                     maxIterations,

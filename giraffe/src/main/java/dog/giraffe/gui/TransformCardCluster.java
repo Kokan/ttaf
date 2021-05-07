@@ -22,6 +22,10 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
     private final JTextField maxClusters;
     private final JTextField maxIterations;
     private final JTextField minClusters;
+    private final JTextField theta_N;
+    private final JTextField L;
+    private final JTextField lumping;
+    private final JTextField std_deviation;
     private final JCheckBox replaceEmptyCentersFarthest;
     private final JTextField replaceEmptyCentersRandom;
     private final JComboBox<Transform.Cluster.Type> type;
@@ -155,12 +159,87 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
                         .gridY(5)
                         .insets(new Insets(5, 0, 5, 0))
                         .constraints());
+        cardPanel.add(
+                new JLabel("Theta_N:"),
+                new GBC()
+                        .gridX(0)
+                        .gridY(6)
+                        .anchorLineStart()
+                        .insets(new Insets(0, 7, 0, 0))
+                        .constraints());
+        theta_N=new JTextField();
+        theta_N.setColumns(10);
+        theta_N.setHorizontalAlignment(JTextField.RIGHT);
+        cardPanel.add(
+                theta_N,
+                new GBC()
+                        .gridX(1)
+                        .gridY(6)
+                        .insets(new Insets(5, 0, 5, 0))
+                        .constraints());
+
+        cardPanel.add(
+                new JLabel("L:"),
+                new GBC()
+                        .gridX(0)
+                        .gridY(7)
+                        .anchorLineStart()
+                        .insets(new Insets(0, 7, 0, 0))
+                        .constraints());
+        L=new JTextField();
+        L.setColumns(10);
+        L.setHorizontalAlignment(JTextField.RIGHT);
+        cardPanel.add(
+                L,
+                new GBC()
+                        .gridX(1)
+                        .gridY(7)
+                        .insets(new Insets(5, 0, 5, 0))
+                        .constraints());
+
+        cardPanel.add(
+                new JLabel("Lumping:"),
+                new GBC()
+                        .gridX(0)
+                        .gridY(8)
+                        .anchorLineStart()
+                        .insets(new Insets(0, 7, 0, 0))
+                        .constraints());
+        lumping=new JTextField();
+        lumping.setColumns(10);
+        lumping.setHorizontalAlignment(JTextField.RIGHT);
+        cardPanel.add(
+                lumping,
+                new GBC()
+                        .gridX(1)
+                        .gridY(8)
+                        .insets(new Insets(5, 0, 5, 0))
+                        .constraints());
+
+        cardPanel.add(
+                new JLabel("std_deviation:"),
+                new GBC()
+                        .gridX(0)
+                        .gridY(9)
+                        .anchorLineStart()
+                        .insets(new Insets(0, 7, 0, 0))
+                        .constraints());
+        std_deviation=new JTextField();
+        std_deviation.setColumns(10);
+        std_deviation.setHorizontalAlignment(JTextField.RIGHT);
+        cardPanel.add(
+                std_deviation,
+                new GBC()
+                        .gridX(1)
+                        .gridY(9)
+                        .insets(new Insets(5, 0, 5, 0))
+                        .constraints());
 
         cardPanel.add(
                 new JLabel("Initial centers:"),
                 new GBC()
                         .gridX(0)
-                        .gridY(6)
+                        .gridY(10)
                         .anchorLineStart()
                         .insets(new Insets(0, 7, 0, 0))
                         .constraints());
@@ -169,7 +248,7 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
                 initialCentersPanel,
                 new GBC()
                         .gridX(1)
-                        .gridY(6)
+                        .gridY(10)
                         .gridWidthRemainder()
                         .anchorLineStart()
                         .constraints());
@@ -187,7 +266,7 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
                 new JLabel("Replace empty centers:"),
                 new GBC()
                         .gridX(0)
-                        .gridY(7)
+                        .gridY(11)
                         .anchorLineStart()
                         .insets(new Insets(0, 7, 0, 0))
                         .constraints());
@@ -196,7 +275,7 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
                 replaceEmptyCentersPanel,
                 new GBC()
                         .gridX(1)
-                        .gridY(7)
+                        .gridY(11)
                         .gridWidthRemainder()
                         .anchorLineStart()
                         .insets(new Insets(5, 0, 5, 0))
@@ -215,7 +294,7 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
                 set,
                 new GBC()
                         .gridX(0)
-                        .gridY(8)
+                        .gridY(12)
                         .anchorLineStart()
                         .insets(new Insets(0, 7, 0, 0))
                         .constraints());
@@ -224,7 +303,7 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
                 new JPanel(),
                 new GBC()
                         .gridX(4)
-                        .gridY(9)
+                        .gridY(12)
                         .weightX(1.0)
                         .weightY(1.0)
                         .constraints());
@@ -234,6 +313,10 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
     void modelChanged() {
         algorithm.setSelectedItem(transform.algorithm);
         bins.setText(Integer.toString(transform.bins));
+        theta_N.setText(Double.toString(transform.theta_N));
+        lumping.setText(Double.toString(transform.lumping));
+        L.setText(Integer.toString(transform.L));
+        std_deviation.setText(Double.toString(transform.std_deviation));
         errorLimit.setText(Double.toString(transform.errorLimit));
         initialCentersFarthest.setSelected(transform.initialCentersMeanAndFarthest);
         initialCentersKDTree.setSelected(transform.initialCentersKDTree);
@@ -251,6 +334,10 @@ public class TransformCardCluster extends TransformCard<Transform.Cluster> {
             Transform.Cluster newTransform=new Transform.Cluster();
             newTransform.algorithm=(Transform.Cluster.Algorithm)algorithm.getSelectedItem();
             newTransform.bins=Integer.parseInt(bins.getText().trim());
+            newTransform.theta_N=Double.parseDouble(theta_N.getText().trim());
+            newTransform.lumping=Double.parseDouble(lumping.getText().trim());
+            newTransform.L=Integer.parseInt(L.getText().trim());
+            newTransform.std_deviation=Double.parseDouble(std_deviation.getText().trim());
             newTransform.errorLimit=Double.parseDouble(errorLimit.getText().trim());
             newTransform.initialCentersKDTree=initialCentersKDTree.isSelected();
             newTransform.initialCentersMeanAndFarthest=initialCentersFarthest.isSelected();

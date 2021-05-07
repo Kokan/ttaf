@@ -182,6 +182,7 @@ public interface ClusteringStrategy<P extends Points> extends Log {
 
     static <P extends Points> ClusteringStrategy<P> isodata(
             int startClusters, int desiredClusters, double errorLimit, int maxIteration,
+            double theta_N, double lumping, int L, double std_deviation,
             InitialCenters<P> initialCenters, ReplaceEmptyCluster<P> replaceEmptyCluster) {
         return new ClusteringStrategy<>() {
             @Override
@@ -189,6 +190,10 @@ public interface ClusteringStrategy<P extends Points> extends Log {
                 Isodata.cluster(
                         startClusters,
                         desiredClusters,
+                        theta_N,
+                        lumping,
+                        L,
+                        std_deviation,
                         context,
                         continuation,
                         errorLimit,
