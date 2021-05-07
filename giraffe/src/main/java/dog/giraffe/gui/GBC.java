@@ -6,11 +6,6 @@ import java.awt.Insets;
 public class GBC {
     private final GridBagConstraints constraints=new GridBagConstraints();
 
-    public GBC anchorLineEnd() {
-        constraints.anchor=GridBagConstraints.LINE_END;
-        return this;
-    }
-
     public GBC anchorLineStart() {
         constraints.anchor=GridBagConstraints.LINE_START;
         return this;
@@ -52,11 +47,6 @@ public class GBC {
 
     public GBC insets(Insets insets) {
         constraints.insets=insets;
-        return this;
-    }
-
-    public GBC iPadX(int iPadX) {
-        constraints.ipadx=iPadX;
         return this;
     }
 

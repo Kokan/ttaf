@@ -153,11 +153,11 @@ public abstract class KDTree extends Points {
         public Leaf(MutablePoints points, Sum.Factory sumFactory) {
             super(
                     points.dimensions(),
-                    points.perform(Double.NEGATIVE_INFINITY, 0, MAX, points.size()),
-                    points.perform(Double.POSITIVE_INFINITY, 0, MIN, points.size()),
+                    points.perform(Double.NEGATIVE_INFINITY, MAX),
+                    points.perform(Double.POSITIVE_INFINITY, MIN),
                     points.size(),
-                    points.sum(0, Doubles.IDENTITY, points.size(), sums(points, sumFactory)),
-                    points.sum(0, Doubles.SQUARE, points.size(), sums(points, sumFactory)));
+                    points.sum(Doubles.IDENTITY, sums(points, sumFactory)),
+                    points.sum(Doubles.SQUARE, sums(points, sumFactory)));
             this.points=points;
         }
 
@@ -199,7 +199,7 @@ public abstract class KDTree extends Points {
             double nd=Double.POSITIVE_INFINITY;
             for (int oo=0, ss=size; 0<ss; ++oo, --ss) {
                 Vector cc=points.get(oo);
-                double dd=Distance.DISTANCE.distance(cc, point);
+                double dd=Distance.distance(cc, point);
                 if (nd>dd) {
                     nc=cc;
                     nd=dd;
@@ -308,7 +308,7 @@ public abstract class KDTree extends Points {
         int nc=0;
         double nd=Double.POSITIVE_INFINITY;
         for (int cc=0; centers.size()>cc; ++cc) {
-            double di=distance().distance(centerPoint.apply(centers.get(cc)), mean);
+            double di=Distance.distance(centerPoint.apply(centers.get(cc)), mean);
             if (nd>di) {
                 nc=cc;
                 nd=di;
@@ -327,7 +327,7 @@ public abstract class KDTree extends Points {
             for (int dd=0; dimensions>dd; ++dd) {
                 ex.coordinate(dd, ((cc3.coordinate(dd)>nc2.coordinate(dd))?max:min).coordinate(dd));
             }
-            if (distance().distance(nc2, ex)>distance().distance(cc3, ex)) {
+            if (Distance.distance(nc2, ex)>Distance.distance(cc3, ex)) {
                 centers2.add(cc2);
             }
         }

@@ -62,14 +62,6 @@ public interface ClusteringStrategy<P extends Points> extends Log {
         };
     }
 
-    static <P extends Points> ClusteringStrategy<P> best(int iterations, ClusteringStrategy<P> strategy) {
-        List<ClusteringStrategy<P>> strategies=new ArrayList<>(iterations);
-        for (; 0<iterations; --iterations) {
-            strategies.add(strategy);
-        }
-        return best(strategies);
-    }
-
     void cluster(Context context, P points, Continuation<Clusters> continuation) throws Throwable;
 
     static <P extends Points> ClusteringStrategy<P> elbow(

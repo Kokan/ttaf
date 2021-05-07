@@ -3,6 +3,7 @@
 build
 hs_err_pid*
 java.hprof.txt
+out
 *.class
 *.ear
 *.log

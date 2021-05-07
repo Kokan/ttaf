@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 public abstract class MutablePoints extends Points implements QuickSort.Swap  {
     public static class Interval {
-        public int from;
-        public int to;
+        public final int from;
+        public final int to;
 
         public Interval(int from, int to) {
             this.from=from;
@@ -29,47 +29,11 @@ public abstract class MutablePoints extends Points implements QuickSort.Swap  {
         }
     }
 
-    public interface Factory {
-        MutablePoints create(int expectedSize);
-    }
-
     public MutablePoints(int dimensions) {
         super(dimensions);
     }
 
     public abstract void add(Vector vector);
-
-    public void addFrom(FloatArrayPoints points, int from, int to) {
-        addFrom((Points)points, from, to);
-    }
-
-    public void addFrom(Points points, int from, int to) {
-        Vector vector=new Vector(dimensions);
-        for (; to>from; ++from) {
-            for (int dd=0; dimensions>dd; ++dd) {
-                vector.coordinate(dd, points.get(dd, from));
-            }
-            add(vector);
-        }
-    }
-
-    public void addFrom(UnsignedByteArrayPoints points, int from, int to) {
-        addFrom((Points)points, from, to);
-    }
-
-    public void addFrom(UnsignedShortArrayPoints points, int from, int to) {
-        addFrom((Points)points, from, to);
-    }
-
-    public abstract void addNormalized(Vector vector);
-
-    public abstract void addTo(MutablePoints points, int from, int to);
-
-    public void clear() {
-        clear(0);
-    }
-
-    public abstract void clear(int size);
 
     public void compact(List<Interval> intervals) {
         ArrayDeque<Interval> queue=new ArrayDeque<>(intervals.size());
@@ -105,15 +69,14 @@ public abstract class MutablePoints extends Points implements QuickSort.Swap  {
                 else {
                     copy(ii.to-free, size, free);
                     size+=free;
-                    ii.to-=free;
-                    queue.addLast(ii);
+                    queue.addLast(new Interval(ii.from, ii.to-free));
                 }
             }
         }
         size(size);
     }
 
-    public void copy(int from, int to, int length) {
+    protected void copy(int from, int to, int length) {
         for (; 0<length; --length, ++from, ++to) {
             for (int dd=0; dimensions>dd; ++dd) {
                 set(dd, to, get(dd, from));
@@ -130,8 +93,6 @@ public abstract class MutablePoints extends Points implements QuickSort.Swap  {
     }
 
     public abstract void set(int dimension, int index, double value);
-
-    public abstract void set(int index, Vector vector);
 
     public abstract void setNormalized(int dimension, int index, double value);
 

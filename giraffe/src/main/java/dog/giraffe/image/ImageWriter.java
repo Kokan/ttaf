@@ -1,6 +1,5 @@
 package dog.giraffe.image;
 
-import dog.giraffe.CmdLineConfig;
 import dog.giraffe.Context;
 import dog.giraffe.Log;
 import dog.giraffe.points.MutablePoints;
@@ -21,13 +20,7 @@ public interface ImageWriter extends AutoCloseable, Log {
         ImageWriter create(int width, int height, int dimension) throws Throwable;
     }
 
-    interface FileFactory {
-        ImageWriter create(int width, int height, int dimension, String format, Path path) throws Throwable;
-    }
-
     interface Line {
-        void set(int dimension, int xx, double value);
-
         void setNormalized(int dimension, int xx, double value);
 
         void write() throws Throwable;
@@ -35,7 +28,7 @@ public interface ImageWriter extends AutoCloseable, Log {
 
     void close() throws IOException;
 
-    Line getLine(int yy) throws Throwable;
+    Line getLine(int yy);
 
     static String outputFormat(String outputFormat, Path outputPath) {
         if (null!=outputFormat) {

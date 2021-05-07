@@ -245,7 +245,7 @@ public class CmdLine {
         }
 
         try (Context context=new StandardContext(config.threads)) {
-            AsyncJoin<Void> join=new AsyncJoin<>();
+            AsyncJoin join=new AsyncJoin();
             if (config.batchMode) {
                 batchMode(config, context, imageMap, join);
             }

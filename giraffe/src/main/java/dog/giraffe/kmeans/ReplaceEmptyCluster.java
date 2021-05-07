@@ -13,22 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface ReplaceEmptyCluster<P extends Points> extends Log {
-    static <P extends Points> ReplaceEmptyCluster<P> error() {
-        return new ReplaceEmptyCluster<>() {
-            @Override
-            public void log(Map<String, Object> log) {
-                log.put("type", "error");
-            }
-
-            @Override
-            public void newCenter(
-                    List<Vector> centers, Context context, int maxIterations, P points, List<Points> points2,
-                    Continuation<Vector> continuation) throws Throwable {
-                continuation.failed(new EmptyClusterException());
-            }
-        };
-    }
-
     static <P extends Points> ReplaceEmptyCluster<P> farthest(boolean notNear) {
         return new ReplaceEmptyCluster<>() {
             @Override

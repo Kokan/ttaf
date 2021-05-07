@@ -1,6 +1,5 @@
 package dog.giraffe;
 
-import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Executor;
 import java.util.Random;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -21,12 +20,6 @@ public class TestContext implements Context {
     @Override
     public Executor executor() {
         return executor;
-    }
-
-    @Override
-    public Continuation<Throwable> logger() {
-        fail();
-        return null;
     }
 
     @Override

@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Continuations {
     @FunctionalInterface
     public interface IntForks<T> {
-        AsyncSupplier<T> fork(int from, int to) throws Throwable;
+        AsyncSupplier<T> fork(int from, int to);
     }
 
     private Continuations() {
@@ -34,42 +34,6 @@ public class Continuations {
                 catch (Throwable throwable2) {
                     continuation2.failed(throwable2);
                 }
-            }
-        });
-    }
-
-    public static <T> Continuation<T> catchBlock(AsyncFunction<Throwable, T> block, Continuation<T> continuation) {
-        return singleRun(new Continuation<>() {
-            @Override
-            public void completed(T result) throws Throwable {
-                continuation.completed(result);
-            }
-
-            @Override
-            public void failed(Throwable throwable) throws Throwable {
-                try {
-                    block.apply(throwable, continuation);
-                }
-                catch (Throwable throwable2) {
-                    if (null!=throwable) {
-                        throwable2.addSuppressed(throwable);
-                    }
-                    continuation.failed(throwable2);
-                }
-            }
-        });
-    }
-
-    public static <T> Continuation<T> consume(Consumer<T> consumer, Continuation<Throwable> logger) {
-        return singleRun(new Continuation<>() {
-            @Override
-            public void completed(T result) throws Throwable {
-                consumer.accept(result);
-            }
-
-            @Override
-            public void failed(Throwable throwable) throws Throwable {
-                logger.failed(throwable);
             }
         });
     }

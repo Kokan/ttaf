@@ -9,7 +9,6 @@ import dog.giraffe.threads.Supplier;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.Raster;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,7 @@ public abstract class BufferedImageReader implements ImageReader {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
     }
 
     public static BufferedImageReader create(BufferedImage image, Path path) {
@@ -134,17 +133,8 @@ public abstract class BufferedImageReader implements ImageReader {
 
     @Override
     public Reader reader() {
-        return new Reader() {
-            @Override
-            public Image image() {
-                return BufferedImageReader.this;
-            }
-
-            @Override
-            public void setNormalizedLineTo(int yy, MutablePoints points, int offset) {
+        return (yy, points, offset)->
                 BufferedImageReader.this.points.setNormalizedTo(yy*width, width, points, offset);
-            }
-        };
     }
 
     @Override

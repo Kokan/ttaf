@@ -1,7 +1,6 @@
 package dog.giraffe;
 
 import dog.giraffe.threads.Block;
-import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Executor;
 import dog.giraffe.threads.StoppedException;
 import java.util.Random;
@@ -31,7 +30,6 @@ public class StandardContext implements Context {
     }
 
     private final Executor executor;
-    private final Continuation<Throwable> logger;
     private final ScheduledExecutorService realExecutor;
     private final AtomicBoolean stopped=new AtomicBoolean(false);
 
@@ -48,17 +46,6 @@ public class StandardContext implements Context {
                 return threads;
             }
         };
-        logger=new Continuation<>() {
-            @Override
-            public void completed(Throwable result) {
-                log(result);
-            }
-
-            @Override
-            public void failed(Throwable throwable) {
-                log(throwable);
-            }
-        };
         realExecutor=Executors.newScheduledThreadPool(
                 threads,
                 (runnable)->{
@@ -66,10 +53,6 @@ public class StandardContext implements Context {
                     thread.setDaemon(true);
                     return thread;
                 });
-    }
-
-    public StandardContext() {
-        this(Runtime.getRuntime().availableProcessors());
     }
 
     @Override
@@ -98,11 +81,6 @@ public class StandardContext implements Context {
             System.err.flush();
         }
         System.exit(1);
-    }
-
-    @Override
-    public Continuation<Throwable> logger() {
-        return logger;
     }
 
     @Override

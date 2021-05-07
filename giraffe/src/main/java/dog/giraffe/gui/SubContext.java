@@ -2,7 +2,6 @@ package dog.giraffe.gui;
 
 import dog.giraffe.Context;
 import dog.giraffe.Sum;
-import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Executor;
 import java.util.Random;
 
@@ -22,11 +21,6 @@ public class SubContext implements Context {
     @Override
     public Executor executor() {
         return context.executor();
-    }
-
-    @Override
-    public Continuation<Throwable> logger() {
-        return context.logger();
     }
 
     @Override

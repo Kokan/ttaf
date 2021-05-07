@@ -29,7 +29,7 @@ public class KDTreeTest {
             final int dimensions=random.nextInt(4)+1;
             List<Vector> centers=Collections.unmodifiableList(create(dimensions, random, 10));
             VectorList points=new VectorList(create(dimensions, random, 1000));
-            KDTree tree=KDTree.create(random.nextInt(10)+1, points, Sum.HEAP);
+            KDTree tree=KDTree.create(random.nextInt(10)+1, points, Sum.PREFERRED);
             tree.classify(
                     Function.identity(),
                     centers,

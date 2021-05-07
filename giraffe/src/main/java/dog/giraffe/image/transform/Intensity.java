@@ -30,7 +30,7 @@ public class Intensity extends Image.Transform {
     public Reader reader() throws Throwable {
         return new TransformReader() {
             @Override
-            protected void setNormalizedLineToTransform(int yy, MutablePoints points, int offset) throws Throwable {
+            protected void setNormalizedLineToTransform(MutablePoints points, int offset) {
                 for (int xx=0; width()>xx; ++xx, ++offset) {
                     double value=0.0;
                     for (int dd=0; image.dimensions()>dd; ++dd) {

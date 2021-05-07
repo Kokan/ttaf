@@ -9,12 +9,4 @@ public class CannotSelectInitialCentersException extends EmptyClusterException {
     public CannotSelectInitialCentersException(String message) {
         super(message);
     }
-
-    public CannotSelectInitialCentersException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public CannotSelectInitialCentersException(Throwable cause) {
-        super(cause);
-    }
 }

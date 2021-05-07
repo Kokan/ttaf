@@ -1,5 +1,5 @@
 {
-  "inputFile" : "../P.t.altaica_Tomak_Male.jpg",
+  "inputFile" : "testimages/P.t.altaica_Tomak_Male.jpg",
   "mask" : [ "java.util.ArrayList", [ {
     "x1" : 0.0,
     "y1" : 0.0,

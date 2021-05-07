@@ -30,14 +30,6 @@ public class Lists {
         };
     }
 
-    public static List<Double> toList(double[] values) {
-        List<Double> list=new ArrayList<>(values.length);
-        for (double value: values) {
-            list.add(value);
-        }
-        return Collections.unmodifiableList(list);
-    }
-
     public static List<Integer> toList(int[] values) {
         List<Integer> list=new ArrayList<>(values.length);
         for (int value: values) {

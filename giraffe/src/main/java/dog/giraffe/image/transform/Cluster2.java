@@ -52,18 +52,13 @@ public abstract class Cluster2 extends Image.Transform {
         }
 
         @Override
-        protected MutablePoints createPoints1(int dimensions, int expectedSize) {
-            return new FloatArrayPoints(dimensions, expectedSize);
+        protected MutablePoints createPoints1(int expectedSize) {
+            return new FloatArrayPoints(1, expectedSize);
         }
 
         @Override
         protected MutablePoints createPoints2(int dimensions, int expectedSize) {
             return new FloatArrayPoints(dimensions, expectedSize);
-        }
-
-        @Override
-        protected int dimensions1() {
-            return 1;
         }
 
         @Override
@@ -117,8 +112,8 @@ public abstract class Cluster2 extends Image.Transform {
         }
 
         @Override
-        protected MutablePoints createPoints1(int dimensions, int expectedSize) {
-            return new FloatArrayPoints(dimensions, expectedSize);
+        protected MutablePoints createPoints1(int expectedSize) {
+            return new FloatArrayPoints(1, expectedSize);
         }
 
         @Override
@@ -127,12 +122,7 @@ public abstract class Cluster2 extends Image.Transform {
         }
 
         @Override
-        protected int dimensions1() {
-            return 1;
-        }
-
-        @Override
-        protected int dimensions2() throws Throwable {
+        protected int dimensions2() {
             return image.dimensions();
         }
 
@@ -142,7 +132,7 @@ public abstract class Cluster2 extends Image.Transform {
         }
 
         @Override
-        protected Projection projection() throws Throwable {
+        protected Projection projection() {
             return new Projection() {
                 private final double[] hue=new double[image.dimensions()];
                 private final double[] point=new double[image.dimensions()];
@@ -203,7 +193,7 @@ public abstract class Cluster2 extends Image.Transform {
 
     protected abstract void checkImageDimensions(int dimensions);
 
-    protected abstract MutablePoints createPoints1(int dimensions, int expectedSize);
+    protected abstract MutablePoints createPoints1(int expectedSize);
 
     protected abstract MutablePoints createPoints2(int dimensions, int expectedSize);
 
@@ -215,9 +205,7 @@ public abstract class Cluster2 extends Image.Transform {
         return new HyperHue(image, mask, strategy);
     }
 
-    protected abstract int dimensions1();
-
-    protected abstract int dimensions2() throws Throwable;
+    protected abstract int dimensions2();
 
     @Override
     public void log(Map<String, Object> log) throws Throwable {
@@ -268,7 +256,7 @@ public abstract class Cluster2 extends Image.Transform {
     protected void prepareImpl(Context context, Continuation<Dimensions> continuation) throws Throwable {
         checkImageDimensions(image.dimensions());
         sumFactory=context.sum();
-        MutablePoints points1=createPoints1(dimensions1(), image.height()*image.width());
+        MutablePoints points1=createPoints1(image.height()*image.width());
         MutablePoints points2=createPoints2(dimensions2(), image.height()*image.width());
         points1.size(image.height()*image.width());
         points2.size(image.height()*image.width());
@@ -330,16 +318,16 @@ public abstract class Cluster2 extends Image.Transform {
         };
     }
 
-    protected abstract Projection projection() throws Throwable;
+    protected abstract Projection projection();
 
     @Override
     public Reader reader() throws Throwable {
         return new TransformReader() {
             private final Function<Vector, Vector> nearestCenter1=KDTree.nearestCenter2(data1.centers, sumFactory);
             private final Function<Vector, Vector> nearestCenter2=KDTree.nearestCenter2(data2.centers, sumFactory);
-            private final Vector point1=new Vector(dimensions1());
+            private final Vector point1=new Vector(1);
             private final Vector point2=new Vector(dimensions2());
-            private final MutablePoints points1=createPoints1(dimensions1(), 1);
+            private final MutablePoints points1=createPoints1(1);
             private final MutablePoints points2=createPoints2(dimensions2(), 1);
             private final Projection projection=projection();
 
@@ -349,7 +337,7 @@ public abstract class Cluster2 extends Image.Transform {
             }
 
             @Override
-            protected void setNormalizedLineToTransform(int yy, MutablePoints points, int offset) throws Throwable {
+            protected void setNormalizedLineToTransform(MutablePoints points, int offset) throws Throwable {
                 for (int xx=0; line.size()>xx; ++xx, ++offset) {
                     Map<Vector, Vector> colorMap3;
                     Function<Vector, Vector> nearestCenter3;

@@ -37,7 +37,7 @@ public class Hue extends Image.Transform {
             private final ColorConverter colorConverter=new ColorConverter();
 
             @Override
-            protected void setNormalizedLineToTransform(int yy, MutablePoints points, int offset) throws Throwable {
+            protected void setNormalizedLineToTransform(MutablePoints points, int offset) {
                 for (int xx=0; width()>xx; ++xx, ++offset) {
                     colorConverter.rgbToHslv(
                             line.getNormalized(2, xx),

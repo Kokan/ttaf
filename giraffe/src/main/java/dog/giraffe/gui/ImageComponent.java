@@ -32,10 +32,6 @@ public class ImageComponent extends JComponent {
         }
     }
 
-    public void setImage(BufferedImage image) {
-        setImages(List.of(image));
-    }
-
     public void setImages(List<BufferedImage> images) {
         this.images=images;
         repaint();

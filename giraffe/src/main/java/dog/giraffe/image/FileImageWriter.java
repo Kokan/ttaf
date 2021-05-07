@@ -29,11 +29,6 @@ public class FileImageWriter implements ImageWriter {
         }
 
         @Override
-        public void set(int dimension, int xx, double value) {
-            data[dimensions*xx+dimension]=((byte)value)&0xff;
-        }
-
-        @Override
         public void setNormalized(int dimension, int xx, double value) {
             data[dimensions*xx+dimension]=UnsignedByteArrayPoints.denormalize(value)&0xff;
         }

@@ -1,12 +1,12 @@
 package dog.giraffe.isodata;
 
-import dog.giraffe.kmeans.CannotSelectInitialCentersException;
 import dog.giraffe.Clusters;
 import dog.giraffe.Context;
-import dog.giraffe.kmeans.InitialCenters;
 import dog.giraffe.MeanDouble;
-import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.Sum;
+import dog.giraffe.kmeans.CannotSelectInitialCentersException;
+import dog.giraffe.kmeans.InitialCenters;
+import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.points.Distance;
 import dog.giraffe.points.Mean;
 import dog.giraffe.points.Points;
@@ -305,8 +305,8 @@ public class Isodata<P extends Points> {
                 Sum errorSum=context.sum().create(end-start);
                 for (int ii=start; end>ii; ++ii) {
                     Vector point=points.get(ii);
-                    Vector center=nearestCenter(centers, this.points.distance(), point);
-                    errorSum.add(this.points.distance().distance(center, point));
+                    Vector center=nearestCenter(centers, point);
+                    errorSum.add(Distance.distance(center, point));
                     voronoi.get(center).add(point);
                 }
                 continuation2.completed(new SimpleEntry<>(errorSum, voronoi));
@@ -395,7 +395,7 @@ public class Isodata<P extends Points> {
          }
          for (int i=0;i<p.clusters.size();++i) {
              for (int j=i+1;j<p.clusters.size();++j) {
-                 double d_ij= points.distance().distance(p.clusters.get(i).center, p.clusters.get(j).center);
+                 double d_ij= Distance.distance(p.clusters.get(i).center, p.clusters.get(j).center);
                  dist[i][j] = d_ij;
                  if (i!=j && d_ij < lumping) {
                      map.add(new SimpleEntry<>(i,j));
@@ -514,7 +514,7 @@ public class Isodata<P extends Points> {
             forks.add((continuation2)->{
                 MeanDouble mean = new MeanDouble(cluster.points.size(), context.sum());
                 for (Vector point: cluster.points) {
-                    double distance = points.distance().distance(cluster.center, point);
+                    double distance = Distance.distance(cluster.center, point);
                     mean=mean.add(distance);
                     s.add(distance);
                 }
@@ -595,11 +595,11 @@ public class Isodata<P extends Points> {
                 context.executor());
     }
 
-    public static Vector nearestCenter(Iterable<Vector> centers, Distance distance, Vector point) {
+    public static Vector nearestCenter(Iterable<Vector> centers, Vector point) {
         Vector bestCenter=null;
         double bestDistance=Double.POSITIVE_INFINITY;
         for (Vector cc: centers) {
-            double dd=distance.distance(cc, point);
+            double dd=Distance.distance(cc, point);
             if (dd<bestDistance) {
                 bestCenter=cc;
                 bestDistance=dd;

@@ -11,8 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Images {
-
-    public static List<BufferedImage> NO_IMAGE;
+    public static final List<BufferedImage> NO_IMAGE;
 
     static {
         BufferedImage noImage=new BufferedImage(800, 600, BufferedImage.TYPE_BYTE_GRAY);

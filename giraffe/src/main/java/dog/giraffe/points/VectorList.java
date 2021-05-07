@@ -18,33 +18,6 @@ public class VectorList extends MutablePoints {
     }
 
     @Override
-    public void addNormalized(Vector vector) {
-        add(vector);
-    }
-
-    @Override
-    public void addTo(MutablePoints points, int from, int to) {
-        for (; to>from; ++from) {
-            points.add(this.points.get(from));
-        }
-    }
-
-    @Override
-    public void clear(int size) {
-        if (points.size()>size) {
-            points.subList(size, points.size()).clear();
-        }
-        for (Vector vector: points) {
-            vector.clear();
-        }
-        if (points.size()<size) {
-            while (points.size()<size) {
-                points.add(new Vector(dimensions()));
-            }
-        }
-    }
-
-    @Override
     public Vector get(int index) {
         return points.get(index);
     }
@@ -72,11 +45,6 @@ public class VectorList extends MutablePoints {
     @Override
     public void set(int dimension, int index, double value) {
         points.get(index).coordinate(dimension, value);
-    }
-
-    @Override
-    public void set(int index, Vector vector) {
-        points.set(index, vector.copy());
     }
 
     @Override

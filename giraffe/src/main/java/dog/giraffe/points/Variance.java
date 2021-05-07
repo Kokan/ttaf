@@ -39,15 +39,6 @@ public class Variance {
         }
     }
 
-    public void clear() {
-        sums.forEach(Sum::clear);
-        addends=0;
-    }
-
-    public Vector mean() {
-        return mean;
-    }
-
     public Vector variance() {
         if (addends==0) {
             throw new RuntimeException("division by zero");

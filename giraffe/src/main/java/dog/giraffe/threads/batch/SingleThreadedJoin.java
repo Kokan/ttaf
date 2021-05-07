@@ -8,7 +8,7 @@ public class SingleThreadedJoin<T> implements Continuation<T> {
     private T result;
     private Throwable throwable;
 
-    public boolean completed() throws Throwable {
+    public boolean completed() {
         if (hasThrowable) {
             throw new RuntimeException(throwable);
         }
@@ -16,7 +16,7 @@ public class SingleThreadedJoin<T> implements Continuation<T> {
     }
 
     @Override
-    public void completed(T result) throws Throwable {
+    public void completed(T result) {
         if (hasResult || hasThrowable) {
             throw new RuntimeException("already completed");
         }
@@ -25,7 +25,7 @@ public class SingleThreadedJoin<T> implements Continuation<T> {
     }
 
     @Override
-    public void failed(Throwable throwable) throws Throwable {
+    public void failed(Throwable throwable) {
         if (hasResult || hasThrowable) {
             throw new RuntimeException("already completed");
         }

@@ -1,6 +1,5 @@
 package dog.giraffe;
 
-import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Executor;
 import dog.giraffe.threads.StoppedException;
 import java.util.Random;
@@ -16,8 +15,6 @@ public interface Context extends AutoCloseable {
     void close();
 
     Executor executor();
-
-    Continuation<Throwable> logger();
 
     Random random();
 

@@ -42,17 +42,17 @@ public class Outputs {
         }
 
         @Override
-        public String hue(Transform.Hue hue) {
+        public String hue() {
             return CARD_EMPTY;
         }
 
         @Override
-        public String hyperHue(Transform.HyperHue hyperHue) {
+        public String hyperHue() {
             return CARD_EMPTY;
         }
 
         @Override
-        public String intensity(Transform.Intensity intensity) {
+        public String intensity() {
             return CARD_EMPTY;
         }
 
@@ -62,13 +62,12 @@ public class Outputs {
         }
 
         @Override
-        public String normalizeMinMax(Transform.NormalizeMinMax normalizeMinMax) {
+        public String normalizeMinMax() {
             return CARD_EMPTY;
         }
 
         @Override
-        public String normalizedDifferenceVegetationIndex(
-                Transform.NormalizedDifferenceVegetationIndex normalizedDifferenceVegetationIndex) {
+        public String normalizedDifferenceVegetationIndex() {
             return CARD_EMPTY;
         }
 
@@ -104,17 +103,17 @@ public class Outputs {
         }
 
         @Override
-        public String hue(Transform.Hue hue) {
+        public String hue() {
             return "hue";
         }
 
         @Override
-        public String hyperHue(Transform.HyperHue hyperHue) {
+        public String hyperHue() {
             return "hyper hue";
         }
 
         @Override
-        public String intensity(Transform.Intensity intensity) {
+        public String intensity() {
             return "intensity";
         }
 
@@ -124,13 +123,12 @@ public class Outputs {
         }
 
         @Override
-        public String normalizeMinMax(Transform.NormalizeMinMax normalizeMinMax) {
+        public String normalizeMinMax() {
             return "normalize min/max";
         }
 
         @Override
-        public String normalizedDifferenceVegetationIndex(
-                Transform.NormalizedDifferenceVegetationIndex normalizedDifferenceVegetationIndex) {
+        public String normalizedDifferenceVegetationIndex() {
             return "normalized difference vegetation index";
         }
 
@@ -264,17 +262,17 @@ public class Outputs {
             }
 
             @Override
-            public Function<Image, Image> hue(Transform.Hue hue) {
+            public Function<Image, Image> hue() {
                 return Hue::create;
             }
 
             @Override
-            public Function<Image, Image> hyperHue(Transform.HyperHue hyperHue) {
+            public Function<Image, Image> hyperHue() {
                 return HyperHue::create;
             }
 
             @Override
-            public Function<Image, Image> intensity(Transform.Intensity intensity) {
+            public Function<Image, Image> intensity() {
                 return Intensity::create;
             }
 
@@ -284,13 +282,12 @@ public class Outputs {
             }
 
             @Override
-            public Function<Image, Image> normalizeMinMax(Transform.NormalizeMinMax normalizeMinMax) {
+            public Function<Image, Image> normalizeMinMax() {
                 return (image)->Normalize.createMinMax(image, mask);
             }
 
             @Override
-            public Function<Image, Image> normalizedDifferenceVegetationIndex(
-                    Transform.NormalizedDifferenceVegetationIndex normalizedDifferenceVegetationIndex) {
+            public Function<Image, Image> normalizedDifferenceVegetationIndex() {
                 return NormalizedDifferenceVegetationIndex::create;
             }
 

@@ -1,20 +1,12 @@
 package dog.giraffe.points;
 
-import dog.giraffe.Sum;
 import dog.giraffe.threads.Function;
 
 public class Distance {
-    public static final Distance DISTANCE=new Distance();
-
-    public void addDistanceTo(Vector center, Vector point, Sum sum) {
-        int dimensions=center.dimensions();
-        for (int dd=0; dimensions>dd; ++dd) {
-            double di=center.coordinate(dd)-point.coordinate(dd);
-            sum.add(di*di);
-        }
+    private Distance() {
     }
 
-    public double distance(Vector center, Vector point) {
+    public static double distance(Vector center, Vector point) {
         int dimensions=center.dimensions();
         double distance=0.0;
         for (int dd=0; dimensions>dd; ++dd) {
@@ -32,7 +24,7 @@ public class Distance {
         Vector bestCenter=null;
         double bestDistance=Double.POSITIVE_INFINITY;
         for (Vector center: centers) {
-            double dd=DISTANCE.distance(center, point);
+            double dd=distance(center, point);
             if (dd<bestDistance) {
                 bestCenter=center;
                 bestDistance=dd;

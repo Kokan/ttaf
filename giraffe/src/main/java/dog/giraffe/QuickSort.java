@@ -112,52 +112,6 @@ public class QuickSort {
 				:first;
 	}
 
-	/**
-	public static void sort(Compare compare, int from, Swap swap, int to) {
-		sort(from, new PivotPropertyGreaterOrEqual(compare), swap, to);
-	}
-	
-	public static void sort(int from, PivotProperty pivotProperty, Swap swap, int to) {
-		int size=to-from;
-		if (1>=size) {
-			return;
-		}
-		if (2==size) {
-			if (0<pivotProperty.compare.compare(from, from+1)) {
-				swap.swap(from, from+1);
-			}
-			return;
-		}
-		int split=splitPivot(from, pivotProperty, swap, to);
-		sort(from, pivotProperty, swap, split);
-		sort(split+1, pivotProperty, swap, to);
-	}
-
-	 public static int splitPivot(int from, PivotProperty property, Swap swap, int to) {
-	 int size=to-from;
-	 if (1>=size) {
-	 return from;
-	 }
-	 if (2==size) {
-	 if (0<property.compare.compare(from, from+1)) {
-	 swap.swap(from, from+1);
-	 }
-	 return from;
-	 }
-	 int last=to-1;
-	 int pivotIndex=pivotIndex(property.compare, from, last);
-	 if (pivotIndex!=last) {
-	 swap.swap(pivotIndex, last);
-	 }
-	 property.pivotIndex=last;
-	 int split=split(from, property, swap, last);
-	 if (split!=last) {
-	 swap.swap(split, last);
-	 }
-	 return split;
-	 }
-	*/
-
 	public static int split(int from, Property property, Swap swap, int to) {
 		--to;
 		while (from<=to) {

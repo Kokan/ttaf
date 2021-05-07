@@ -20,7 +20,7 @@ public class NormalizedHyperHue extends Image.Transform {
     }
 
     @Override
-    public MutablePoints createPoints(int dimensions, int expectedSize) throws Throwable {
+    public MutablePoints createPoints(int dimensions, int expectedSize) {
         return new FloatArrayPoints(dimensions, expectedSize);
     }
 
@@ -41,7 +41,7 @@ public class NormalizedHyperHue extends Image.Transform {
             private final double[] temp=new double[dimensions()];
 
             @Override
-            protected void setNormalizedLineToTransform(int yy, MutablePoints points, int offset) throws Throwable {
+            protected void setNormalizedLineToTransform(MutablePoints points, int offset) {
                 for (int xx=0; width()>xx; ++xx, ++offset) {
                     double dotProduct=0.0;
                     for (int dd=0; dimensions()>dd; ++dd) {

@@ -33,12 +33,11 @@ public interface ClusterColors {
                 intensity.put(vector, Math.sqrt(intensity2/vector2.dimensions()));
                 normalized.put(vector, vector2);
             }));
-            return colors(clusters, intensity, normalized, points);
+            return colors(clusters, intensity, normalized);
         }
 
         protected abstract Map<Vector, Vector> colors(
-                List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized,
-                Points points);
+                List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized);
     }
 
     abstract class Gray extends Abstract {
@@ -57,8 +56,7 @@ public interface ClusterColors {
             return new Gray(dimensions) {
                 @Override
                 protected Map<Vector, Vector> colors(
-                        List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized,
-                        Points points) {
+                        List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized) {
                     Set<Double> remainingGrays=new TreeSet<>();
                     Map<List<Vector>, Void> remainingClusters=new TreeMap<>(Lists.lexicographicComparator());
                     for (int cc=0; clusters.size()>cc; ++cc) {
@@ -111,8 +109,7 @@ public interface ClusterColors {
             return new RGB() {
                 @Override
                 protected Map<Vector, Vector> colors(
-                        List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized,
-                        Points points) {
+                        List<List<Vector>> clusters, Map<Vector, Double> intensity, Map<Vector, Vector> normalized) {
                     ColorConverter colorConverter=new ColorConverter();
                     Map<Vector, Double> hues=new IdentityHashMap<>(normalized.size());
                     normalized.forEach((vector, vector2)->{

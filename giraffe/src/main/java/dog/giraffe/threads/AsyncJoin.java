@@ -1,26 +1,24 @@
 package dog.giraffe.threads;
 
-public class AsyncJoin<T> implements Continuation<T> {
+public class AsyncJoin implements Continuation<Void> {
     private Throwable error;
     private boolean hasError;
     private boolean hasResult;
     private final Object lock=new Object();
-    private T result;
 
     @Override
-    public void completed(T result) throws Throwable {
+    public void completed(Void result) {
         synchronized (lock) {
             if (hasError || hasResult) {
                 throw new RuntimeException("already completed");
             }
             hasResult=true;
-            this.result=result;
             lock.notifyAll();
         }
     }
 
     @Override
-    public void failed(Throwable throwable) throws Throwable {
+    public void failed(Throwable throwable) {
         synchronized (lock) {
             if (hasError || hasResult) {
                 throw new RuntimeException("already completed");
@@ -31,14 +29,14 @@ public class AsyncJoin<T> implements Continuation<T> {
         }
     }
 
-    public T join() throws Throwable {
+    public void join() throws Throwable {
         synchronized (lock) {
             while (true) {
                 if (hasError) {
                     throw new RuntimeException(error);
                 }
                 if (hasResult) {
-                    return result;
+                    return;
                 }
                 lock.wait();
             }

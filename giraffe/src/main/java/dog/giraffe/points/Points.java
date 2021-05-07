@@ -21,7 +21,7 @@ public abstract class Points {
     protected final Mean.Factory mean;
     protected final Variance.Factory variance;
 
-    public Points(int dimensions) {
+    protected Points(int dimensions) {
         if (0>dimensions) {
             throw new IllegalArgumentException(Integer.toString(dimensions));
         }
@@ -79,10 +79,6 @@ public abstract class Points {
         return dimensions;
     }
 
-    public Distance distance() {
-        return Distance.DISTANCE;
-    }
-
     public double distance(Vector center, int index) {
         double distance=0.0;
         for (int dd=0; dimensions>dd; ++dd) {
@@ -118,12 +114,12 @@ public abstract class Points {
 
     public abstract double minValue();
 
-    public Vector perform(double defaultValue, int offset, DoubleBinaryOperator operator, int size) {
+    Vector perform(double defaultValue, DoubleBinaryOperator operator) {
         Vector result=new Vector(dimensions);
         for (int dd=0; dimensions>dd; ++dd) {
             result.coordinate(dd, defaultValue);
         }
-        for (; 0<size; ++offset, --size) {
+        for (int offset=0, size=size(); 0<size; ++offset, --size) {
             for (int dd=0; dimensions>dd; ++dd) {
                 result.coordinate(dd, operator.applyAsDouble(result.coordinate(dd), get(dd, offset)));
             }
@@ -135,12 +131,12 @@ public abstract class Points {
 
     public abstract List<Points> split(int parts);
 
-    public Vector sum(int offset, DoubleUnaryOperator operator, int size, List<Sum> sums) {
+    Vector sum(DoubleUnaryOperator operator, List<Sum> sums) {
         for (int dd=0; dimensions>dd; ++dd) {
             sums.get(dd).clear();
         }
         Vector result=new Vector(dimensions);
-        for (; 0<size; ++offset, --size) {
+        for (int offset=0, size=size(); 0<size; ++offset, --size) {
             for (int dd=0; dimensions>dd; ++dd) {
                 sums.get(dd).add(operator.applyAsDouble(get(dd, offset)));
             }
@@ -155,7 +151,7 @@ public abstract class Points {
         return variance;
     }
 
-    public int widestDimension() {
+    int widestDimension() {
         double widestDifference=Double.NEGATIVE_INFINITY;
         int widestDimension=0;
         for (int dd=0; dimensions>dd; ++dd) {

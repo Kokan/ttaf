@@ -82,21 +82,21 @@ public interface Transform {
     class Hue implements Transform {
         @Override
         public <R> R visit(Visitor<R> visitor) {
-            return visitor.hue(this);
+            return visitor.hue();
         }
     }
 
     class HyperHue implements Transform {
         @Override
         public <R> R visit(Visitor<R> visitor) {
-            return visitor.hyperHue(this);
+            return visitor.hyperHue();
         }
     }
 
     class Intensity implements Transform {
         @Override
         public <R> R visit(Visitor<R> visitor) {
-            return visitor.intensity(this);
+            return visitor.intensity();
         }
     }
 
@@ -118,14 +118,14 @@ public interface Transform {
     class NormalizeMinMax implements Transform {
         @Override
         public <R> R visit(Visitor<R> visitor) {
-            return visitor.normalizeMinMax(this);
+            return visitor.normalizeMinMax();
         }
     }
 
     class NormalizedDifferenceVegetationIndex implements Transform {
         @Override
         public <R> R visit(Visitor<R> visitor) {
-            return visitor.normalizedDifferenceVegetationIndex(this);
+            return visitor.normalizedDifferenceVegetationIndex();
         }
     }
 
@@ -170,17 +170,17 @@ public interface Transform {
     interface Visitor<R> {
         R cluster(Cluster cluster);
 
-        R hue(Hue hue);
+        R hue();
 
-        R hyperHue(HyperHue hyperHue);
+        R hyperHue();
 
-        R intensity(Intensity intensity);
+        R intensity();
 
         R normalizeDeviation(NormalizeDeviation normalizeDeviation);
 
-        R normalizeMinMax(NormalizeMinMax normalizeMinMax);
+        R normalizeMinMax();
 
-        R normalizedDifferenceVegetationIndex(NormalizedDifferenceVegetationIndex normalizedDifferenceVegetationIndex);
+        R normalizedDifferenceVegetationIndex();
 
         R normalizedHyperHue(NormalizedHyperHue normalizedHyperHue);
 

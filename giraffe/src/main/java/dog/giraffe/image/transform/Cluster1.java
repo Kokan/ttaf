@@ -41,7 +41,7 @@ public class Cluster1 extends Image.Transform {
     }
 
     @Override
-    public MutablePoints createPoints(int dimensions, int expectedSize) throws Throwable {
+    public MutablePoints createPoints(int dimensions, int expectedSize) {
         return new UnsignedByteArrayPoints(dimensions, expectedSize);
     }
 
@@ -129,7 +129,7 @@ public class Cluster1 extends Image.Transform {
             private final Vector point=new Vector(line.dimensions());
 
             @Override
-            protected void setNormalizedLineToTransform(int yy, MutablePoints points, int offset) throws Throwable {
+            protected void setNormalizedLineToTransform(MutablePoints points, int offset) throws Throwable {
                 for (int xx=0; line.size()>xx; ++xx, ++offset) {
                     for (int dd=0; line.dimensions()>dd; ++dd) {
                         point.coordinate(dd, line.get(dd, xx));

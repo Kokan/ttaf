@@ -168,11 +168,6 @@ public abstract class FileImageReader implements ImageReader {
             private int[] buffer=new int[dimensions*width];
 
             @Override
-            public Image image() {
-                return FileImageReader.this;
-            }
-
-            @Override
             public void setNormalizedLineTo(int yy, MutablePoints points, int offset) throws Throwable {
                 ImageReadParam readParam=new ImageReadParam();
                 readParam.setSourceRegion(new Rectangle(0, yy, width, 1));

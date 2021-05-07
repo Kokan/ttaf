@@ -17,11 +17,6 @@ public class BufferedImageWriter implements ImageWriter {
         }
 
         @Override
-        public void set(int dimension, int xx, double value) {
-            data[dimensions*(yy*width+xx)+dimension]=(byte)value;
-        }
-
-        @Override
         public void setNormalized(int dimension, int xx, double value) {
             data[dimensions*(yy*width+xx)+dimension]=UnsignedByteArrayPoints.denormalize(value);
         }
@@ -47,10 +42,6 @@ public class BufferedImageWriter implements ImageWriter {
 
     @Override
     public void close() throws IOException {
-    }
-
-    public static BufferedImageWriter create(int width, int height, int dimensions) {
-        return new BufferedImageWriter(dimensions, height, null, width);
     }
 
     public static BufferedImageWriter create(int width, int height, int dimensions, Consumer<BufferedImage> consumer) {

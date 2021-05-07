@@ -18,33 +18,6 @@ public class UnsignedShortArrayPoints extends ArrayPoints<short[]> {
         this(new short[dimensions*expectedSize], dimensions, 0, 0);
     }
 
-    public void add(short coordinate0) {
-        ensureSize(size+1);
-        data[dimensions*size]=coordinate0;
-        ++size;
-    }
-
-    public void add(short coordinate0, short coordinate1) {
-        ensureSize(size+1);
-        data[dimensions*size]=coordinate0;
-        data[dimensions*size+1]=coordinate1;
-        ++size;
-    }
-
-    public void add(short coordinate0, short coordinate1, short coordinate2) {
-        ensureSize(size+1);
-        data[dimensions*size]=coordinate0;
-        data[dimensions*size+1]=coordinate1;
-        data[dimensions*size+2]=coordinate2;
-        ++size;
-    }
-
-    public void add(short[] vector) {
-        ensureSize(size+1);
-        System.arraycopy(vector, 0, data, dimensions*size, dimensions);
-        ++size;
-    }
-
     @Override
     public void add(Vector vector) {
         ensureSize(size+1);
@@ -55,39 +28,7 @@ public class UnsignedShortArrayPoints extends ArrayPoints<short[]> {
     }
 
     @Override
-    public void addFrom(UnsignedShortArrayPoints points, int from, int to) {
-        int length=to-from;
-        ensureSize(size+length);
-        System.arraycopy(
-                points.data, points.dimensions*(points.offset+from),
-                data, dimensions*size,
-                dimensions*length);
-        size+=length;
-    }
-
-    @Override
-    public void addNormalized(Vector vector) {
-        ensureSize(size+1);
-        for (int dd=0; dimensions>dd; ++dd) {
-            data[dimensions*size+dd]=denormalize(vector.coordinate(dd));
-        }
-        ++size;
-    }
-
-    @Override
-    public void addTo(MutablePoints points, int from, int to) {
-        points.addFrom(this, from, to);
-    }
-
-    @Override
-    public void clear(int size) {
-        ensureSize(size);
-        this.size=size;
-        Arrays.fill(data, 0, dimensions*size, (short)0);
-    }
-
-    @Override
-    public void copy(int from, int to, int length) {
+    protected void copy(int from, int to, int length) {
         System.arraycopy(
                 data, dimensions*(offset+from),
                 data, dimensions*(offset+to),
@@ -138,13 +79,6 @@ public class UnsignedShortArrayPoints extends ArrayPoints<short[]> {
     @Override
     public void set(int dimension, int index, double value) {
         data[dimension+dimensions*index]=(short)value;
-    }
-
-    @Override
-    public void set(int index, Vector vector) {
-        for (int dd=0, ii=dimensions*(offset+index); dimensions>dd; ++dd, ++ii) {
-            data[ii]=(short)vector.coordinate(dd);
-        }
     }
 
     @Override

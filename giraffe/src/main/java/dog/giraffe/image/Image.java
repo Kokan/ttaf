@@ -20,7 +20,7 @@ public interface Image extends Log {
                 this.width=width;
             }
 
-            public Dimensions(Image image) throws Throwable {
+            public Dimensions(Image image) {
                 this(image.dimensions(), image.height(), image.width());
             }
         }
@@ -40,12 +40,12 @@ public interface Image extends Log {
         }
 
         @Override
-        public int dimensions() throws Throwable {
+        public int dimensions() {
             return dimensions;
         }
 
         @Override
-        public int height() throws Throwable {
+        public int height(){
             return height;
         }
 
@@ -66,7 +66,7 @@ public interface Image extends Log {
         protected abstract void prepareImpl(Context context, Continuation<Dimensions> continuation) throws Throwable;
 
         @Override
-        public int width() throws Throwable {
+        public int width(){
             return width;
         }
     }
@@ -81,18 +81,12 @@ public interface Image extends Log {
             }
 
             @Override
-            public Image image() {
-                return Transform.this;
-            }
-
-            @Override
             public void setNormalizedLineTo(int yy, MutablePoints points, int offset) throws Throwable {
                 reader.setNormalizedLineTo(yy, line, 0);
-                setNormalizedLineToTransform(yy, points, offset);
+                setNormalizedLineToTransform(points, offset);
             }
 
-            protected abstract void setNormalizedLineToTransform(
-                    int yy, MutablePoints points, int offset) throws Throwable;
+            protected abstract void setNormalizedLineToTransform(MutablePoints points, int offset) throws Throwable;
         }
 
         protected final Image image;
@@ -108,29 +102,22 @@ public interface Image extends Log {
         }
     }
 
+    @FunctionalInterface
     interface Reader {
-        default void addNormalizedLineTo(int yy, MutablePoints points) throws Throwable {
-            int size=points.size();
-            points.size(size+image().width());
-            setNormalizedLineTo(yy, points, size);
-        }
-
-        Image image();
-
         void setNormalizedLineTo(int yy, MutablePoints points, int offset) throws Throwable;
     }
 
     MutablePoints createPoints(int dimensions, int expectedSize) throws Throwable;
 
-    List<Image> dependencies() throws Throwable;
+    List<Image> dependencies();
 
-    int dimensions() throws Throwable;
+    int dimensions();
 
-    int height() throws Throwable;
+    int height();
 
     void prepare(Context context, Continuation<Void> continuation) throws Throwable;
 
     Reader reader() throws Throwable;
 
-    int width() throws Throwable;
+    int width();
 }

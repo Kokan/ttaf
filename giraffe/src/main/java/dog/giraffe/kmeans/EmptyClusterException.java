@@ -10,10 +10,6 @@ public class EmptyClusterException extends RuntimeException {
         super(message);
     }
 
-    public EmptyClusterException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
     public EmptyClusterException(Throwable cause) {
         super(cause);
     }

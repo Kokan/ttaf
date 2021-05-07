@@ -146,9 +146,10 @@ public interface ParallelSearch<T, U> {
                 else {
                     int newThreads=Math.min(threads-running2, toIndex-nextIndex);
                     if (0<newThreads) {
-                        for (int tt=newThreads; 0<tt; ++nextIndex, --tt) {
-                            ElementCont elementCont=new ElementCont(nextIndex, wakeup);
+                        for (int tt=newThreads; 0<tt; --tt) {
                             int index=nextIndex;
+                            ElementCont elementCont=new ElementCont(index, wakeup);
+                            ++nextIndex;
                             executor.execute(()->{
                                 try {
                                     if (competed()) {
