@@ -9,6 +9,7 @@ import dog.giraffe.image.Image;
 import dog.giraffe.image.ImageReader;
 import dog.giraffe.image.ImageWriter;
 import dog.giraffe.image.transform.Mask;
+import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import dog.giraffe.threads.Function;
@@ -263,43 +264,50 @@ class OutputPanel {
     }
 
     private void renderOutput(ActionEvent event) {
-        logModel.setLog(Collections.emptyMap());
-        images=null;
-        preview.setImages(Images.NO_IMAGE);
-        gui.<Pair<List<BufferedImage>, Map<String, Object>>>run(
-                "render",
+        renderOutputs(gui, Collections.singletonList(this));
+    }
+
+    static void renderOutputs(GUI gui, List<OutputPanel> outputPanels) {
+        outputPanels.forEach((outputPanel)->outputPanel.setImages(null, Collections.emptyMap()));
+        gui.<List<Pair<List<BufferedImage>, Map<String, Object>>>>run(
+                String.format("Rendering %1$d image%2$s", outputPanels.size(), (1==outputPanels.size())?"":"s"),
                 (context, continuation)->{
                     if (null==gui.model.inputFile) {
                         throw new RuntimeException("no input file selected");
                     }
                     Mask mask=Outputs.mask(gui.model.mask);
-                    Function<Image, Image> imageMap=Function.identity();
-                    for (Transform transform: modelOutput.transforms) {
-                        imageMap=Outputs.transformToImageMap(mask, transform).compose(imageMap);
-                    }
-                    Supplier<ImageReader> imageReader=BufferedImageReader.factory(gui.model.inputFile);
-                    AtomicReference<BufferedImage> imageResult=new AtomicReference<>();
-                    AtomicReference<Map<String, Object>> logResult=new AtomicReference<>();
-                    ImageWriter.Factory imageWriter=BufferedImageWriter.factory(imageResult::set);
-                    ImageWriter.write(
-                            context,
-                            imageMap,
-                            imageReader,
-                            imageWriter,
-                            logResult::set,
-                            Continuations.map(
-                                    (input, continuation2)->
-                                        continuation2.completed(new Pair<>(
-                                                Images.resize(context::checkStopped, imageResult.get()),
-                                                logResult.get())),
-                                    continuation));
+                    List<AsyncSupplier<Pair<List<BufferedImage>, Map<String, Object>>>> steps=new ArrayList<>();
+                    outputPanels.forEach((outputPanel)->steps.add((continuation2)->{
+                        context.checkStopped();
+                        Function<Image, Image> imageMap=Function.identity();
+                        for (Transform transform: outputPanel.modelOutput.transforms) {
+                            imageMap=Outputs.transformToImageMap(mask, transform).compose(imageMap);
+                        }
+                        Supplier<ImageReader> imageReader=BufferedImageReader.factory(Paths.get(gui.model.inputFile));
+                        AtomicReference<BufferedImage> imageResult=new AtomicReference<>();
+                        AtomicReference<Map<String, Object>> logResult=new AtomicReference<>();
+                        ImageWriter.Factory imageWriter=BufferedImageWriter.factory(imageResult::set);
+                        ImageWriter.write(
+                                context,
+                                imageMap,
+                                imageReader,
+                                imageWriter,
+                                logResult::set,
+                                Continuations.map(
+                                        (input, continuation3)->
+                                                continuation3.completed(new Pair<>(
+                                                        Images.resize(context::checkStopped, imageResult.get()),
+                                                        logResult.get())),
+                                        continuation2));
+                    }));
+                    Continuations.sequence(steps, continuation, context.executor());
                 },
                 new Continuation<>() {
                     @Override
-                    public void completed(Pair<List<BufferedImage>, Map<String, Object>> result) {
-                        images=result.first;
-                        preview.setImages(images);
-                        logModel.setLog(result.second);
+                    public void completed(List<Pair<List<BufferedImage>, Map<String, Object>>> result) {
+                        for (int ii=0; outputPanels.size()>ii; ++ii) {
+                            outputPanels.get(ii).setImages(result.get(ii).first, result.get(ii).second);
+                        }
                     }
 
                     @Override
@@ -332,7 +340,7 @@ class OutputPanel {
             chooser.setCurrentDirectory(Paths.get(userDir).toFile());
         }
         if (null!=gui.model.inputFile) {
-            Path path=gui.model.inputFile.getParent();
+            Path path=Paths.get(gui.model.inputFile).getParent();
             if (null!=path) {
                 chooser.setCurrentDirectory(path.toFile());
             }
@@ -354,6 +362,19 @@ class OutputPanel {
                 }
             }
         }
+    }
+
+    void setImages(List<BufferedImage> images, Map<String, Object> log) {
+        if (null==images) {
+            this.images=null;
+            preview.setImages(Images.NO_IMAGE);
+        }
+        else {
+            this.images=images;
+            preview.setImages(images);
+        }
+        logModel.setLog(log);
+        gui.viewerPanel.modelChanged();
     }
 
     void transformChanged(Transform transform) {

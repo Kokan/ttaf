@@ -1,23 +1,37 @@
 package dog.giraffe.gui;
 
 import dog.giraffe.Icons;
+import dog.giraffe.Pair;
 import dog.giraffe.SwingContext;
 import dog.giraffe.gui.model.Model;
 import dog.giraffe.gui.model.Output;
-import dog.giraffe.threads.Consumer;
+import dog.giraffe.gui.model.Transform;
+import dog.giraffe.image.BufferedImageReader;
+import dog.giraffe.image.BufferedImageWriter;
+import dog.giraffe.image.Image;
+import dog.giraffe.image.ImageReader;
+import dog.giraffe.image.ImageWriter;
+import dog.giraffe.image.transform.Mask;
+import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
+import dog.giraffe.threads.Function;
+import dog.giraffe.threads.Supplier;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -47,6 +61,7 @@ public class GUI {
     private Path settingsFile;
     private JLabel settingsFileLabel;
     private JTabbedPane tabbedPane;
+    ViewerPanel viewerPanel;
 
     private void addOutput(ActionEvent event) {
         Output modelOutput=Output.create();
@@ -132,14 +147,20 @@ public class GUI {
         inputImagePanel=new InputImagePanel(this);
         topPanel.add(inputImagePanel.component(), BorderLayout.CENTER);
 
-        JPanel addOutputPanel=new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topPanel.add(addOutputPanel, BorderLayout.SOUTH);
+        JPanel outputsPanel=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topPanel.add(outputsPanel, BorderLayout.SOUTH);
         JButton addOutput=new JButton("Add output");
         addOutput.addActionListener(this::addOutput);
-        addOutputPanel.add(addOutput);
+        outputsPanel.add(addOutput);
+        JButton renderAllOutputs=new JButton("Render all outputs");
+        renderAllOutputs.addActionListener(this::renderAllOutputs);
+        outputsPanel.add(renderAllOutputs);
 
         maskPanel=new MaskPanel(this);
         optionsPanel.add(maskPanel.component(), BorderLayout.CENTER);
+
+        viewerPanel=new ViewerPanel(this);
+        tabbedPane.add("Viewer", viewerPanel.component());
 
         modelChanged();
 
@@ -180,14 +201,19 @@ public class GUI {
             }
         }
         finally {
-            outputPanels.forEach((outputPanel)->tabbedPane.remove(outputPanel.component()));
-            outputPanels.clear();
-            for (int ii=0; model.outputs.size()>ii; ++ii) {
-                OutputPanel outputPanel=new OutputPanel(this, model.outputs.get(ii));
-                outputPanels.add(outputPanel);
-                tabbedPane.insertTab("Output", null, outputPanel.component(), null, ii+1);
+            try {
+                outputPanels.forEach((outputPanel)->tabbedPane.remove(outputPanel.component()));
+                outputPanels.clear();
+                for (int ii=0; model.outputs.size()>ii; ++ii) {
+                    OutputPanel outputPanel=new OutputPanel(this, model.outputs.get(ii));
+                    outputPanels.add(outputPanel);
+                    tabbedPane.insertTab("Output", null, outputPanel.component(), null, ii+1);
+                }
+                outputPanels.forEach(OutputPanel::modelChanged);
             }
-            outputPanels.forEach(OutputPanel::modelChanged);
+            finally {
+                viewerPanel.modelChanged();
+            }
         }
     }
 
@@ -195,6 +221,10 @@ public class GUI {
         outputPanels.remove(outputPanel);
         tabbedPane.remove(outputPanel.component());
         model.outputs.remove(outputPanel.modelOutput);
+    }
+
+    private void renderAllOutputs(ActionEvent event) {
+        OutputPanel.renderOutputs(this, outputPanels);
     }
 
     <T> void run(String title, AsyncTask<T> task, Continuation<T> continuation) {
@@ -213,7 +243,6 @@ public class GUI {
                         task.run(subContext, continuation2);
                     }
                     catch (Throwable throwable) {
-                        System.out.println("run catch "+throwable);
                         continuation2.failed(throwable);
                     }
                 });

@@ -215,6 +215,29 @@ public class Continuations {
         });
     }
 
+    public static <T> void sequence(
+            List<AsyncSupplier<T>> steps, Continuation<List<T>> continuation, Executor executor) throws Throwable {
+        sequence(steps, continuation, executor, new ArrayList<>(steps.size()));
+    }
+
+    private static <T> void sequence(
+            List<AsyncSupplier<T>> steps, Continuation<List<T>> continuation, Executor executor,
+            List<T> results) throws Throwable {
+        if (steps.size()<=results.size()) {
+            continuation.completed(results);
+            return;
+        }
+        steps.get(results.size()).get(
+                Continuations.async(
+                        Continuations.map(
+                                (result, continuation2)->{
+                                    results.add(result);
+                                    sequence(steps, continuation2, executor, results);
+                                },
+                                continuation),
+                        executor));
+    }
+
     public static <T> Continuation<T> singleRun(Continuation<T> continuation) {
         return SingleRunContinuation.wrap(continuation);
     }

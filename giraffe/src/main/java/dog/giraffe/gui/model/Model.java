@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Model {
-    public Path inputFile;
+    public String inputFile;
     public List<HalfPlane> mask;
     public List<Output> outputs;
 

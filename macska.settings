@@ -1,5 +1,5 @@
 {
-  "inputFile" : [ "java.nio.file.Path", "file:///stuff/unistuff/ttaf/P.t.altaica_Tomak_Male.jpg" ],
+  "inputFile" : "../P.t.altaica_Tomak_Male.jpg",
   "mask" : [ "java.util.ArrayList", [ {
     "x1" : 0.0,
     "y1" : 0.0,
@@ -21,15 +21,15 @@
     "x2" : 0.0,
     "y2" : 4.0
   }, {
-    "x1" : 34.0,
-    "y1" : 45.0,
-    "x2" : 56.0,
-    "y2" : 67.0
+    "x1" : 0.0,
+    "y1" : 0.0,
+    "x2" : 0.0,
+    "y2" : 5.0
   }, {
     "x1" : 0.0,
     "y1" : 0.0,
     "x2" : 0.0,
-    "y2" : 6.0
+    "y2" : 63.0
   }, {
     "x1" : 0.0,
     "y1" : 0.0,
@@ -45,30 +45,20 @@
     "y1" : 0.0,
     "x2" : 0.0,
     "y2" : 9.0
-  }, {
-    "x1" : 0.0,
-    "y1" : 0.0,
-    "x2" : 0.0,
-    "y2" : 10.0
   } ] ],
   "outputs" : [ "java.util.ArrayList", [ {
-    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$HyperHue", { } ], [ "dog.giraffe.gui.model.Transform$Cluster", {
-      "algorithm" : "K_MEANS",
-      "bins" : 32,
-      "errorLimit" : 0.95,
-      "initialCentersKDTree" : false,
-      "initialCentersMeanAndFarthest" : true,
-      "initialCentersRandom" : 0,
-      "maxClusters" : 10,
-      "maxIterations" : 10000,
-      "minClusters" : 2,
-      "replaceEmptyClustersFarthest" : true,
-      "replaceEmptyClustersRandom" : 0,
-      "type" : "CLUSTER_1"
+    "transforms" : [ "java.util.ArrayList", [ ] ]
+  }, {
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$Intensity", { } ] ] ]
+  }, {
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$HyperHue", { } ], [ "dog.giraffe.gui.model.Transform$NormalizeDeviation", {
+      "sigma" : 3.0
     } ] ] ]
   }, {
-    "transforms" : [ "java.util.ArrayList", [ ] ]
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$Hue", { } ] ] ]
   }, {
-    "transforms" : [ "java.util.ArrayList", [ ] ]
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$NormalizedDifferenceVegetationIndex", { } ], [ "dog.giraffe.gui.model.Transform$NormalizeDeviation", {
+      "sigma" : 1.0
+    } ] ] ]
   } ] ]
 }

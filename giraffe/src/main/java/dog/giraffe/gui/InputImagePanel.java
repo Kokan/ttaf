@@ -123,13 +123,13 @@ class InputImagePanel {
             chooser.setCurrentDirectory(Paths.get(userDir).toFile());
         }
         if (null!=gui.model.inputFile) {
-            Path path=gui.model.inputFile.getParent();
+            Path path=Paths.get(gui.model.inputFile).getParent();
             if (null!=path) {
                 chooser.setCurrentDirectory(path.toFile());
             }
         }
         if (JFileChooser.APPROVE_OPTION==chooser.showOpenDialog(gui.frame)) {
-            gui.model.inputFile=chooser.getSelectedFile().toPath().toAbsolutePath();
+            gui.model.inputFile=chooser.getSelectedFile().toString();
             try {
                 modelChanged();
             }
@@ -149,8 +149,8 @@ class InputImagePanel {
         height.setText("-");
         channels.setText("-");
         if (null!=gui.model.inputFile) {
-            inputFile.setText(gui.model.inputFile.toString());
-            try (ImageReader ir=FileImageReader.create(gui.model.inputFile)) {
+            inputFile.setText(gui.model.inputFile);
+            try (ImageReader ir=FileImageReader.create(Paths.get(gui.model.inputFile))) {
                 width.setText(Integer.toString(ir.width()));
                 height.setText(Integer.toString(ir.height()));
                 channels.setText(Integer.toString(ir.dimensions()));
