@@ -86,7 +86,6 @@ public class Isodata<P extends Points> {
     private final ReplaceEmptyCluster<P> replaceEmptyCluster;
     private final List<Sum> sums;
     private final Sum sum;
-    private double prevError;
 
     private final Map<String, Double> stats;
 
@@ -98,6 +97,10 @@ public class Isodata<P extends Points> {
 
     private void stats_set(String name, Double value) {
         stats.put(name, value);
+    }
+
+    private Double stats_get(String name) {
+        return stats.get(name);
     }
 
     private void reset(String name) {
@@ -164,7 +167,6 @@ public class Isodata<P extends Points> {
         this.replaceEmptyCluster=replaceEmptyCluster;
         this.sums=sums;
         this.sum=sum;
-        this.prevError=0.0;
         this.stats=new HashMap<>();
     }
 
@@ -223,7 +225,6 @@ public class Isodata<P extends Points> {
                                 continuation2.failed(new CannotSelectInitialCentersException());
                                 return;
                             }
-                            double error=Double.POSITIVE_INFINITY;
                             List<Cluster> clusters = new ArrayList<>(points.size());
                             for (Vector center : centers) {
                               clusters.add(new Cluster(new ArrayList<>(), center));
@@ -251,8 +252,8 @@ public class Isodata<P extends Points> {
                                                for (Vector c : res.keySet()) {
                                                   cl.add(c);
                                                }
-                                               cont.completed(Clusters.createWithStats(cl, error, new HashMap<>(isodata.stats)));
-                                             },continuation), error, 0); },
+                                               cont.completed(Clusters.createWithStats(cl, isodata.stats_get("error"), new HashMap<>(isodata.stats)));
+                                             },continuation), 0, 0); },
                         continuation));
     }
 
@@ -264,8 +265,8 @@ public class Isodata<P extends Points> {
     public void distribute(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
         context.checkStopped();
         double err = sum.sum();
-        double err_bot = prevError*errorLimit;
-        if ((maxIterations<=iteration) || (err > 0 && prevError > 0 && (err > err_bot))) {
+        double err_bot = error*errorLimit;
+        if ((maxIterations<=iteration) || (err > 0 && error > 0 && (err > err_bot))) {
             Map<Vector,List<Vector>> a=new HashMap<>();
             for (Vector center : p.getCenters()) {
                 a.put(center,new ArrayList<>());
@@ -517,13 +518,13 @@ public class Isodata<P extends Points> {
                 forks,
                 Continuations.map(
                         (results, continuation2)->{
-                            prevError = sum.sum();
+                            double error2 = sum.sum();
 
                             sum.clear();
                             for (Sum s : sums) {
                                 sum.add(s.sum());
                             }       
-                            all_avg_distance(p, continuation2, error, iteration);
+                            all_avg_distance(p, continuation2, error2, iteration);
                         },
                         continuation),
                 context.executor());
