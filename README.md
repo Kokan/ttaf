@@ -13,3 +13,5 @@ Planned features are:
 - Cluster data points based on saturation as described in the above mentioned paper.
 - Implement some kind of circular clustering, like circular Otsu's method.
 - Compare results, and supervised evaluation.
+
+API docs: https://zooflavor.github.io/ttaf/javadoc/index.html
