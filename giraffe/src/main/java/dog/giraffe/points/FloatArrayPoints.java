@@ -3,13 +3,21 @@ package dog.giraffe.points;
 import java.util.Arrays;
 
 /**
+ * A {@link MutablePoints} backed by a float array.
+ * Coordinate values are considered to be between 0 and 1.
  * Sub-points are only mutable as far as swap goes.
  */
 public class FloatArrayPoints extends ArrayPoints<float[]> {
+    /**
+     * Creates a new instance with the array data, dimensionality dimensions, size size, starting at offset.
+     */
     public FloatArrayPoints(float[] data, int dimensions, int offset, int size) {
         super(data, dimensions, offset, size);
     }
 
+    /**
+     * Creates a new instance with dimensionality dimensions and pre-allocated size of expectedSize.
+     */
     public FloatArrayPoints(int dimensions, int expectedSize) {
         this(new float[dimensions*expectedSize], dimensions, 0, 0);
     }

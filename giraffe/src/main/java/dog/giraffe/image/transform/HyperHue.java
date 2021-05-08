@@ -7,11 +7,18 @@ import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import java.util.Map;
 
+/**
+ * A transformation replacing every pixel of an image with its hyper-hue.
+ * Hyper-hue for a vector x is defined to vector x with is coordinate for the vector (1, 1, 1, ...) zeroed out.
+ */
 public class HyperHue extends Image.Transform {
     private HyperHue(Image image) {
         super(image);
     }
 
+    /**
+     * Creates a new {@link HyperHue} instance.
+     */
     public static Image create(Image image) {
         return new HyperHue(image);
     }

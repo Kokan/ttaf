@@ -1,14 +1,13 @@
 package dog.giraffe.points;
 
 import dog.giraffe.Context;
-import dog.giraffe.Doubles;
-import dog.giraffe.QuickSort;
-import dog.giraffe.Sum;
-import dog.giraffe.kmeans.InitialCenters;
-import dog.giraffe.kmeans.ReplaceEmptyCluster;
+import dog.giraffe.cluster.InitialCenters;
+import dog.giraffe.cluster.ReplaceEmptyCluster;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
-import dog.giraffe.threads.Function;
+import dog.giraffe.util.Doubles;
+import dog.giraffe.util.Function;
+import dog.giraffe.util.QuickSort;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,6 +20,9 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
 
+/**
+ * A {@link Points} implementation which is a binary tree over a backing {@link MutablePoints}.
+ */
 public abstract class KDTree extends Points {
     private static class NearestCenter {
         public Vector center;
@@ -253,6 +255,11 @@ public abstract class KDTree extends Points {
         mean.addAll(size(), sum);
     }
 
+    /**
+     * Creates a new kd-tree over points.
+     *
+     * @param maxLeafSize the maximum number of vectors a leaf can contain.
+     */
     public static KDTree create(int maxLeafSize, MutablePoints points, Sum.Factory sumFactory) {
         if (1>maxLeafSize) {
             throw new IllegalArgumentException(Integer.toString(maxLeafSize));
@@ -272,6 +279,11 @@ public abstract class KDTree extends Points {
                 create(maxLeafSize, points.subPoints(middle, points.size()), sumFactory));
     }
 
+    /**
+     * Creates asynchronously a new kd-tree over points.
+     *
+     * @param maxLeafSize the maximum number of vectors a leaf can contain.
+     */
     public static void create(
             Context context, int maxLeafSize, MutablePoints points, Continuation<KDTree> continuation)
             throws Throwable {
@@ -301,6 +313,9 @@ public abstract class KDTree extends Points {
                 context.executor());
     }
 
+    /**
+     * Filters centers by excluding those that cannot be the nearest center for any of the vectors in this.
+     */
     protected <C> List<C> filterCenters(Function<C, Vector> centerPoint, List<C> centers) throws Throwable {
         if (1>=centers.size()) {
             return centers;
@@ -334,6 +349,13 @@ public abstract class KDTree extends Points {
         return Collections.unmodifiableList(centers2);
     }
 
+    /**
+     * Returns a method for initial cluster selection. It will select the mean of the nodes of the tree as centers.
+     * If there are more centers needed than nodes further points will be selected by
+     * the {@link ReplaceEmptyCluster#farthest(boolean)} method.
+     *
+     * @param notNear the parameter of {@link ReplaceEmptyCluster#farthest(boolean)}
+     */
     public static InitialCenters<KDTree> initialCenters(boolean notNear) {
         ReplaceEmptyCluster<KDTree> fallback=ReplaceEmptyCluster.farthest(notNear);
         return new InitialCenters<>() {
@@ -381,6 +403,10 @@ public abstract class KDTree extends Points {
         };
     }
 
+    /**
+     * Creates a kd-tree of the centers and returns a function that determines the nearest centers
+     * to points by the {@link #nearestCenter(NearestCenter, Vector)} method.
+     */
     public static Function<Vector, Vector> nearestCenter(List<Vector> centers, Sum.Factory sum) {
         NearestCenter nearestCenter=new NearestCenter();
         KDTree tree=KDTree.create(1, new VectorList(new ArrayList<>(centers)), sum);
@@ -390,12 +416,22 @@ public abstract class KDTree extends Points {
         };
     }
 
+    /**
+     * Creates a function to determine the nearest center for points.
+     * For small number of centers it will iterate through all the vectors of centers.
+     * For larger number of centers it will use {@link #nearestCenter(List, Sum.Factory)}.
+     */
     public static Function<Vector, Vector> nearestCenter2(List<Vector> centers, Sum.Factory sum) {
         return (16>centers.size())
                 ?Distance.nearestCenter(centers)
                 :KDTree.nearestCenter(centers, sum);
     }
 
+    /**
+     * Determines the nearest vector of this to the vector point.
+     * Leaf nodes iterates through all their vectors.
+     * Branch nodes use bounding boxes to exclude vectors from this.
+     */
     protected abstract void nearestCenter(NearestCenter nearestCenter, Vector point);
 
     @Override
@@ -403,6 +439,11 @@ public abstract class KDTree extends Points {
         return size;
     }
 
+    /**
+     * If this node is a leaf returns false and doesn't touch deque.
+     * If this node is a branch returns true and first adds the right child to the dequeues head and then
+     * adds the left child to the dequeues head.
+     */
     protected abstract boolean split(Deque<KDTree> deque);
 
     @Override

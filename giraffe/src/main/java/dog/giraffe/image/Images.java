@@ -11,6 +11,9 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Map;
 
+/**
+ * Helper methods for the creation of images.
+ */
 public class Images {
     private static final Map<Integer, Integer> TYPES_BY_DIMENSION=Map.ofEntries(
             Map.entry(1, ColorSpace.TYPE_GRAY),
@@ -32,6 +35,9 @@ public class Images {
     private Images() {
     }
 
+    /**
+     * Creates the description on color components for {@link ColorSpace} with dimensions components.
+     */
     public static int[] createBandOffsets(int dimensions) {
         int[] result=new int[dimensions];
         for (int ii=0; dimensions>ii; ++ii) {
@@ -40,6 +46,9 @@ public class Images {
         return result;
     }
 
+    /**
+     * Creates a new {@link ColorSpace} with dimensions components.
+     */
     public static ColorSpace createColorSpace(int dimensions) {
         Integer type=TYPES_BY_DIMENSION.get(dimensions);
         if (null==type) {
@@ -67,6 +76,9 @@ public class Images {
         };
     }
 
+    /**
+     * Creates a new {@link BufferedImage} that stores every pixel in dimensions byte
+     */
     public static BufferedImage createUnsignedByte(int width, int height, int dimensions) {
         return new BufferedImage(
                 new ComponentColorModel(

@@ -1,30 +1,37 @@
 package dog.giraffe.image.transform;
 
-import dog.giraffe.ClusterColors;
-import dog.giraffe.ClusteringStrategy;
-import dog.giraffe.Clusters;
-import dog.giraffe.ColorConverter;
 import dog.giraffe.Context;
-import dog.giraffe.Doubles;
-import dog.giraffe.Lists;
 import dog.giraffe.Log;
-import dog.giraffe.Pair;
-import dog.giraffe.Sum;
+import dog.giraffe.cluster.ClusterColors;
+import dog.giraffe.cluster.ClusteringStrategy;
+import dog.giraffe.cluster.Clusters;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.FloatArrayPoints;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.points.MutablePoints;
+import dog.giraffe.points.Sum;
 import dog.giraffe.points.Vector;
 import dog.giraffe.threads.AsyncFunction;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
-import dog.giraffe.threads.Function;
+import dog.giraffe.util.ColorConverter;
+import dog.giraffe.util.Doubles;
+import dog.giraffe.util.Function;
+import dog.giraffe.util.Lists;
+import dog.giraffe.util.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Clusters the pixel of an image and replaces every pixel with a color assigned to pixel's nearest center.
+ * This transform treats a pixel differently whether it is gray-like or colorful.
+ * The two class of pixels are clustered separately and assigned different colors.
+ * Centers of grayish pixel will be assigned gray colors.
+ * Centers of colorful pixels will be assigned fully saturated colors.
+ */
 public abstract class Cluster2 extends Image.Transform {
     private static class Data {
         private List<Vector> centers;
@@ -80,7 +87,7 @@ public abstract class Cluster2 extends Image.Transform {
                 public boolean project(
                         MutablePoints input, int inputOffset, MutablePoints output1, int outputOffset1,
                         MutablePoints output2, int outputOffset2) {
-                    colorConverter.rgbToHslv(
+                    colorConverter.rgbToHsvAndHsl(
                             input.getNormalized(0, inputOffset),
                             input.getNormalized(1, inputOffset),
                             input.getNormalized(2, inputOffset));
@@ -173,14 +180,24 @@ public abstract class Cluster2 extends Image.Transform {
         }
     }
 
+    /**
+     * Contains all the information to classify and transform pixels.
+     * Implementations doesn't have to be thread-safe.
+     */
     protected interface Projection {
+        /**
+         * Selects the class of the pixel at inputOffset in input.
+         * Returns true if it is gray-like and puts its transformation into output1 at outputOffset1.
+         * Returns false if it is colorful and puts its transformation into output2 at outputOffset2.
+         */
         boolean project(
                 MutablePoints input, int inputOffset,
-                MutablePoints output1, int outputOffset1, MutablePoints output2, int outputOffset2);
+                MutablePoints output1, int outputOffset1,
+                MutablePoints output2, int outputOffset2);
     }
 
-    private final Data data1=new Data(ClusterColors.Gray.falseColor(3));
-    private final Data data2=new Data(ClusterColors.RGB.falseColor(0, 1, 2));
+    private final Data data1=new Data(ClusterColors.falseGrays(3));
+    private final Data data2=new Data(ClusterColors.falseColors(0, 1, 2));
     private final Mask mask;
     private final ClusteringStrategy<? super KDTree> strategy;
     private Sum.Factory sumFactory;
@@ -191,20 +208,44 @@ public abstract class Cluster2 extends Image.Transform {
         this.strategy=strategy;
     }
 
+    /**
+     * Checks the number of components of the input image.
+     */
     protected abstract void checkImageDimensions(int dimensions);
 
+    /**
+     * Create {@link MutablePoints} compatible with grayish pixels.
+     */
     protected abstract MutablePoints createPoints1(int expectedSize);
 
+    /**
+     * Create {@link MutablePoints} compatible with colorful pixels.
+     */
     protected abstract MutablePoints createPoints2(int dimensions, int expectedSize);
 
+    /**
+     * Creates a new {@link Cluster2} instance which clusters pixels by value or hue depending on saturation.
+     *
+     * @param mask ignore parts of the input image
+     * @param strategy clustering algorithm to be used
+     */
     public static Image createHue(Image image, Mask mask, ClusteringStrategy<? super KDTree> strategy) {
         return new Hue(image, mask, strategy);
     }
 
+    /**
+     * Creates a new {@link Cluster2} instance which clusters pixels by intensity or hyper-hue depending on saturation.
+     *
+     * @param mask ignore parts of the input image
+     * @param strategy clustering algorithm to be used
+     */
     public static Image createHyperHue(Image image, Mask mask, ClusteringStrategy<? super KDTree> strategy) {
         return new HyperHue(image, mask, strategy);
     }
 
+    /**
+     * Returns the number of components used for colorful pixels.
+     */
     protected abstract int dimensions2();
 
     @Override
@@ -221,6 +262,9 @@ public abstract class Cluster2 extends Image.Transform {
         temp.forEach((key, value)->log.put("color-"+key, value));
     }
 
+    /**
+     * Returns the type of the clustering selection.
+     */
     protected abstract String logType();
 
     private AsyncFunction<KDTree, Void> prepareCluster(Context context, Data data, MutablePoints points) {
@@ -318,6 +362,9 @@ public abstract class Cluster2 extends Image.Transform {
         };
     }
 
+    /**
+     * Returns a new instance of {@link Projection} that can be used to classify and transform pixels.
+     */
     protected abstract Projection projection();
 
     @Override

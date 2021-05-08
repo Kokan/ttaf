@@ -4,9 +4,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * A {@link List} of {@link Vector Vectors}.
+ */
 public class VectorList extends MutablePoints {
     private final List<Vector> points;
 
+    /**
+     * Creates a new instance with the vectors of points.
+     */
     public VectorList(List<Vector> points) {
         super(points.get(0).dimensions());
         this.points=points;

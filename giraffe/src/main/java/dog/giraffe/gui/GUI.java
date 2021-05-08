@@ -1,6 +1,5 @@
 package dog.giraffe.gui;
 
-import dog.giraffe.Icons;
 import dog.giraffe.SwingContext;
 import dog.giraffe.gui.model.Model;
 import dog.giraffe.gui.model.Output;

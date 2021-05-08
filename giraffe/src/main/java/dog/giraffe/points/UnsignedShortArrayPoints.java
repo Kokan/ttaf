@@ -3,17 +3,28 @@ package dog.giraffe.points;
 import java.util.Arrays;
 
 /**
+ * A {@link MutablePoints} backed by a short array.
+ * Coordinate values are considered to be between 0 and 65536.
  * Sub-points are only mutable as far as swap goes.
  */
 public class UnsignedShortArrayPoints extends ArrayPoints<short[]> {
+    /**
+     * Creates a new instance with the array data, dimensionality dimensions, size size, starting at offset.
+     */
     public UnsignedShortArrayPoints(short[] data, int dimensions, int offset, int size) {
         super(data, dimensions, offset, size);
     }
 
+    /**
+     * Creates a new instance with the array data, dimensionality dimensions, full size, starting at offset 0.
+     */
     public UnsignedShortArrayPoints(short[] data, int dimensions) {
         this(data, dimensions, 0, data.length/dimensions);
     }
 
+    /**
+     * Creates a new instance with dimensionality dimensions and pre-allocated size of expectedSize.
+     */
     public UnsignedShortArrayPoints(int dimensions, int expectedSize) {
         this(new short[dimensions*expectedSize], dimensions, 0, 0);
     }
@@ -35,6 +46,9 @@ public class UnsignedShortArrayPoints extends ArrayPoints<short[]> {
                 dimensions*length);
     }
 
+    /**
+     * Converts the value in the range [0, 1] to the range of a short.
+     */
     public static short denormalize(double value) {
         return (short)Math.max(0L, Math.min(65535L, Math.round(65535.0*value)));
     }

@@ -1,5 +1,6 @@
 package dog.giraffe;
 
+import dog.giraffe.points.Sum;
 import dog.giraffe.threads.Executor;
 import java.util.Random;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -34,6 +35,6 @@ public class TestContext implements Context {
 
     @Override
     public Sum.Factory sum() {
-        return Sum.PREFERRED;
+        return Sum.SINGLE_VARIABLE;
     }
 }

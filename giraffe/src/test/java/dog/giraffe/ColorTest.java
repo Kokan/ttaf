@@ -1,5 +1,6 @@
 package dog.giraffe;
 
+import dog.giraffe.util.ColorConverter;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -37,7 +38,7 @@ public class ColorTest {
 
     private void testHSV(double red, double green, double blue, double hue, double saturation, double value) {
         ColorConverter colorConverter=new ColorConverter();
-        colorConverter.rgbToHslv(blue, green, red);
+        colorConverter.rgbToHsvAndHsl(blue, green, red);
         assertEquals(hue, colorConverter.hue, 0.01);
         assertEquals(saturation, colorConverter.saturationValue, 0.01);
         assertEquals(value, colorConverter.value, 0.01);

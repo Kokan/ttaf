@@ -1,12 +1,15 @@
 package dog.giraffe.image.transform;
 
 import dog.giraffe.Context;
-import dog.giraffe.Lists;
+import dog.giraffe.util.Lists;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import java.util.Map;
 
+/**
+ * A transformation which select components of an input image.
+ */
 public class Select extends Image.Transform {
     private final int[] selectedDimensions;
 
@@ -15,6 +18,9 @@ public class Select extends Image.Transform {
         this.selectedDimensions=selectedDimensions;
     }
 
+    /**
+     * Creates a new image which contains the selectedDimensions components of the image parameter.
+     */
     public static Image create(Image image, int... selectedDimensions) {
         return new Select(image, selectedDimensions);
     }

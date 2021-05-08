@@ -1,13 +1,16 @@
 package dog.giraffe.image;
 
 import dog.giraffe.points.UnsignedByteArrayPoints;
-import dog.giraffe.threads.Consumer;
+import dog.giraffe.util.Consumer;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import javax.imageio.ImageIO;
 
+/**
+ * An {@link ImageWriter} that writes to an internal memory buffer.
+ */
 public class BufferedImageWriter implements ImageWriter {
     private class LineImpl implements Line {
         private final int yy;
@@ -44,7 +47,7 @@ public class BufferedImageWriter implements ImageWriter {
     public void close() throws IOException {
     }
 
-    public static BufferedImageWriter create(int width, int height, int dimensions, Consumer<BufferedImage> consumer) {
+    private static BufferedImageWriter create(int width, int height, int dimensions, Consumer<BufferedImage> consumer) {
         return new BufferedImageWriter(dimensions, height, null, width) {
             @Override
             public void close() throws IOException {
@@ -62,7 +65,7 @@ public class BufferedImageWriter implements ImageWriter {
         };
     }
 
-    public static BufferedImageWriter createFile(int width, int height, int dimensions, String format, Path path) {
+    private static BufferedImageWriter createFile(int width, int height, int dimensions, String format, Path path) {
         return new BufferedImageWriter(dimensions, height, path, width) {
             @Override
             public void close() throws IOException {
@@ -72,6 +75,9 @@ public class BufferedImageWriter implements ImageWriter {
         };
     }
 
+    /**
+     * Creates an image from the memory buffer.
+     */
     public BufferedImage createImage() {
         int[] buffer=new int[dimensions*width];
         BufferedImage image=Images.createUnsignedByte(width, height, dimensions);
@@ -91,10 +97,17 @@ public class BufferedImageWriter implements ImageWriter {
         return new LineImpl(yy);
     }
 
+    /**
+     * Creates a factory for {@link BufferedImageWriter BufferedImageWriters} that upon close
+     * supplies the written image to the consumer.
+     */
     public static Factory factory(Consumer<BufferedImage> consumer) {
         return (width, height, dimension)->create(width, height, dimension, consumer);
     }
 
+    /**
+     * Creates a factory for {@link BufferedImageReader BufferedImageReaders} that is associated with the given path.
+     */
     public static Factory factory(String format, Path path) {
         return (width, height, dimension)->createFile(width, height, dimension, format, path);
     }
@@ -105,6 +118,9 @@ public class BufferedImageWriter implements ImageWriter {
         log.put("file", path);
     }
 
+    /**
+     * Writes the contents of the memory buffer to the file path.
+     */
     public void writeImage(String format, Path path) throws IOException {
         if (!ImageIO.write(createImage(), format, path.toFile())) {
             throw new RuntimeException("no image writer for "+format);

@@ -1,7 +1,7 @@
 package dog.giraffe.gui;
 
 import dog.giraffe.Context;
-import dog.giraffe.Sum;
+import dog.giraffe.points.Sum;
 import dog.giraffe.threads.Executor;
 import java.util.Random;
 

@@ -5,7 +5,7 @@ import dog.giraffe.points.MutablePoints;
 import dog.giraffe.points.UnsignedByteArrayPoints;
 import dog.giraffe.points.UnsignedShortArrayPoints;
 import dog.giraffe.threads.Continuation;
-import dog.giraffe.threads.Supplier;
+import dog.giraffe.util.Supplier;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
@@ -20,6 +20,9 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
 
+/**
+ * An {@link ImageReader} that reads every line directly from disk.
+ */
 public abstract class FileImageReader implements ImageReader {
     private static class UnsignedByte extends FileImageReader {
         public UnsignedByte(
@@ -73,7 +76,10 @@ public abstract class FileImageReader implements ImageReader {
     private final Path path;
     protected final int width;
 
-    public FileImageReader(
+    /**
+     * Creates a new instance.
+     */
+    protected FileImageReader(
             ImageInputStream imageInputStream, javax.imageio.ImageReader imageReader, Path path) throws Throwable {
         this.imageInputStream=imageInputStream;
         this.imageReader=imageReader;
@@ -93,6 +99,9 @@ public abstract class FileImageReader implements ImageReader {
         }
     }
 
+    /**
+     * Creates a reader that reads directly from the file path.
+     */
     public static FileImageReader create(Path path) throws Throwable {
         boolean error=true;
         ImageInputStream iis=new FileImageInputStream(path.toFile());
@@ -139,6 +148,10 @@ public abstract class FileImageReader implements ImageReader {
         return dimensions;
     }
 
+    /**
+     * Creates a factory that creates {@link FileImageReader FileImageReaders} that reads from the
+     * file specified by path.
+     */
     public static Supplier<ImageReader> factory(Path path) {
         return ()->create(path);
     }
@@ -155,6 +168,9 @@ public abstract class FileImageReader implements ImageReader {
         log.put("type", logType());
     }
 
+    /**
+     * Returns the type of the image.
+     */
     protected abstract String logType();
 
     @Override
@@ -186,6 +202,9 @@ public abstract class FileImageReader implements ImageReader {
         };
     }
 
+    /**
+     * Sets the dimensions-th coordinate of the vector indexed by index in points to value.
+     */
     protected abstract void setNormalized(MutablePoints points, int dimension, int index, int value);
 
     @Override

@@ -1,6 +1,6 @@
 package dog.giraffe.gui;
 
-import dog.giraffe.Pair;
+import dog.giraffe.util.Pair;
 import dog.giraffe.gui.model.Output;
 import dog.giraffe.gui.model.Transform;
 import dog.giraffe.image.BufferedImageReader;
@@ -12,8 +12,8 @@ import dog.giraffe.image.transform.Mask;
 import dog.giraffe.threads.AsyncSupplier;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
-import dog.giraffe.threads.Function;
-import dog.giraffe.threads.Supplier;
+import dog.giraffe.util.Function;
+import dog.giraffe.util.Supplier;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;

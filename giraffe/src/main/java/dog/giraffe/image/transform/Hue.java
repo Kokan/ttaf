@@ -1,17 +1,23 @@
 package dog.giraffe.image.transform;
 
-import dog.giraffe.ColorConverter;
 import dog.giraffe.Context;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
+import dog.giraffe.util.ColorConverter;
 import java.util.Map;
 
+/**
+ * Hue transforms an RGB image to the HSV color space and selects the hue components as its sole output component.
+ */
 public class Hue extends Image.Transform {
     private Hue(Image image) {
         super(image);
     }
 
+    /**
+     * Creates a new {@link Hue} instance.
+     */
     public static Image create(Image image) {
         return new Hue(image);
     }
@@ -39,7 +45,7 @@ public class Hue extends Image.Transform {
             @Override
             protected void setNormalizedLineToTransform(MutablePoints points, int offset) {
                 for (int xx=0; width()>xx; ++xx, ++offset) {
-                    colorConverter.rgbToHslv(
+                    colorConverter.rgbToHsvAndHsl(
                             line.getNormalized(2, xx),
                             line.getNormalized(1, xx),
                             line.getNormalized(0, xx));

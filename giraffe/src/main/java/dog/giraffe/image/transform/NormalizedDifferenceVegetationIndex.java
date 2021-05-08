@@ -6,11 +6,18 @@ import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import java.util.Map;
 
+/**
+ * A transformation replacing every pixel of an input image with the normalized difference vegetation index
+ * of the first two components.
+ */
 public class NormalizedDifferenceVegetationIndex extends Image.Transform {
     private NormalizedDifferenceVegetationIndex(Image image) {
         super(image);
     }
 
+    /**
+     * Creates a new {@link NormalizedDifferenceVegetationIndex} instance.
+     */
     public static Image create(Image image) {
         return new NormalizedDifferenceVegetationIndex(image);
     }

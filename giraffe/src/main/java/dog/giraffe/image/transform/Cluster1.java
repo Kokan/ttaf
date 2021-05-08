@@ -1,12 +1,12 @@
 package dog.giraffe.image.transform;
 
-import dog.giraffe.ClusterColors;
-import dog.giraffe.ClusteringStrategy;
-import dog.giraffe.Clusters;
+import dog.giraffe.cluster.ClusterColors;
+import dog.giraffe.cluster.ClusteringStrategy;
+import dog.giraffe.cluster.Clusters;
 import dog.giraffe.Context;
-import dog.giraffe.Lists;
+import dog.giraffe.util.Lists;
 import dog.giraffe.Log;
-import dog.giraffe.Sum;
+import dog.giraffe.points.Sum;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.points.MutablePoints;
@@ -15,10 +15,13 @@ import dog.giraffe.points.Vector;
 import dog.giraffe.threads.AsyncFunction;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
-import dog.giraffe.threads.Function;
+import dog.giraffe.util.Function;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Clusters the pixel of an image and replaces every pixel with a color assigned to pixel's nearest center.
+ */
 public class Cluster1 extends Image.Transform {
     private List<Vector> centers;
     private Clusters clusters;
@@ -34,7 +37,14 @@ public class Cluster1 extends Image.Transform {
         this.mask=mask;
         this.strategy=strategy;
     }
-    
+
+    /**
+     * Creates a new {@link Cluster1} instance.
+     *
+     * @param colors used to assign color to cluster centers
+     * @param mask ignore parts of the input image
+     * @param strategy clustering algorithm to be used
+     */
     public static Image create(
             Image image, ClusterColors colors, Mask mask, ClusteringStrategy<? super KDTree> strategy) {
         return new Cluster1(image, colors, mask, strategy);

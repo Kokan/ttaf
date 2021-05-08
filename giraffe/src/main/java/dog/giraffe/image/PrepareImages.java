@@ -1,8 +1,8 @@
 package dog.giraffe.image;
 
 import dog.giraffe.Context;
-import dog.giraffe.Pair;
-import dog.giraffe.threads.Block;
+import dog.giraffe.util.Pair;
+import dog.giraffe.util.Block;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
 import dog.giraffe.threads.SleepProcess;
@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Helper class to correctly {@link Image#prepare(Context, Continuation)} a DAG of images.
+ */
 public class PrepareImages {
     private class PrepareContinuation implements Continuation<Void> {
         private final Image image;
@@ -92,6 +95,9 @@ public class PrepareImages {
                 .run();
     }
 
+    /**
+     * Prepare the DAG of images specified by images.
+     */
     public static void prepareImages(
             Context context, List<Image> images, Continuation<Void> continuation) throws Throwable {
         new PrepareImages(context)

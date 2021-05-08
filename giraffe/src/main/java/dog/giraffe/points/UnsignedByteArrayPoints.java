@@ -3,17 +3,28 @@ package dog.giraffe.points;
 import java.util.Arrays;
 
 /**
+ * A {@link MutablePoints} backed by a byte array.
+ * Coordinate values are considered to be between 0 and 255.
  * Sub-points are only mutable as far as swap goes.
  */
 public class UnsignedByteArrayPoints extends ArrayPoints<byte[]> {
+    /**
+     * Creates a new instance with the array data, dimensionality dimensions, size size, starting at offset.
+     */
     public UnsignedByteArrayPoints(byte[] data, int dimensions, int offset, int size) {
         super(data, dimensions, offset, size);
     }
 
+    /**
+     * Creates a new instance with the array data, dimensionality dimensions, full size, starting at offset 0.
+     */
     public UnsignedByteArrayPoints(byte[] data, int dimensions) {
         this(data, dimensions, 0, data.length/dimensions);
     }
 
+    /**
+     * Creates a new instance with dimensionality dimensions and pre-allocated size of expectedSize.
+     */
     public UnsignedByteArrayPoints(int dimensions, int expectedSize) {
         this(new byte[dimensions*expectedSize], dimensions, 0, 0);
     }
@@ -35,6 +46,9 @@ public class UnsignedByteArrayPoints extends ArrayPoints<byte[]> {
                 dimensions*length);
     }
 
+    /**
+     * Converts the value in the range [0, 1] to the range of a byte.
+     */
     public static byte denormalize(double value) {
         return (byte)Math.max(0L, Math.min(255L, Math.round(255.0*value)));
     }

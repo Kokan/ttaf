@@ -1,11 +1,14 @@
 package dog.giraffe;
 
+import dog.giraffe.cluster.ClusteringStrategy;
+import dog.giraffe.cluster.Clusters;
+import dog.giraffe.cluster.Otsu;
 import dog.giraffe.points.FloatArrayPoints;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.points.Points;
 import dog.giraffe.points.Vector;
-import dog.giraffe.threads.batch.SingleThreadedExecutor;
-import dog.giraffe.threads.batch.SingleThreadedJoin;
+import dog.giraffe.threads.SingleThreadedExecutor;
+import dog.giraffe.threads.SingleThreadedJoin;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -80,7 +83,7 @@ public class OtsuTest {
                         Arrays.asList(0.0, 0.5),
                         Arrays.asList(0.5, 1.0)),
                 cluster(
-                        ClusteringStrategy.otsuCircular(10, 2),
+                        Otsu.circular(10, 2),
                         density(0.0, 0.5, 1.0))
                         .centers);
         assertClusters(
@@ -89,7 +92,7 @@ public class OtsuTest {
                         Arrays.asList(0.2, 0.5),
                         Arrays.asList(0.5, 0.8)),
                 cluster(
-                        ClusteringStrategy.otsuCircular(10, 3),
+                        Otsu.circular(10, 3),
                         density(0.2, 0.8))
                         .centers);
         assertClusters(
@@ -97,7 +100,7 @@ public class OtsuTest {
                         Arrays.asList(0.0, 0.2, 0.8, 1.0),
                         Arrays.asList(0.2, 0.8)),
                 cluster(
-                        ClusteringStrategy.otsuCircular(10, 2),
+                        Otsu.circular(10, 2),
                         density(0.2, 0.8))
                         .centers);
     }
@@ -110,7 +113,7 @@ public class OtsuTest {
                         Arrays.asList(0.2, 0.8),
                         Arrays.asList(0.8, 1.0)),
                 cluster(
-                        ClusteringStrategy.otsuLinear(10, 3),
+                        Otsu.linear(10, 3),
                         density(0.2, 0.8))
                         .centers);
     }

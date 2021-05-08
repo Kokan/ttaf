@@ -1,11 +1,17 @@
 package dog.giraffe.points;
 
-import dog.giraffe.threads.Function;
+import dog.giraffe.util.Function;
 
+/**
+ * Helpers methods related to the standard Euclidean distance function.
+ */
 public class Distance {
     private Distance() {
     }
 
+    /**
+     * Return the Euclidean distance between center and point.
+     */
     public static double distance(Vector center, Vector point) {
         int dimensions=center.dimensions();
         double distance=0.0;
@@ -16,10 +22,16 @@ public class Distance {
         return distance;
     }
 
+    /**
+     * Returns a {@link Function} which maps points to its nearest vector from centers.
+     */
     public static Function<Vector, Vector> nearestCenter(Iterable<Vector> centers) {
         return (point)->nearestCenter(centers, point);
     }
 
+    /**
+     * Returns the vector from centers that is nearest to point.
+     */
     public static Vector nearestCenter(Iterable<Vector> centers, Vector point) {
         Vector bestCenter=null;
         double bestDistance=Double.POSITIVE_INFINITY;

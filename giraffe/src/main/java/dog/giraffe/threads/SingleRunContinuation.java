@@ -6,7 +6,7 @@ class SingleRunContinuation<T> implements Continuation<T> {
     private final AtomicBoolean completed=new AtomicBoolean(false);
     private final Continuation<? super T> continuation;
 
-    public SingleRunContinuation(Continuation<? super T> continuation) {
+    private SingleRunContinuation(Continuation<? super T> continuation) {
         this.continuation=continuation;
     }
 

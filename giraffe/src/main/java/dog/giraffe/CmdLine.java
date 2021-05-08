@@ -1,5 +1,12 @@
 package dog.giraffe;
 
+import dog.giraffe.cluster.ClusterColors;
+import dog.giraffe.cluster.ClusteringStrategy;
+import dog.giraffe.cluster.InitialCenters;
+import dog.giraffe.cluster.Isodata;
+import dog.giraffe.cluster.KMeans;
+import dog.giraffe.cluster.Otsu;
+import dog.giraffe.cluster.ReplaceEmptyCluster;
 import dog.giraffe.image.BufferedImageReader;
 import dog.giraffe.image.BufferedImageWriter;
 import dog.giraffe.image.FileImageReader;
@@ -16,15 +23,13 @@ import dog.giraffe.image.transform.Normalize;
 import dog.giraffe.image.transform.NormalizedDifferenceVegetationIndex;
 import dog.giraffe.image.transform.NormalizedHyperHue;
 import dog.giraffe.image.transform.Select;
-import dog.giraffe.kmeans.InitialCenters;
-import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.points.KDTree;
 import dog.giraffe.threads.AsyncJoin;
+import dog.giraffe.threads.Batch;
+import dog.giraffe.threads.BatchRunner;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
-import dog.giraffe.threads.Function;
-import dog.giraffe.threads.batch.Batch;
-import dog.giraffe.threads.batch.BatchRunner;
+import dog.giraffe.util.Function;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -42,6 +47,9 @@ import java.util.regex.Pattern;
 import picocli.CommandLine;
 import picocli.CommandLine.MissingParameterException;
 
+/**
+ * The command line utility based on this library.
+ */
 public class CmdLine {
     private static void batchMode(
             CmdLineConfig config, Context context, Function<Image, Image> imageMap, Continuation<Void> continuation)
@@ -175,8 +183,8 @@ public class CmdLine {
             imageMap=(image)->Cluster1.create(
                     image,
                     config.rgbClusterColors
-                            ?ClusterColors.RGB.falseColor(0, 1, 2)
-                            :ClusterColors.Gray.falseColor(1),
+                            ?ClusterColors.falseColors(0, 1, 2)
+                            :ClusterColors.falseGrays(1),
                     mask,
                     strategy);
         }
@@ -213,7 +221,7 @@ public class CmdLine {
                     imageMap2=NormalizedDifferenceVegetationIndex::create;
                     break;
                 default:
-                    Matcher matcher=CmdLineConfig.IMAGE_TRANSFORM_NORMALIZE_VARIANCE.matcher(it);
+                    Matcher matcher=CmdLineConfig.IMAGE_TRANSFORM_NORMALIZE_DEVIATION.matcher(it);
                     if (matcher.matches()) {
                         double sigma=Double.parseDouble(matcher.group(1));
                         imageMap2=(image)->Normalize.createDeviation(image, mask, sigma);
@@ -323,7 +331,7 @@ public class CmdLine {
                 config.elbow=false;
                 List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>();
                 initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
-                        strategies.add(ClusteringStrategy.isodata(
+                        strategies.add(Isodata.isodata(
                                 config.minClusters,
                                 config.maxClusters,
                                 config.errorLimit,
@@ -340,7 +348,7 @@ public class CmdLine {
                 strategyGenerator=(clusters)->{
                     List<ClusteringStrategy<KDTree>> strategies2=new ArrayList<>();
                     initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
-                            strategies2.add(ClusteringStrategy.kMeans(
+                            strategies2.add(KMeans.kMeans(
                                     clusters,
                                     config.errorLimit,
                                     init,
@@ -350,10 +358,10 @@ public class CmdLine {
                 };
                 break;
             case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU:
-                strategyGenerator=(clusters)->ClusteringStrategy.otsuLinear(config.bins, clusters);
+                strategyGenerator=(clusters)->Otsu.linear(config.bins, clusters);
                 break;
             case CmdLineConfig.CLUSTERING_ALGORITHM_OTSU_CIRCULAR:
-                strategyGenerator=(clusters)->ClusteringStrategy.otsuCircular(config.bins, clusters);
+                strategyGenerator=(clusters)->Otsu.circular(config.bins, clusters);
                 break;
             default:
                 throw new RuntimeException("unexpected clustering algorithm "+config.clusteringAlgorithm);

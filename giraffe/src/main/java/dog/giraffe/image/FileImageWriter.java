@@ -16,13 +16,17 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageOutputStream;
 
+/**
+ * An {@link ImageWriter} that writes an image line by line to the disk directly.
+ * Instances will only buffer line data for lines actively written to by some thread.
+ */
 public class FileImageWriter implements ImageWriter {
     private class LineImpl implements Line {
         private final int[] data;
         private final BufferedImage image;
         private final int yy;
 
-        public LineImpl(int yy) {
+        private LineImpl(int yy) {
             this.yy=yy;
             data=new int[dimensions*width];
             image=Images.createUnsignedByte(width, 1, dimensions);
@@ -51,7 +55,7 @@ public class FileImageWriter implements ImageWriter {
     private final Path path;
     private final int width;
 
-    public FileImageWriter(
+    private FileImageWriter(
             int dimensions, ImageOutputStream imageOutputStream, javax.imageio.ImageWriter imageWriter,
             Path path, int width) {
         this.dimensions=dimensions;
@@ -76,7 +80,7 @@ public class FileImageWriter implements ImageWriter {
         }
     }
 
-    public static FileImageWriter create(
+    private static FileImageWriter create(
             int width, int height, int dimensions, String format, Path path) throws Throwable {
         boolean error=true;
         ImageOutputStream ios=new FileImageOutputStream(path.toFile());
@@ -117,6 +121,12 @@ public class FileImageWriter implements ImageWriter {
         }
     }
 
+    /**
+     * Creates a new factory that creates {@link FileImageWriter FileImageWriters}
+     * writing to the file specified by path.
+     *
+     * @param format the java format name
+     */
     public static Factory factory(String format, Path path) {
         return (width, height, dimension)->create(width, height, dimension, format, path);
     }

@@ -1,13 +1,29 @@
 package dog.giraffe.threads;
 
+import dog.giraffe.util.Block;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+/**
+ * Searches an interval for an element in parallel.
+ */
 public interface ParallelSearch<T, U> {
+    /**
+     * Decides to complete the search or to continue it.
+     *
+     * @param newElements the elements computed since the last call to this method
+     */
     void search(Map<Integer, T> newElements, Block continueSearch, Continuation<U> continuation) throws Throwable;
 
+    /**
+     * Starts a new search.
+     * The elements will be computed in the interval [fromIndex, toIndex) by elements.
+     *
+     * @param executor used to run the element generation and the call to {@link #search(Map, Block, Continuation)}
+     * @param threads the maximum number of parallel computations that can be used to generate elements
+     */
     static <T, U> void search(
             AsyncFunction<Integer, T> elements, int fromIndex, int toIndex, ParallelSearch<T, U> search,
             Executor executor, int threads, Continuation<U> continuation) throws Throwable {

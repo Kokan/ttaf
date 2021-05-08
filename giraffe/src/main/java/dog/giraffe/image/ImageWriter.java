@@ -3,11 +3,11 @@ package dog.giraffe.image;
 import dog.giraffe.Context;
 import dog.giraffe.Log;
 import dog.giraffe.points.MutablePoints;
-import dog.giraffe.threads.Consumer;
 import dog.giraffe.threads.Continuation;
 import dog.giraffe.threads.Continuations;
-import dog.giraffe.threads.Function;
-import dog.giraffe.threads.Supplier;
+import dog.giraffe.util.Consumer;
+import dog.giraffe.util.Function;
+import dog.giraffe.util.Supplier;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -15,21 +15,48 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * Class to create images as {@link java.awt.image.BufferedImage BufferedImages} and to write to disk.
+ */
 public interface ImageWriter extends AutoCloseable, Log {
+    /**
+     * Factory for ImageWriters.
+     */
     interface Factory {
+        /**
+         * Creates a new {@link ImageWriter} for an image with the specified width, height, and dimensions.
+         */
         ImageWriter create(int width, int height, int dimension) throws Throwable;
     }
 
+    /**
+     * Contains all the information to write one line of the image.
+     */
     interface Line {
+        /**
+         * Sets the component dimension of the pixel xx to value, possibly buffering it.
+         */
         void setNormalized(int dimension, int xx, double value);
 
+        /**
+         * Finalizes the line and ensures it's written the backing store.
+         */
         void write() throws Throwable;
     }
 
+    @Override
     void close() throws IOException;
 
+    /**
+     * Creates an object which can be used to write a line component-wise.
+     *
+     * @param yy the index if the line to be written
+     */
     Line getLine(int yy);
 
+    /**
+     * Guesses the java format name of a file by the extension of the filename.
+     */
     static String outputFormat(String outputFormat, Path outputPath) {
         if (null!=outputFormat) {
             return outputFormat;
@@ -55,6 +82,14 @@ public interface ImageWriter extends AutoCloseable, Log {
         return "tiff";
     }
 
+    /**
+     * Generates an image and writes it.
+     *
+     * @param imageMap the transformation to be applied to the input image
+     * @param imageReader the input image
+     * @param imageWriter the place to write the result
+     * @param logger store for the metadata
+     */
     static void write(
             Context context, Function<Image, Image> imageMap, Supplier<ImageReader> imageReader,
             ImageWriter.Factory imageWriter, Consumer<Map<String, Object>> logger, Continuation<Void> continuation)

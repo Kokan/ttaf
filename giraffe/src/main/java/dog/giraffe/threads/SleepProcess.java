@@ -1,6 +1,20 @@
 package dog.giraffe.threads;
 
+import dog.giraffe.util.Block;
+
+/**
+ * An asynchronous computation that waits for an external event.
+ * {@link #run(Block, Block, Continuation)} is called repeatedly.
+ * At each call the process can choose to complete the computation or to sleep.
+ * The wakeup method can be used by the external event to cause a call to {@link #run(Block, Block, Continuation)}.
+ */
 public interface SleepProcess<T> {
+    /**
+     * Starts a new {@link SleepProcess}.
+     *
+     * @param executor executor is used to run calls to {@link #run(Block, Block, Continuation)}.
+     * @return a wakeup block associated with process
+     */
     static <T> Block create(Continuation<T> continuation, Executor executor, SleepProcess<T> process) {
         class Wakeup implements Block {
             class SleepContinuation implements Block, Continuation<T> {
@@ -82,5 +96,13 @@ public interface SleepProcess<T> {
         return new Wakeup();
     }
 
+    /**
+     * Completes the continuation
+     * or calls sleep to signify it can not proceed with the computation in its current state.
+     * This method cannot be called while another call is in progress.
+     * A call is considered completed when the continuation is completed or sleep is called.
+     *
+     * @param wakeup wakeup can be used to cause the run method to be called eventually
+     */
     void run(Block wakeup, Block sleep, Continuation<T> continuation) throws Throwable;
 }

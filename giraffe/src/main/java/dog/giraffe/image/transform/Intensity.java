@@ -1,17 +1,23 @@
 package dog.giraffe.image.transform;
 
 import dog.giraffe.Context;
-import dog.giraffe.Doubles;
+import dog.giraffe.util.Doubles;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import java.util.Map;
 
+/**
+ * A transformation the replaces every pixel of the input image with its euclidean length.
+ */
 public class Intensity extends Image.Transform {
     private Intensity(Image image) {
         super(image);
     }
 
+    /**
+     * Creates a new Intensity instance.
+     */
     public static Image create(Image image) {
         return new Intensity(image);
     }

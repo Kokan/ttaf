@@ -1,6 +1,6 @@
 package dog.giraffe.gui;
 
-import dog.giraffe.Pair;
+import dog.giraffe.util.Pair;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;

@@ -1,8 +1,8 @@
 package dog.giraffe.image.transform;
 
 import dog.giraffe.Context;
-import dog.giraffe.Pair;
-import dog.giraffe.Sum;
+import dog.giraffe.util.Pair;
+import dog.giraffe.points.Sum;
 import dog.giraffe.image.Image;
 import dog.giraffe.points.FloatArrayPoints;
 import dog.giraffe.points.MutablePoints;
@@ -11,6 +11,9 @@ import dog.giraffe.threads.Continuations;
 import java.util.Arrays;
 import java.util.Map;
 
+/**
+ * Normalizes the range of the components of an image.
+ */
 public abstract class Normalize extends Image.Transform {
     private static class Deviation extends Normalize {
         private static final class Result {
@@ -175,10 +178,23 @@ public abstract class Normalize extends Image.Transform {
         this.mask=mask;
     }
 
+
+    /**
+     * Creates a new {@link Normalize} instance. The input range [mean-sigma*deviation, mean+sigma*deviation]
+     * is mapped to the output range [0, 1].
+     *
+     * @param mask pixels masked out are not considered in the input range
+     */
     public static Image createDeviation(Image image, Mask mask, double sigma) {
         return new Deviation(image, mask, sigma);
     }
 
+    /**
+     * Creates a new {@link Normalize} instance. The input range [min component value, max component value]
+     * is mapped to the output range [0, 1].
+     *
+     * @param mask pixels masked out are not considered in the input range
+     */
     public static Image createMinMax(Image image, Mask mask) {
         return new MinMax(image, mask);
     }

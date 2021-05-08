@@ -5,7 +5,7 @@ import dog.giraffe.points.MutablePoints;
 import dog.giraffe.points.UnsignedByteArrayPoints;
 import dog.giraffe.points.UnsignedShortArrayPoints;
 import dog.giraffe.threads.Continuation;
-import dog.giraffe.threads.Supplier;
+import dog.giraffe.util.Supplier;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.Raster;
@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import javax.imageio.ImageIO;
 
+/**
+ * An {@link ImageWriter} that reads line from a memory buffer.
+ */
 public abstract class BufferedImageReader implements ImageReader {
     private final int height;
     private final Path path;
@@ -31,7 +34,7 @@ public abstract class BufferedImageReader implements ImageReader {
     public void close() {
     }
 
-    public static BufferedImageReader create(BufferedImage image, Path path) {
+    private static BufferedImageReader create(BufferedImage image, Path path) {
         switch (image.getSampleModel().getDataType()) {
             case DataBuffer.TYPE_BYTE:
                 return createUnsignedByte(image, path);
@@ -94,7 +97,7 @@ public abstract class BufferedImageReader implements ImageReader {
         };
     }
 
-    public static BufferedImageReader create(Path path) throws Throwable {
+    private static BufferedImageReader create(Path path) throws Throwable {
         return create(ImageIO.read(path.toFile()), path);
     }
 
@@ -108,6 +111,9 @@ public abstract class BufferedImageReader implements ImageReader {
         return points.dimensions();
     }
 
+    /**
+     * Create a factory for {@link BufferedImageReader BufferedImageReaders} that buffers the image file path.
+     */
     public static Supplier<ImageReader> factory(Path path) {
         return ()->create(path);
     }
@@ -124,6 +130,9 @@ public abstract class BufferedImageReader implements ImageReader {
         log.put("type", logType());
     }
 
+    /**
+     * Returns the type of the image.
+     */
     protected abstract String logType();
 
     @Override

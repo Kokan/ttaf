@@ -4,11 +4,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * A {@link MutablePoints} backed by a primitive array.
+ */
 public abstract class ArrayPoints<T> extends MutablePoints {
     T data;
     final int offset;
     int size;
 
+    /**
+     * Creates a new instance with the array data, dimensionality dimensions, size size, starting at offset.
+     */
     public ArrayPoints(T data, int dimensions, int offset, int size) {
         super(dimensions);
         this.data=data;
@@ -16,6 +22,9 @@ public abstract class ArrayPoints<T> extends MutablePoints {
         this.size=size;
     }
 
+    /**
+     * Makes sure the backing array is large enough to hold newSize vectors.
+     */
     protected abstract void ensureSize(int newSize);
 
     @Override
@@ -52,5 +61,8 @@ public abstract class ArrayPoints<T> extends MutablePoints {
         }
     }
 
+    /**
+     * Swaps the vectors indexed by index0 and index1.
+     */
     protected abstract void swapImpl(int index0, int index1);
 }

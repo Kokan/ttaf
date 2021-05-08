@@ -1,15 +1,26 @@
 package dog.giraffe;
 
-import dog.giraffe.threads.Block;
+import dog.giraffe.points.Sum;
+import dog.giraffe.util.Block;
 import dog.giraffe.threads.Executor;
-import dog.giraffe.threads.StoppedException;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Default implementation of {@link dog.giraffe.Context Context}.
+ *
+ * Threads are run asynchronously by a standard java executor.
+ *
+ * Logs errors to the standard error.
+ */
 public class StandardContext implements Context {
+    /**
+     * Wrapper for {@link Block Blocks}.
+     * Exceptions thrown by the Block will be logged to the standard error.
+     */
     protected class BlockRunnable implements Runnable {
         private final Block block;
 
@@ -33,6 +44,11 @@ public class StandardContext implements Context {
     private final ScheduledExecutorService realExecutor;
     private final AtomicBoolean stopped=new AtomicBoolean(false);
 
+    /**
+     * Creates a new instance.
+     *
+     * @param threads the number of java threads used to run tasks
+     */
     public StandardContext(int threads) {
         executor=new Executor() {
             @Override
@@ -95,6 +111,6 @@ public class StandardContext implements Context {
 
     @Override
     public Sum.Factory sum() {
-        return Sum.PREFERRED;
+        return Sum.SINGLE_VARIABLE;
     }
 }

@@ -1,8 +1,10 @@
 package dog.giraffe;
 
+import dog.giraffe.cluster.Clusters;
 import dog.giraffe.image.Image;
 import dog.giraffe.image.ImageWriter;
 import dog.giraffe.points.Vector;
+import dog.giraffe.util.Lists;
 import java.io.BufferedOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -20,10 +22,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Supertype of classes that can log metadata.
+ */
 @FunctionalInterface
 public interface Log {
+    /**
+     * Writes metadata to the map log.
+     */
     void log(Map<String, Object> log) throws Throwable;
 
+    /**
+     * Writes coordinates and selected colors of clusters to the metadata.
+     */
     static void logClusters(Clusters clusters, Map<Vector, Vector> colorMap, Map<String, Object> log) {
         log.put("clusters", clusters.centers.size());
         for (int ii=0; clusters.centers.size()>ii; ++ii) {
@@ -40,16 +51,25 @@ public interface Log {
         log.put("clusters-error", clusters.error);
     }
 
+    /**
+     * Writes the time took to complete clustering to the metadata.
+     */
     static void logElapsedTime(Instant start, Instant end, Map<String, Object> log) {
         log.put("elapsed-time", Duration.between(start, end));
     }
 
+    /**
+     * Prepends a name to metadata keys.
+     */
     static void logField(String name, Log field, Map<String, Object> log) throws Throwable {
         Map<String, Object> temp=new LinkedHashMap<>();
         field.log(temp);
         temp.forEach((key, value)->log.put(name+"-"+key, value));
     }
 
+    /**
+     * Writes metadata of an {@link dog.giraffe.image.Image Image} generator DAG.
+     */
     static void logImages(Image image, Map<String, Object> log) throws Throwable {
         logImages(image, log, new IdentityHashMap<>(), new IdentityHashMap<>());
     }
@@ -72,16 +92,27 @@ public interface Log {
         logField(name, image, log);
     }
 
+    /**
+     * Writers the metadata of an {@link dog.giraffe.image.ImageWriter ImageWtiter}.
+     */
     static void logWriter(ImageWriter writer, Map<String, Object> log) throws Throwable {
         logField("writer", writer, log);
     }
 
+    /**
+     * Writes metadata to the file specified by path.
+     * Each key-value pair will produce a line of text.
+     */
     static void write(Path path, Map<String, Object> log) throws Throwable {
         try (OutputStream stream=Files.newOutputStream(path)) {
             write(stream, log);
         }
     }
 
+    /**
+     * Writes metadata to the stream.
+     * Each key-value pair will produce a line of text.
+     */
     static void write(OutputStream stream, Map<String, Object> log) throws Throwable {
         try (OutputStream bos=new BufferedOutputStream(stream);
                 Writer wr=new OutputStreamWriter(bos, StandardCharsets.UTF_8);

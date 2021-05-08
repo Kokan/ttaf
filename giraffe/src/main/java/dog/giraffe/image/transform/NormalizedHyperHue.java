@@ -7,6 +7,11 @@ import dog.giraffe.points.MutablePoints;
 import dog.giraffe.threads.Continuation;
 import java.util.Map;
 
+/**
+ * {@link NormalizedHyperHue} transforms an image as {@link HyperHue} does and than normalizes all the vectors
+ * to have a uniform length.
+ * Points whose lengths are smaller than the specified maxZero are collapsed to the zero point.
+ */
 public class NormalizedHyperHue extends Image.Transform {
     private final double maxZero2;
 
@@ -15,6 +20,9 @@ public class NormalizedHyperHue extends Image.Transform {
         this.maxZero2=maxZero*maxZero;
     }
 
+    /**
+     * Creates a new {@link NormalizedHyperHue} instance.
+     */
     public static Image create(Image image, double maxZero) {
         return new NormalizedHyperHue(image, maxZero);
     }

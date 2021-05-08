@@ -1,6 +1,6 @@
 package dog.giraffe.gui;
 
-import dog.giraffe.threads.Block;
+import dog.giraffe.util.Block;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;

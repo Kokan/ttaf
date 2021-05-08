@@ -1,5 +1,9 @@
 package dog.giraffe.threads;
 
+/**
+ * Waits synchronously for an asynchronous computation.
+ * AsyncJoins are thread-safe.
+ */
 public class AsyncJoin implements Continuation<Void> {
     private Throwable error;
     private boolean hasError;
@@ -29,6 +33,11 @@ public class AsyncJoin implements Continuation<Void> {
         }
     }
 
+    /**
+     * Blocks this thread while this object is not completed.
+     * Returns on successful completion.
+     * Throws an exception on failed completion.
+     */
     public void join() throws Throwable {
         synchronized (lock) {
             while (true) {

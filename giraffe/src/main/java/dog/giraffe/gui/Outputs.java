@@ -1,7 +1,12 @@
 package dog.giraffe.gui;
 
-import dog.giraffe.ClusterColors;
-import dog.giraffe.ClusteringStrategy;
+import dog.giraffe.cluster.ClusterColors;
+import dog.giraffe.cluster.ClusteringStrategy;
+import dog.giraffe.cluster.InitialCenters;
+import dog.giraffe.cluster.Isodata;
+import dog.giraffe.cluster.KMeans;
+import dog.giraffe.cluster.Otsu;
+import dog.giraffe.cluster.ReplaceEmptyCluster;
 import dog.giraffe.gui.model.HalfPlane;
 import dog.giraffe.gui.model.Transform;
 import dog.giraffe.image.Image;
@@ -15,11 +20,9 @@ import dog.giraffe.image.transform.Normalize;
 import dog.giraffe.image.transform.NormalizedDifferenceVegetationIndex;
 import dog.giraffe.image.transform.NormalizedHyperHue;
 import dog.giraffe.image.transform.Select;
-import dog.giraffe.kmeans.InitialCenters;
-import dog.giraffe.kmeans.ReplaceEmptyCluster;
 import dog.giraffe.points.KDTree;
-import dog.giraffe.threads.Function;
-import dog.giraffe.threads.Supplier;
+import dog.giraffe.util.Function;
+import dog.giraffe.util.Supplier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -198,7 +201,7 @@ public class Outputs {
                         }
                         List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>();
                         initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
-                                strategies.add(ClusteringStrategy.isodata(
+                                strategies.add(Isodata.isodata(
                                         cluster.minClusters,
                                         cluster.maxClusters,
                                         cluster.errorLimit,
@@ -224,7 +227,7 @@ public class Outputs {
                                 strategyGenerator=(clusters)->{
                                     List<ClusteringStrategy<KDTree>> strategies=new ArrayList<>();
                                     initialCenters.forEach((init)->replaceEmptyClusters.forEach((replace)->
-                                            strategies.add(ClusteringStrategy.kMeans(
+                                            strategies.add(KMeans.kMeans(
                                                     clusters,
                                                     cluster.errorLimit,
                                                     init,
@@ -234,10 +237,10 @@ public class Outputs {
                                 };
                                 break;
                             case OTSU:
-                                strategyGenerator=(clusters)->ClusteringStrategy.otsuLinear(cluster.bins, clusters);
+                                strategyGenerator=(clusters)->Otsu.linear(cluster.bins, clusters);
                                 break;
                             case OTSU_CIRCULAR:
-                                strategyGenerator=(clusters)->ClusteringStrategy.otsuCircular(cluster.bins, clusters);
+                                strategyGenerator=(clusters)->Otsu.circular(cluster.bins, clusters);
                                 break;
                             default:
                                 throw new RuntimeException("unexpected cluster algorithm "+cluster.algorithm);
@@ -254,7 +257,7 @@ public class Outputs {
                     switch (cluster.type) {
                         case CLUSTER_1:
                             return Cluster1.create(
-                                    image, ClusterColors.RGB.falseColor(0, 1, 2), mask, strategy);
+                                    image, ClusterColors.falseColors(0, 1, 2), mask, strategy);
                         case CLUSTER_HUE:
                             return Cluster2.createHue(image, mask, strategy);
                         case CLUSTER_HYPER_HUE:

@@ -1,6 +1,7 @@
 package dog.giraffe;
 
-import dog.giraffe.threads.Consumer;
+import dog.giraffe.util.Consumer;
+import dog.giraffe.util.QuickSort;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
