@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":9,"i3":10,"i4":10,"i5":9,"i6":10,"i7":9,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10};
+var data = {"i0":10,"i1":10,"i2":9,"i3":10,"i4":10,"i5":9,"i6":10,"i7":9,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -266,13 +266,18 @@ extends java.lang.Object</pre>
 </tr>
 <tr id="i8" class="altColor">
 <td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#resetStats()">resetStats</a></span>()</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i9" class="rowColor">
+<td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#select_next_action(dog.giraffe.cluster.Isodata.Clusterss,dog.giraffe.threads.Continuation,double,int)">select_next_action</a></span>&#8203;(<a href="Isodata.Clusterss.html" title="class in dog.giraffe.cluster">Isodata.Clusterss</a>&nbsp;p,
                   <a href="../threads/Continuation.html" title="interface in dog.giraffe.threads">Continuation</a>&lt;java.util.Map&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>,&#8203;java.util.List&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>&gt;&gt;&gt;&nbsp;continuation,
                   double&nbsp;error,
                   int&nbsp;iteration)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#split_cluster(dog.giraffe.cluster.Isodata.Clusterss,dog.giraffe.threads.Continuation,double,int)">split_cluster</a></span>&#8203;(<a href="Isodata.Clusterss.html" title="class in dog.giraffe.cluster">Isodata.Clusterss</a>&nbsp;p,
              <a href="../threads/Continuation.html" title="interface in dog.giraffe.threads">Continuation</a>&lt;java.util.Map&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>,&#8203;java.util.List&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>&gt;&gt;&gt;&nbsp;continuation,
@@ -280,7 +285,7 @@ extends java.lang.Object</pre>
              int&nbsp;iteration)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#start(dog.giraffe.cluster.Isodata.Clusterss,dog.giraffe.threads.Continuation,double,int)">start</a></span>&#8203;(<a href="Isodata.Clusterss.html" title="class in dog.giraffe.cluster">Isodata.Clusterss</a>&nbsp;p,
      <a href="../threads/Continuation.html" title="interface in dog.giraffe.threads">Continuation</a>&lt;java.util.Map&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>,&#8203;java.util.List&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>&gt;&gt;&gt;&nbsp;continuation,
@@ -288,7 +293,7 @@ extends java.lang.Object</pre>
      int&nbsp;iteration)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#std_deviation(dog.giraffe.cluster.Isodata.Clusterss,dog.giraffe.threads.Continuation,double,int)">std_deviation</a></span>&#8203;(<a href="Isodata.Clusterss.html" title="class in dog.giraffe.cluster">Isodata.Clusterss</a>&nbsp;p,
              <a href="../threads/Continuation.html" title="interface in dog.giraffe.threads">Continuation</a>&lt;java.util.Map&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>,&#8203;java.util.List&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>&gt;&gt;&gt;&nbsp;continuation,
@@ -296,7 +301,7 @@ extends java.lang.Object</pre>
              int&nbsp;iteration)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i13" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#update_centers(dog.giraffe.cluster.Isodata.Clusterss,dog.giraffe.threads.Continuation,double,int)">update_centers</a></span>&#8203;(<a href="Isodata.Clusterss.html" title="class in dog.giraffe.cluster">Isodata.Clusterss</a>&nbsp;p,
               <a href="../threads/Continuation.html" title="interface in dog.giraffe.threads">Continuation</a>&lt;java.util.Map&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>,&#8203;java.util.List&lt;<a href="../points/Vector.html" title="class in dog.giraffe.points">Vector</a>&gt;&gt;&gt;&nbsp;continuation,
@@ -354,6 +359,15 @@ extends java.lang.Object</pre>
 <dt><span class="throwsLabel">Throws:</span></dt>
 <dd><code>java.lang.Throwable</code></dd>
 </dl>
+</li>
+</ul>
+<a id="resetStats()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>resetStats</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;resetStats()</pre>
 </li>
 </ul>
 <a id="start(dog.giraffe.cluster.Isodata.Clusterss,dog.giraffe.threads.Continuation,double,int)">
@@ -553,6 +567,19 @@ extends java.lang.Object</pre>
                                                                <a href="InitialCenters.html" title="interface in dog.giraffe.cluster">InitialCenters</a>&lt;P&gt;&nbsp;initialCenters,
                                                                <a href="ReplaceEmptyCluster.html" title="interface in dog.giraffe.cluster">ReplaceEmptyCluster</a>&lt;P&gt;&nbsp;replaceEmptyCluster)</pre>
 <div class="block">The ISODATA clustering algorithm.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>startClusters</code> - the number of clusters to start with</dd>
+<dd><code>desiredClusters</code> - the number of clusters it should aim to create</dd>
+<dd><code>errorLimit</code> - an early exit happens if an iteration improvement is smaller then this limit</dd>
+<dd><code>maxIteration</code> - the maximum number of iterations the algorithm should take</dd>
+<dd><code>theta_N</code> - the percentage of all points that provides the smallest possible cluster size (smaller clusters are dropped)</dd>
+<dd><code>lumping</code> - a cluster pair is candidate of merging if their centers are closer then this parameter</dd>
+<dd><code>L</code> - the number of clusters lumping can merge per iteration</dd>
+<dd><code>std_deviation</code> - clusters are split into two if their standard deviation is larger (split may not happen based on the number of clusters)
+ 
+ The implementation is based on the Julius T. Tou, Rafael C. Gonzalez: Pattern Recognition Principles book.</dd>
+</dl>
 </li>
 </ul>
 </li>
