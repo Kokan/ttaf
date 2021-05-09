@@ -24,6 +24,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
 public class GUI {
@@ -161,10 +162,17 @@ public class GUI {
 
         frame.setVisible(true);
 
-        if (null!=settingsFile) {
-            loadSettings(settingsFile);
-        }
-        modelChanged();
+        SwingUtilities.invokeLater(()->{
+            try {
+                if (null!=settingsFile) {
+                    loadSettings(settingsFile);
+                }
+                modelChanged();
+            }
+            catch (Throwable throwable) {
+                log(throwable);
+            }
+        });
     }
 
     public static void main(String[] args) throws Throwable {
