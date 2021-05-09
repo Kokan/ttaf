@@ -626,7 +626,7 @@ public class Isodata<P extends Points> {
      * @param errorLimit  an early exit happens if an iteration improvement is smaller then this limit
      * @param maxIteration the maximum number of iterations the algorithm should take
      * @param theta_N the percentage of all points that provides the smallest possible cluster size (smaller clusters are dropped)
-     * @param lumping a cluster pair is candidate of merging if their centers are closer then this parameter
+     * @param lumping a cluster pair is candidate of merging if their centers are closer than this parameter
      * @param L the number of clusters lumping can merge per iteration
      * @param std_deviation clusters are split into two if their standard deviation is larger (split may not happen based on the number of clusters)
      * 

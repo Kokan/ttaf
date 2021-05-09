@@ -311,19 +311,19 @@ public class ViewerPanel {
     }
 
     private void moveDown(ActionEvent event) {
-        move(0, 1);
+        move(0, -1);
     }
 
     private void moveLeft(ActionEvent event) {
-        move(-1, 0);
-    }
-
-    private void moveRight(ActionEvent event) {
         move(1, 0);
     }
 
+    private void moveRight(ActionEvent event) {
+        move(-1, 0);
+    }
+
     private void moveUp(ActionEvent event) {
-        move(0, -1);
+        move(0, 1);
     }
 
     private Sizes sizes(Sizes sizes) {
