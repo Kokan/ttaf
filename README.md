@@ -45,7 +45,8 @@ The parameters of k-means are
 ### ISODATA
 
 ISODATA is an improvement of k-means which doesn't require the user to give the correct number of clusters up front.
-The ISODATA uses heuristics for manipulating the current list of clusters. This current ISODATA implementation is based on the one described in Pattern Recognition Principles book [[6]](#6).
+The ISODATA uses heuristics for manipulating the current list of clusters.
+The current ISODATA implementation is based on the one described in Pattern Recognition Principles book [[6]](#6).
 It utilizes three cluster list manipulation:
 * Dropping small clusters
 * Merging close clusters
@@ -59,9 +60,11 @@ Some parameters of ISODATA are the same as k-means:
 
 Other parameters are:
 - minClusters and maxClusters: the range of the number clusters the result can be chosen from
-- foo
-- bar
-- baz.
+- theta_N: the percentage of all points that provides the smallest possible cluster size (smaller clusters are dropped)
+- lumping: a cluster pair is candidate of merging if their centers are closer than this parameter
+- L: the number of clusters lumping can merge per iteration
+- std_deviation: clusters are split into two if their standard deviation is larger
+  (split may not happen based on the number of clusters)
 
 ### Otsu's method
 
@@ -77,7 +80,6 @@ Its parameters are:
 The elbow method can transform a clustering algorithms which works on a fixed number of cluster to one which
 searches a range of possible numbers of cluster
 and selects the one where further increasing the number of clusters will not pay off.
-
 
 The parameters of the elbow method are:
 - errorLimit: stops when the clustering error fails to decrease as fast as the errorLimit rate
@@ -100,6 +102,19 @@ Its parameters are:
   - hyper-hue: work for any color space having at least 2 components,
     pixels are decomposed into a gray part parallel to (1, 1, 1, ...) and a color part perpendicular to it,
     pixels are considered gray if the gray part is longer than the color part.
+
+### Masks
+
+Clustering algorithms can take masks to ignore parts of the images.
+There are three types of masks currently implemented:
+- one that enables all pixels
+- the intersection of the visible pixels of a list of masks
+- enabling a half-plane and disabling the opposite one.
+
+Half-planes can be defined be line segments in the form of (x1,y1,x2,y2).
+The points on the clockwise side of the directed line segment (x1,y1)-&gt;(x2,y2) are masked out,
+all other points are visible.
+A convex polygon can be selected by describing all of its edges in a counterclockwise fashion.
 
 ## Image transformations
 
@@ -280,6 +295,69 @@ and can be asked to write this buffer to disk or to create a `java.awt.image.Buf
 https://zooflavor.github.io/ttaf/javadoc/index.html
 
 ## GUI tool
+
+Using this framework we built a graphical tool to eyeball the results of various clustering strategies.
+The tool can be started by running `giraffe-gui.sh`.
+With this tool you can:
+- select an input image
+- apply a mask
+- describe multiple sequences of transformations on the input file
+- render the result of all the transformations
+- view all the results side by side
+- save the results of the transformations.
+
+The graphical tool has three views define and compare images.
+
+### Input
+
+On the input tab you can:
+- save and load all input and output settings to a file
+- select the input file
+- check the dimensions of the input file
+- add a new output tab
+- render all output images in one go
+- apply a mask to the input image
+  - the mask is the intersection of half-planes
+  - don't forget to push set after changing values!
+
+![GUI tab input](https://zooflavor.github.io/ttaf/gui-input.png)
+
+### Output
+
+On the output tab you can:
+- remove the current output
+- add, remove, or rearrange the sequence of transformation defining the output image
+- set the parameters of the selected transformation
+  - the parameters are described at the beginning of this document
+  - don't forget to push set after changing values!
+- render the output
+  - the output is the transformation of the input image by the sequence of the list of transformations
+- save the output, if it is rendered
+- view the result
+  - there is better viewer at the last tab
+- check the metadata of the transformation
+  - there is two metadata
+    - image##-clusters: the number of clusters of the result
+    - image##-clusters-error: the clustering error of the result
+
+![GUI tab output](https://zooflavor.github.io/ttaf/gui-output.png)
+
+### Viewer
+
+On the viewer tab you can view all the rendered outputs side by side.
+Outputs not yet rendered are not shown.
+The viewer supports the translation and scaling of the view.
+All translation and scaling are applied in tandem to all outputs.
+The controls are:
+- the arrows move the object relative to the camera
+- `+` zooms in the view
+- `-` zooms out the view
+- `1:1` zooms to 100%
+- `⛶` fits the image to the available size
+- mouse scroll zooms in and out
+- mouse drag translates the view.
+
+![GUI tab viewer](https://zooflavor.github.io/ttaf/gui-viewer.png)
 
 ## References
 <a id="1">[1]</a>
