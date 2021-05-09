@@ -2,7 +2,11 @@
 
 set -e
 
+./compile.sh
+
 cd giraffe
-gradle clean jar copyDependencies
 gradle test
+cd ..
+
+./giraffe-cmd-test.sh
 
