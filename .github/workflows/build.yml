@@ -15,4 +15,9 @@ jobs:
           distribution: 'adopt'
       - name: Build and Test
         run: sh ci.sh
+      - name: Archive images
+        uses: actions/upload-artifact@v2
+        with:
+          name: Build and Test
+          path: testimages/out/
 

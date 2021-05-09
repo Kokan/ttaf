@@ -1,3 +1,3 @@
 #!/bin/bash
 
-java -Xmx8g -cp "giraffe/build/libs/*" dog.giraffe.CmdLine "$@"
+java -Xmx16g -cp "giraffe/build/libs/*" dog.giraffe.CmdLine "$@"
