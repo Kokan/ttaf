@@ -9,13 +9,17 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -24,6 +28,13 @@ import javax.swing.JTextField;
 
 public class ViewerPanel {
     private static final double ZOOM=1.25;
+
+    private class ComponentListenerImpl extends ComponentAdapter {
+        @Override
+        public void componentResized(ComponentEvent event) {
+            zoomFit(null);
+        }
+    }
 
     private class MouseListenerImpl implements MouseListener, MouseMotionListener, MouseWheelListener {
         private Pair<Integer, Integer> dragStart;
@@ -98,7 +109,7 @@ public class ViewerPanel {
         int cellHeight=1;
         int cellWidth=1;
         int columns=1;
-        int images;
+        List<List<BufferedImage>> images;
         int imageWidth=1;
         int imageHeight=1;
         int rows=1;
@@ -124,8 +135,8 @@ public class ViewerPanel {
             sizes(viewSizes);
             graphics.setColor(Color.LIGHT_GRAY);
             graphics.fillRect(0, 0, viewSizes.viewWidth, viewSizes.viewHeight);
-            for (int ii=0; gui.outputPanels.size()>ii; ++ii) {
-                List<BufferedImage> images=gui.outputPanels.get(ii).images;
+            for (int ii=0; viewSizes.images.size()>ii; ++ii) {
+                List<BufferedImage> images=viewSizes.images.get(ii);
                 if ((null==images)
                         || images.isEmpty()) {
                     continue;
@@ -206,7 +217,7 @@ public class ViewerPanel {
         }
     }
 
-    private final GUI gui;
+    private final Supplier<List<List<BufferedImage>>> images;
     private final JPanel panel;
     private double translateX;
     private double translateY;
@@ -216,8 +227,9 @@ public class ViewerPanel {
     private final JTextField yy;
     private double zoom=1.0;
 
-    public ViewerPanel(GUI gui) {
-        this.gui=gui;
+    public ViewerPanel(Supplier<List<List<BufferedImage>>> images) {
+        this.images=images;
+
         panel=new JPanel(new BorderLayout());
 
         JPanel topPanel=new JPanel(new BorderLayout());
@@ -250,10 +262,19 @@ public class ViewerPanel {
         topRightPanel.add(yy);
 
         MouseListenerImpl mouseListener=new MouseListenerImpl();
+        view.addComponentListener(new ComponentListenerImpl());
         view.addMouseListener(mouseListener);
         view.addMouseMotionListener(mouseListener);
         view.addMouseWheelListener(mouseListener);
         panel.add(view, BorderLayout.CENTER);
+    }
+
+    public ViewerPanel(GUI gui) {
+        this(()->{
+            List<List<BufferedImage>> images=new ArrayList<>(gui.outputPanels.size());
+            gui.outputPanels.forEach((outputPanel)->images.add(outputPanel.images));
+            return images;
+        });
     }
 
     private static void addButton(JPanel panel, String text, ActionListener listener) {
@@ -314,22 +335,22 @@ public class ViewerPanel {
         sizes.zoom=zoom;
         sizes.viewWidth=view.getWidth();
         sizes.viewHeight=view.getHeight();
-        sizes.images=gui.outputPanels.size();
+        sizes.images=images.get();
         sizes.columns=1;
-        while (sizes.columns*sizes.columns<sizes.images) {
+        while (sizes.columns*sizes.columns<sizes.images.size()) {
             ++sizes.columns;
         }
-        sizes.rows=sizes.images/sizes.columns;
-        if (sizes.rows*sizes.columns<sizes.images) {
+        sizes.rows=Math.max(1, sizes.images.size()/sizes.columns);
+        if (sizes.rows*sizes.columns<sizes.images.size()) {
             ++sizes.rows;
         }
         sizes.cellWidth=sizes.viewWidth/sizes.columns;
         sizes.cellHeight=sizes.viewHeight/sizes.rows;
         sizes.imageWidth=1;
         sizes.imageHeight=1;
-        for (OutputPanel outputPanel: gui.outputPanels) {
-            if (null!=outputPanel.images) {
-                for (BufferedImage image: outputPanel.images) {
+        for (List<BufferedImage> images: sizes.images) {
+            if (null!=images) {
+                for (BufferedImage image: images) {
                     sizes.imageWidth=Math.max(sizes.imageWidth, image.getWidth());
                     sizes.imageHeight=Math.max(sizes.imageHeight, image.getHeight());
                 }

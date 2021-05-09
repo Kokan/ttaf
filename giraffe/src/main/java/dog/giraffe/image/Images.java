@@ -36,7 +36,7 @@ public class Images {
     }
 
     /**
-     * Creates the description on color components for {@link ColorSpace} with dimensions components.
+     * Creates the description of color components for {@link ColorSpace} with dimensions components.
      */
     public static int[] createBandOffsets(int dimensions) {
         int[] result=new int[dimensions];
