@@ -45,6 +45,11 @@ The parameters of k-means are
 ### ISODATA
 
 ISODATA is an improvement of k-means which doesn't require the user to give the correct number of clusters up front.
+The ISODATA uses heuristics for manipulating the current list of clusters. This current ISODATA implementation is based on the one described in Pattern Recognition Principles book [[6]](#6).
+It utilizes three cluster list manipulation:
+* Dropping small clusters
+* Merging close clusters
+* Split cluster
 
 Some parameters of ISODATA are the same as k-means:
 - errorLimit
@@ -301,3 +306,8 @@ D.-C. Tseng, Y.-F. Li, and C.-T. Tung, 1995
 Transformation of a high-dimensional color space for material classification
 <br>
 Huajian Liu, Sang-Heon Lee, Javaan Singh Chahl, 2017
+
+<a id="6">[6]</a>
+Pattern Recognition Principles book
+<br>
+T. Tou, Rafael C. Gonzalez
