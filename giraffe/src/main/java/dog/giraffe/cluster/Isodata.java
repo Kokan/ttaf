@@ -620,6 +620,17 @@ public class Isodata<P extends Points> {
 
     /**
      * The ISODATA clustering algorithm.
+     * 
+     * @param startClusters  the number of clusters to start with
+     * @param desiredClusters the number of clusters it should aim to create
+     * @param errorLimit  an early exit happens if an iteration improvement is smaller then this limit
+     * @param maxIteration the maximum number of iterations the algorithm should take
+     * @param theta_N the percentage of all points that provides the smallest possible cluster size (smaller clusters are dropped)
+     * @param lumping a cluster pair is candidate of merging if their centers are closer then this parameter
+     * @param L the number of clusters lumping can merge per iteration
+     * @param std_deviation clusters are split into two if their standard deviation is larger (split may not happen based on the number of clusters)
+     * 
+     * The implementation is based on the Julius T. Tou, Rafael C. Gonzalez: Pattern Recognition Principles book.
      */
     public static <P extends Points> ClusteringStrategy<P> isodata(
             int startClusters, int desiredClusters, double errorLimit, int maxIteration,
