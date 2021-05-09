@@ -18,7 +18,7 @@ do
 ./giraffe-cmd.sh -i testimages/huetest1.tiff -o testimages/out/huetest1-$algo.jpg -a $algo -e --min 2 --max 10 --image-transform hue
 ./giraffe-cmd.sh -i testimages/huetest2.tiff -o testimages/out/huetest2-$algo.jpg -a $algo -e --min 2 --max 10 --image-transform hue
 
-./giraffe-cmd.sh --batch-mode -i testimages/out/misc/list -o 'testimages/out/misc/$FILE$EXT' --log 'testimages/out/misc/$FILE$EXT.log' -a $algo -e --min 2 --max 10 --max-iterations 1000 --batch-parallel-images 2
+./giraffe-cmd.sh --batch-mode -i testimages/out/misc/list -o "testimages/out/misc/$algo-\$FILE\$EXT" --log "testimages/out/misc/$algo-\$FILE\$EXT.log" -a $algo -e --min 2 --max 10 --max-iterations 1000 --batch-parallel-images 2
 done
 
 ./giraffe-cmd.sh -i testimages/huetest1.tiff -o testimages/out/huetest1-otsu-circular.jpg -a otsu-circular -e=false --min 2 --max 2 --bins 10 --image-transform hue
