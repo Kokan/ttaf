@@ -253,7 +253,19 @@ public class Isodata<P extends Points> {
                         continuation));
     }
 
+    public void resetStats() {
+                stats_set("distribute", 0.0);
+                stats_set("discard_sample", 0.0);
+                stats_set("discarded_cluster", 0.0);
+                stats_set("lumping", 0.0);
+                stats_set("lumpped_cluster", 0.0);
+                stats_set("split_cluster", 0.0);
+                stats_set("splitted_cluster", 0.0);
+                stats_set("update_centers", 0.0);
+    }
+
     public void start(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
+                resetStats();
                 distribute(p, continuation, error, 0);
     }
 
