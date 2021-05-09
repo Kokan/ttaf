@@ -336,6 +336,7 @@ public class Isodata<P extends Points> {
     public void discard_sample(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration)
             throws Throwable {
 
+         context.checkStopped();
          increment("discard_sample");
 
          List<Cluster> clusters2=new ArrayList<>();
@@ -384,7 +385,7 @@ public class Isodata<P extends Points> {
     // Step 11, Step 12, finding pairwise center distance and lumping clusters
     public void lumping(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration)
             throws Throwable {
-
+         context.checkStopped();
 
          increment("lumping");
 
@@ -433,6 +434,8 @@ public class Isodata<P extends Points> {
     // Step 10, split clusters
     public void split_cluster(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration)
             throws Throwable {
+        context.checkStopped();
+
         increment("split_cluster");
         boolean split=false;
         List<Cluster> new_clusters = new ArrayList<>();
@@ -468,6 +471,7 @@ public class Isodata<P extends Points> {
 
     //Step 4, update each cluster centers
     public void update_centers(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
+        context.checkStopped();
 
         increment("update_centers");
 
@@ -500,6 +504,7 @@ public class Isodata<P extends Points> {
 
     //Step 5, compute avg distance D_j
     public void avg_distance(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
+        context.checkStopped();
         List<Cluster> clusters = Collections.unmodifiableList(p.clusters);
 
         for (Sum sum : sums) {
@@ -540,6 +545,7 @@ public class Isodata<P extends Points> {
 
     //Step 6, compute overall avg distance L2Points.Distance
     public void all_avg_distance(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
+        context.checkStopped();
         double all_avg_distance = 0.0;
 
         for (Cluster cluster : p.clusters) {
@@ -572,6 +578,7 @@ public class Isodata<P extends Points> {
 
     //Step 8, find std deviation vector
     public void std_deviation(Clusterss p, Continuation<Map<Vector,List<Vector>>> continuation, double error, int iteration) throws Throwable {
+        context.checkStopped();
         List<Cluster> clusters = Collections.unmodifiableList(p.clusters);
 
         List<AsyncSupplier<Void>> forks=new ArrayList<>(clusters.size());
