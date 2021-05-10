@@ -1,8 +1,8 @@
 package dog.giraffe;
 
 import dog.giraffe.points.Sum;
-import dog.giraffe.util.Block;
 import dog.giraffe.threads.Executor;
+import dog.giraffe.util.Block;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -96,7 +96,6 @@ public class StandardContext implements Context {
             throwable.printStackTrace(System.err);
             System.err.flush();
         }
-        System.exit(1);
     }
 
     @Override

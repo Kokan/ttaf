@@ -1,0 +1,142 @@
+{
+  "inputFile" : "/stuff/unistuff/ttaf2/LC08_L1TP_188027_20200420_20200508_01_T1.tif",
+  "mask" : [ "java.util.ArrayList", [ {
+    "x1" : 2000.0,
+    "y1" : 300.0,
+    "x2" : 300.0,
+    "y2" : 600.0
+  }, {
+    "x1" : 300.0,
+    "y1" : 600.0,
+    "x2" : 6000.0,
+    "y2" : 7800.0
+  }, {
+    "x1" : 6000.0,
+    "y1" : 7800.0,
+    "x2" : 7600.0,
+    "y2" : 2000.0
+  }, {
+    "x1" : 7600.0,
+    "y1" : 2000.0,
+    "x2" : 2000.0,
+    "y2" : 300.0
+  } ] ],
+  "outputs" : [ "java.util.ArrayList", [ {
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$Select", {
+      "selectedChannels" : [ "java.util.ArrayList", [ 1, 2, 3 ] ]
+    } ], [ "dog.giraffe.gui.model.Transform$NormalizeDeviation", {
+      "sigma" : 1.0
+    } ] ] ]
+  }, {
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$NormalizeDeviation", {
+      "sigma" : 1.0
+    } ], [ "dog.giraffe.gui.model.Transform$Cluster", {
+      "algorithm" : "K_MEANS",
+      "bins" : 32,
+      "errorLimit" : 0.95,
+      "initialCentersKDTree" : false,
+      "initialCentersMeanAndFarthest" : true,
+      "initialCentersRandom" : 0,
+      "maxClusters" : 10,
+      "L" : 3,
+      "theta_N" : 0.05,
+      "lumping" : 3.0,
+      "std_deviation" : 20.0,
+      "maxIterations" : 10000,
+      "minClusters" : 2,
+      "replaceEmptyClustersFarthest" : true,
+      "replaceEmptyClustersRandom" : 0,
+      "type" : "CLUSTER_1"
+    } ] ] ]
+  }, {
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$Select", {
+      "selectedChannels" : [ "java.util.ArrayList", [ 1, 2, 3 ] ]
+    } ], [ "dog.giraffe.gui.model.Transform$NormalizeDeviation", {
+      "sigma" : 1.0
+    } ], [ "dog.giraffe.gui.model.Transform$Hue", { } ], [ "dog.giraffe.gui.model.Transform$Cluster", {
+      "algorithm" : "K_MEANS",
+      "bins" : 32,
+      "errorLimit" : 0.95,
+      "initialCentersKDTree" : false,
+      "initialCentersMeanAndFarthest" : true,
+      "initialCentersRandom" : 0,
+      "maxClusters" : 10,
+      "L" : 3,
+      "theta_N" : 0.05,
+      "lumping" : 3.0,
+      "std_deviation" : 20.0,
+      "maxIterations" : 10000,
+      "minClusters" : 2,
+      "replaceEmptyClustersFarthest" : true,
+      "replaceEmptyClustersRandom" : 0,
+      "type" : "CLUSTER_1"
+    } ] ] ]
+  }, {
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$NormalizeDeviation", {
+      "sigma" : 1.0
+    } ], [ "dog.giraffe.gui.model.Transform$HyperHue", { } ], [ "dog.giraffe.gui.model.Transform$Cluster", {
+      "algorithm" : "K_MEANS",
+      "bins" : 32,
+      "errorLimit" : 0.95,
+      "initialCentersKDTree" : false,
+      "initialCentersMeanAndFarthest" : true,
+      "initialCentersRandom" : 0,
+      "maxClusters" : 10,
+      "L" : 3,
+      "theta_N" : 0.05,
+      "lumping" : 3.0,
+      "std_deviation" : 20.0,
+      "maxIterations" : 10000,
+      "minClusters" : 2,
+      "replaceEmptyClustersFarthest" : true,
+      "replaceEmptyClustersRandom" : 0,
+      "type" : "CLUSTER_1"
+    } ] ] ]
+  }, {
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$Select", {
+      "selectedChannels" : [ "java.util.ArrayList", [ 1, 2, 3 ] ]
+    } ], [ "dog.giraffe.gui.model.Transform$NormalizeDeviation", {
+      "sigma" : 1.0
+    } ], [ "dog.giraffe.gui.model.Transform$Cluster", {
+      "algorithm" : "K_MEANS",
+      "bins" : 32,
+      "errorLimit" : 0.95,
+      "initialCentersKDTree" : false,
+      "initialCentersMeanAndFarthest" : true,
+      "initialCentersRandom" : 0,
+      "maxClusters" : 10,
+      "L" : 3,
+      "theta_N" : 0.05,
+      "lumping" : 3.0,
+      "std_deviation" : 20.0,
+      "maxIterations" : 10000,
+      "minClusters" : 2,
+      "replaceEmptyClustersFarthest" : true,
+      "replaceEmptyClustersRandom" : 0,
+      "type" : "CLUSTER_HUE"
+    } ] ] ]
+  }, {
+    "transforms" : [ "java.util.ArrayList", [ [ "dog.giraffe.gui.model.Transform$Select", {
+      "selectedChannels" : [ "java.util.ArrayList", [ 3, 4 ] ]
+    } ], [ "dog.giraffe.gui.model.Transform$NormalizedHyperHue", {
+      "maxZero" : 0.01
+    } ], [ "dog.giraffe.gui.model.Transform$Cluster", {
+      "algorithm" : "K_MEANS",
+      "bins" : 32,
+      "errorLimit" : 0.95,
+      "initialCentersKDTree" : false,
+      "initialCentersMeanAndFarthest" : true,
+      "initialCentersRandom" : 0,
+      "maxClusters" : 10,
+      "L" : 3,
+      "theta_N" : 0.05,
+      "lumping" : 3.0,
+      "std_deviation" : 20.0,
+      "maxIterations" : 10000,
+      "minClusters" : 2,
+      "replaceEmptyClustersFarthest" : true,
+      "replaceEmptyClustersRandom" : 0,
+      "type" : "CLUSTER_1"
+    } ] ] ]
+  } ] ]
+}
